@@ -1,0 +1,112 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  username  String?  @unique
+  email     String   @unique
+  password  String   // bcrypt hash
+  role      String   // admin | agent_rd | agent_haiti | gestionnaire
+  avatar    String   @default("")
+  location  String   @default("")
+  nodeId    String   @default("node-default")
+  status    String   @default("offline") // online | busy | offline
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id                  String   @id @default(cuid())
+  referenceNumber     String   @unique
+  senderName          String
+  senderPhone         String
+  receiverName        String
+  receiverPhone       String
+  operator            String   // moncash | natcash | digicel | natcom | claro | altice
+  serviceType         String   // cash_out | transfer | topup_mobile | bill_payment
+  channel             String   // haiti_cash | digital_telecom
+  amountDOP           Float
+  amountHTG           Float
+  amountUSD           Float?   @default(0)
+  exchangeRate        Float    // e.g. 2.35
+  feeDOP              Float    @default(0)
+  commissionDOP       Float    @default(0)
+
+  // Node & Agent Audit Tracing
+  createdByNode       String   @default("node-01")
+  createdByName       String   @default("Agent")
+  createdByRole       String   @default("agent_rd")
+  isAdminNominalTrace Boolean  @default(false)
+
+  assignedToNode      String   @default("node-02")
+  assignedToRole      String   @default("agent_haiti")
+  assignedToName      String   @default("Agent Haïti")
+
+  proofNotes          String?
+  status              String   @default("pending_routing") // pending_routing | in_progress | completed | cancelled
+  createdAt           DateTime @default(now())
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  cancellationReason  String?
+}
+
+model AccountBalance {
+  id            String   @id
+  operator      String   // moncash | natcash | digicel | natcom | bank_rd | cash_rd | cash_haiti
+  name          String
+  balance       Float    @default(0)
+  currency      String   // DOP | HTG | USD
+  accountNumber String?
+  lastUpdated   DateTime @default(now())
+  status        String   @default("optimal") // optimal | low | critical
+}
+
+model KillSwitch {
+  operator    String   @id // moncash | natcash | digicel | natcom | claro | altice
+  serviceName String
+  enabled     Boolean  @default(true)
+  reason      String?
+  updatedBy   String
+  updatedAt   DateTime @default(now())
+}
+
+model UserPermission {
+  userId                  String   @id
+  userName                String
+  role                    String
+  servicesAllowed         String   // JSON string of OperatorCode[]
+  maxSingleTransactionDOP Float    @default(100000)
+  canCancelTransaction    Boolean  @default(false)
+  canManageKillSwitch     Boolean  @default(false)
+  canViewTreasury         Boolean  @default(false)
+  canEditRates            Boolean  @default(false)
+}
+
+model ExchangeRate {
+  id             String   @id @default("rate_official")
+  baseCurrency   String   @default("DOP")
+  targetCurrency String   @default("HTG")
+  rate           Float    @default(2.35)
+  updatedBy      String   @default("Admin")
+  updatedAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  nodeId     String
+  actorName  String
+  actorRole  String
+  action     String
+  targetType String   // transaction | kill_switch | permission | treasury | user | system
+  details    String
+  nodeStatus String   @default("ACK") // ACK | SYNCED | DISPATCHED
+  priority   String?  @default("Medium")
+}

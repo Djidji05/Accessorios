@@ -1,0 +1,383 @@
+import React, { useState } from 'react';
+import { 
+  Settings, 
+  Moon, 
+  Sun, 
+  DollarSign, 
+  Globe, 
+  ChevronDown, 
+  Check, 
+  Bell, 
+  Zap, 
+  CheckCircle2, 
+  ShieldAlert,
+  X,
+  PanelLeftOpen,
+  PanelLeft,
+  Search,
+  LogOut,
+  Clock,
+  ChevronRight,
+  Lock
+} from 'lucide-react';
+import { useApp } from '../context/AppContext';
+
+export const Header: React.FC = () => {
+  const { 
+    activeTab, 
+    setActiveTab, 
+    currentUser, 
+    dopToHtgRate, 
+    setDopToHtgRate, 
+    unreadTasksCount, 
+    killSwitchList,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
+    toggleSidebar,
+    isDarkMode,
+    toggleDarkMode,
+    openSearch,
+    nodeConnectionStatus,
+    logout,
+    transactions,
+    setSelectedReceiptTx
+  } = useApp();
+  const [currentLang, setCurrentLang] = useState<'FR' | 'ES' | 'HT' | 'EN'>('FR');
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const activeKillCount = killSwitchList.filter(k => !k.enabled).length;
+
+  const isAgentRD = currentUser.role === 'agent_rd';
+  const isAgentHaiti = currentUser.role === 'agent_haiti';
+
+  // Role-scoped notifications (strictly respects user permissions)
+  const notifications = React.useMemo(() => {
+    const list: Array<{
+      id: string;
+      title: string;
+      message: string;
+      time: string;
+      icon: any;
+      color: string;
+      actionTab?: any;
+      tx?: any;
+    }> = [];
+
+    // Filter transactions per role
+    const scopedTxs = transactions.filter((t) => {
+      if (isAgentRD) {
+        return (
+          t.createdByName?.toLowerCase() === currentUser.name?.toLowerCase() ||
+          t.senderName?.toLowerCase() === currentUser.name?.toLowerCase() ||
+          t.createdByRole === 'agent_rd'
+        );
+      }
+      if (isAgentHaiti) {
+        return t.operator === 'natcash' || t.operator === 'natcom' || t.channel === 'haiti_cash';
+      }
+      return true;
+    });
+
+    // Recent transaction status notifications
+    scopedTxs.slice(0, 3).forEach((tx) => {
+      let icon = Clock;
+      let color = 'text-amber-500 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800';
+      let title = `Transfert ${tx.status === 'completed' ? 'Validé' : tx.status === 'cancelled' ? 'Annulé' : 'En cours'}`;
+
+      if (tx.status === 'completed') {
+        icon = CheckCircle2;
+        color = 'text-emerald-500 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800';
+      } else if (tx.status === 'cancelled') {
+        icon = ShieldAlert;
+        color = 'text-rose-500 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800';
+      }
+
+      list.push({
+        id: `tx_${tx.id}`,
+        title,
+        message: `${tx.operator.toUpperCase()} • ${tx.amountHTG.toLocaleString()} HTG pour ${tx.receiverName}`,
+        time: 'Récent',
+        icon,
+        color,
+        tx
+      });
+    });
+
+    // General operational notifications
+    if (activeKillCount > 0) {
+      list.push({
+        id: 'ks_alert',
+        title: 'Sécurité des Services',
+        message: `${activeKillCount} service(s) temporairement suspendu(s)`,
+        time: 'Actif',
+        icon: Lock,
+        color: 'text-rose-500 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800',
+        actionTab: 'kill_switch'
+      });
+    }
+
+    list.push({
+      id: 'rate_info',
+      title: 'Taux de Change',
+      message: `100 Pesos = ${Math.round(dopToHtgRate * 100)} HTG`,
+      time: 'Aujourd\'hui',
+      icon: DollarSign,
+      color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:border-blue-800'
+    });
+
+    return list;
+  }, [transactions, currentUser, dopToHtgRate, activeKillCount, isAgentRD, isAgentHaiti]);
+
+  const languages = [
+    { code: 'FR', label: 'Français 🇫🇷' },
+    { code: 'ES', label: 'Español 🇩🇴' },
+    { code: 'HT', label: 'Kreyòl 🇭🇹' },
+    { code: 'EN', label: 'English 🇺🇸' },
+  ];
+
+  return (
+    <header className="hidden md:flex h-14 bg-white dark:bg-[#0B1120] border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 items-center justify-between sticky top-0 z-20 transition-colors">
+      {/* Left Section: Mobile Brand Header & Desktop Breadcrumbs */}
+      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 flex-shrink-0">
+        {/* Mobile-only Brand Badge (md:hidden) */}
+        <div className="flex md:hidden items-center gap-2 mr-1">
+          <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs shadow-xs">
+            D
+          </div>
+          <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">
+            D'Alexis
+          </span>
+        </div>
+
+        {/* Desktop Sidebar Toggle & Breadcrumbs (md:flex) */}
+        {isSidebarCollapsed && (
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700"
+              title="Rouvrir la barre latérale"
+              aria-label="Rouvrir la barre latérale"
+            >
+              <PanelLeftOpen className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+            </button>
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+          </div>
+        )}
+
+        <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">Overview</span>
+        <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">/</span>
+        <span className="font-bold text-slate-900 dark:text-slate-100 capitalize truncate">
+          {activeTab === 'overview' ? 'Dashboard' : activeTab === 'guichet' ? 'Nouvelle Transaction' : activeTab.replace('_', ' ')}
+        </span>
+      </div>
+
+      {/* Center Search Bar Trigger in Navbar */}
+      <div className="flex-1 max-w-sm mx-3 sm:mx-6 hidden md:block">
+        <button
+          onClick={openSearch}
+          className="w-full flex items-center justify-between bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/70 px-3 py-1.5 rounded-xl text-xs text-slate-600 dark:text-slate-300 transition-all group shadow-2xs cursor-pointer"
+          title="Rechercher (⌘K ou Ctrl+K)"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 flex-shrink-0 transition-colors" />
+            <span className="text-slate-400 dark:text-slate-400 font-medium truncate">Rechercher une opération...</span>
+          </div>
+          <kbd className="ml-2 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-500 dark:text-slate-400 shadow-2xs flex-shrink-0">
+            ⌘K
+          </kbd>
+        </button>
+      </div>
+
+      {/* Right Tools: Mobile Search, Taux, Notification Bell, Language Globe Icon, Dark mode, Settings */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        
+        {/* Mobile Search Icon Button */}
+        <button 
+          onClick={openSearch}
+          className="md:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+          title="Rechercher (⌘K / Ctrl+K)"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+
+
+
+        {/* Real-time Exchange Rate Widget */}
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8FAFC] dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 px-2 sm:px-2.5 py-1 rounded-xl text-xs font-medium">
+          <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">Taux:</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+            100 Pesos = {Math.round(dopToHtgRate * 100)} HTG
+          </span>
+          {currentUser.role === 'admin' && (
+            <button 
+              onClick={() => {
+                const newRate = prompt('Nouveau taux 1 Peso -> HTG:', dopToHtgRate.toString());
+                if (newRate && !isNaN(parseFloat(newRate))) {
+                  setDopToHtgRate(parseFloat(newRate));
+                }
+              }}
+              className="ml-1 text-[10px] text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-semibold"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {/* NOTIFICATION BELL ICON BUTTON */}
+        <div className="relative">
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors relative"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+            
+            {/* Animated Red Badge Dot */}
+            <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+            </span>
+          </button>
+
+          {/* Notifications Dropdown Panel */}
+          {isNotificationsOpen && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 z-50 animate-in fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Bell className="w-4 h-4 text-slate-900 dark:text-slate-100" />
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">Notifications</h4>
+                </div>
+                <button 
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {notifications.map((notif) => {
+                  const IconComp = notif.icon;
+                  return (
+                    <div 
+                      key={notif.id}
+                      onClick={() => {
+                        if (notif.tx) setSelectedReceiptTx(notif.tx);
+                        if (notif.actionTab) setActiveTab(notif.actionTab);
+                        setIsNotificationsOpen(false);
+                      }}
+                      className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer border border-transparent hover:border-slate-200/80 dark:hover:border-slate-700"
+                    >
+                      <div className={`w-7 h-7 rounded-lg border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
+                        <IconComp className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-slate-900 dark:text-slate-100">{notif.title}</p>
+                          <span className="text-[10px] text-slate-400 font-normal">{notif.time}</span>
+                        </div>
+                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5">{notif.message}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-center">
+                <button
+                  onClick={() => {
+                    setActiveTab('notifications');
+                    setIsNotificationsOpen(false);
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                >
+                  <span>Voir toutes les notifications</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* LOGOUT BUTTON (Déconnexion) NEXT TO NOTIFICATION BELL */}
+        <button
+          onClick={logout}
+          className="px-2.5 py-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer font-extrabold text-xs"
+          title="Déconnexion"
+        >
+          <LogOut className="w-4 h-4 text-rose-500" />
+          <span className="hidden sm:inline">Déconnexion</span>
+        </button>
+
+        {/* Language Globe Icon Selector Button */}
+        <div className="relative">
+          <button 
+            onClick={() => setIsLangOpen(!isLangOpen)}
+            className="flex items-center gap-1.5 p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs font-semibold"
+            title="Changer de langue"
+          >
+            <Globe className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            <span className="font-bold text-slate-800 dark:text-slate-200">{currentLang}</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
+          </button>
+
+          {/* Language Dropdown Menu */}
+          {isLangOpen && (
+            <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in">
+              <div className="space-y-0.5">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setCurrentLang(lang.code as any);
+                      setIsLangOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                      currentLang === lang.code ? 'bg-slate-900 dark:bg-blue-600 text-white font-bold' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                    }`}
+                  >
+                    <span>{lang.label}</span>
+                    {currentLang === lang.code && <Check className="w-3 h-3 text-white" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Dark Mode Moon/Sun Button */}
+        <button 
+          onClick={toggleDarkMode}
+          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+          title={isDarkMode ? "Passer en mode clair" : "Passer en mode sombre"}
+        >
+          {isDarkMode ? (
+            <Sun className="w-4 h-4 text-amber-500" />
+          ) : (
+            <Moon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          )}
+        </button>
+
+        {/* Settings Gear Button */}
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+          title="Paramètres"
+        >
+          <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+        </button>
+
+        {/* Logout Button */}
+        <button 
+          onClick={logout}
+          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+          title="Se déconnecter"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
+    </header>
+  );
+};
