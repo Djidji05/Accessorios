@@ -68,7 +68,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
     <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden font-sans">
       
       {/* Table Header */}
-      <div className="bg-[#F8FAFC] border-b border-slate-200/70 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-slate-50 border-b border-slate-200/70 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className="w-3 h-3 rounded-full bg-slate-900 animate-ping" />
           <div>
@@ -115,6 +115,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
               <th className="py-3.5 px-5">Expéditeur (RD)</th>
               <th className="py-3.5 px-5">Bénéficiaire (Haïti)</th>
               <th className="py-3.5 px-5 text-right">Montant Pesos</th>
+              <th className="py-3.5 px-5 text-right text-blue-600 dark:text-blue-400">Commission Admin</th>
               <th className="py-3.5 px-5 text-right">Montant HTG</th>
               <th className="py-3.5 px-5 text-center">Suivi SLA & Statut</th>
               <th className="py-3.5 px-5 text-center">Action Reçu</th>
@@ -153,6 +154,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                 {/* Montant DOP */}
                 <td className="py-3.5 px-5 text-right font-mono font-bold text-slate-900">
                   {tx.amountDOP.toLocaleString()} DOP
+                </td>
+
+                {/* Commission Admin */}
+                <td className="py-3.5 px-5 text-right font-mono font-black text-blue-600 dark:text-blue-400">
+                  +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
                 </td>
 
                 {/* Montant HTG */}

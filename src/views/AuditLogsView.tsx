@@ -31,9 +31,9 @@ export const AuditLogsView: React.FC = () => {
   // Standardized Date Range Picker
   const [selectedRange, setSelectedRange] = useState<DateRange>({
     preset: 'last_7_days',
-    startDate: new Date(2026, 8, 5),
-    endDate: new Date(2026, 8, 12),
-    label: '7 derniers jours (Last week)'
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    endDate: new Date(),
+    label: '7 derniers jours'
   });
 
   // Full-page log inspection state (NO MODAL POPUP DIV)
@@ -205,7 +205,7 @@ export const AuditLogsView: React.FC = () => {
   /* MAIN AUDIT LOGS LIST                                                       */
   /* -------------------------------------------------------------------------- */
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
       
       {/* 1. HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">

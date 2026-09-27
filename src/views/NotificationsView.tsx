@@ -171,7 +171,7 @@ export const NotificationsView: React.FC = () => {
       <div className="flex items-center justify-between pt-1">
         <button
           onClick={() => setActiveTab(isAgentRD ? 'guichet' : 'overview')}
-          className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-xs font-extrabold cursor-pointer transition-colors"
+          className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-xs font-extrabold cursor-pointer transition-colors"
           title="Retour à l'accueil"
         >
           <ArrowLeft className="w-4 h-4 text-orange-500" />
@@ -180,7 +180,7 @@ export const NotificationsView: React.FC = () => {
       </div>
 
       {/* 1. Header Banner */}
-      <div className="bg-white dark:bg-[#0F172A] p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0 shadow-inner">
             <Bell className="w-6 h-6" />
@@ -219,7 +219,7 @@ export const NotificationsView: React.FC = () => {
             return (
               <div
                 key={notif.id}
-                className="bg-white dark:bg-[#0F172A] p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-3"
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-3"
               >
                 {/* Top Row: Icon, Title, Badge, Time */}
                 <div className="flex items-start justify-between gap-3">
@@ -255,7 +255,7 @@ export const NotificationsView: React.FC = () => {
             );
           })
         ) : (
-          <div className="bg-white dark:bg-[#0F172A] p-12 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
+          <div className="bg-white dark:bg-slate-900 p-12 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
             <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
               <CheckCheck className="w-8 h-8" />
             </div>

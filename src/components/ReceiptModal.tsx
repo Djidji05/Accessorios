@@ -15,20 +15,22 @@ export const ReceiptModal: React.FC = () => {
     window.print();
   };
 
+  const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(tx.operator);
+
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 relative animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-sm w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 my-auto">
         
         {/* Close Button */}
         <button
           onClick={() => setSelectedReceiptTx(null)}
-          className="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors z-20"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Printable Ticket Area */}
-        <div id="printable-receipt" className="space-y-4 text-center">
+        <div id="printable-receipt" className="space-y-4 text-center overflow-y-auto custom-scrollbar pr-1 flex-1 min-h-0">
           
           {/* Ticket Header */}
           <div className="border-b border-dashed border-slate-300 pb-4 space-y-1">
@@ -42,14 +44,14 @@ export const ReceiptModal: React.FC = () => {
             {/* Status Indicator on Receipt */}
             <div className="pt-2">
               {isCompleted ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
+                  <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                  {isTelecom ? 'REÇU OFFICIEL • VALIDÉ PAR LE GESTIONNAIRE' : 'REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ'}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
-                  <Clock className="w-3 h-3 text-amber-600" />
-                  BORDEREAU PROVISOIRE • EN COURS EN HAÏTI
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-800 border border-slate-200">
+                  <Clock className="w-3 h-3 text-slate-600" />
+                  {isTelecom ? 'BORDEREAU PROVISOIRE • EN ATTENTE DU GESTIONNAIRE' : 'BORDEREAU PROVISOIRE • EN COURS EN HAÏTI'}
                 </span>
               )}
             </div>
@@ -69,28 +71,57 @@ export const ReceiptModal: React.FC = () => {
               <span className="text-slate-500">Service:</span>
               <OperatorBadge operator={tx.operator} size="sm" />
             </div>
-            {tx.proofNotes && (
-              <div className="pt-1 border-t border-slate-200 text-[10px] text-slate-600">
-                <span className="font-bold text-emerald-700 block">Preuve Haïti :</span>
-                <span className="font-mono">{tx.proofNotes}</span>
-              </div>
-            )}
           </div>
 
           {/* Sender & Receiver Info */}
           <div className="text-left space-y-2 text-xs border-b border-dashed border-slate-300 pb-3">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Expéditeur (RD)</p>
-              <p className="font-bold text-slate-900">{tx.senderName}</p>
-              <p className="text-[11px] text-slate-500 font-mono">{tx.senderPhone}</p>
-            </div>
+            {tx.senderName && tx.senderName !== 'Client Comptoir' && (
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Expéditeur (RD)</p>
+                <p className="font-bold text-slate-900">{tx.senderName}</p>
+                {tx.senderPhone && tx.senderPhone !== '+1 809 000 0000' && (
+                  <p className="text-[11px] text-slate-500 font-mono">{tx.senderPhone}</p>
+                )}
+              </div>
+            )}
 
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Bénéficiaire (Haïti)</p>
-              <p className="font-bold text-slate-900">{tx.receiverName}</p>
-              <p className="text-[11px] text-slate-500 font-mono">{tx.receiverPhone}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase">
+                {isTelecom ? `Numéro Récepteur (${tx.operator.toUpperCase()})` : 'Bénéficiaire (Haïti)'}
+              </p>
+              {!isTelecom && tx.receiverName && !tx.receiverName.startsWith('Recharge') && (
+                <p className="font-bold text-slate-900">{tx.receiverName}</p>
+              )}
+              <p className="text-[12px] font-extrabold text-slate-900 font-mono mt-0.5">{tx.receiverPhone}</p>
             </div>
           </div>
+
+          {/* Preuve de Paiement / Clôture Section */}
+          {(tx.proofNotes || tx.proofUrl) && (
+            <div className="bg-blue-50/90 p-3.5 rounded-2xl border border-blue-200 text-left space-y-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-blue-950 uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>Preuve Photo & Validation :</span>
+              </div>
+
+              {tx.proofUrl ? (
+                <div className="rounded-2xl overflow-hidden border border-blue-300/80 bg-slate-950 flex flex-col items-center justify-center p-1.5 space-y-1 shadow-inner">
+                  <img 
+                    src={tx.proofUrl} 
+                    alt="Photo Preuve Officielle" 
+                    className="max-h-48 w-auto object-contain rounded-xl"
+                  />
+                  <span className="text-[9px] font-mono text-blue-300 font-bold block text-center">📷 PREUVE PHOTO DU REÇU ENREGISTRÉE</span>
+                </div>
+              ) : null}
+
+              {tx.proofNotes && (
+                <p className="text-[10px] font-mono font-bold text-blue-950 bg-white/95 p-2 rounded-xl border border-blue-200 leading-snug break-words">
+                  {tx.proofNotes}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Financial Breakdown */}
           <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
@@ -106,9 +137,13 @@ export const ReceiptModal: React.FC = () => {
               <span>Frais de Service:</span>
               <span className="font-semibold text-slate-700">{tx.feeDOP} Pesos</span>
             </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Commission Admin:</span>
+              <span className="font-bold text-blue-600">+{tx.commissionDOP || Math.round(tx.amountDOP * 0.01)} Pesos</span>
+            </div>
             <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
               <span className="font-bold text-slate-900">Montant à Décaissement:</span>
-              <span className="text-lg font-extrabold text-emerald-600">{tx.amountHTG.toLocaleString()} HTG</span>
+              <span className="text-lg font-extrabold text-blue-600">{tx.amountHTG.toLocaleString()} HTG</span>
             </div>
           </div>
 
@@ -120,14 +155,14 @@ export const ReceiptModal: React.FC = () => {
             <div className="text-right text-[10px] text-slate-400 font-mono">
               <p className="font-bold text-slate-700">Agent: {tx.createdByName}</p>
               <p>Node: {tx.createdByNode}</p>
-              <p className="text-emerald-600 font-bold mt-1">✔ TRANSACTION SÉCURISÉE</p>
+              <p className="text-blue-600 font-bold mt-1">✔ TRANSACTION SÉCURISÉE</p>
             </div>
           </div>
 
         </div>
 
         {/* Action Buttons */}
-        <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+        <div className="pt-3 border-t border-slate-100 flex items-center gap-2 shrink-0">
           <button
             onClick={handlePrint}
             className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2"

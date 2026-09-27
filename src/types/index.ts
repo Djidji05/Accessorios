@@ -4,6 +4,25 @@ export type OperatorCode = 'moncash' | 'natcash' | 'digicel' | 'natcom' | 'claro
 
 export type ServiceType = 'cash_out' | 'transfer' | 'topup_mobile' | 'bill_payment';
 
+export interface ServiceCommissionConfig {
+  serviceType: ServiceType;
+  serviceName: string;
+  defaultFeeRate: number;        // Frais de service globaux (%)
+  adminCommissionRate: number;   // Commission Admin (%)
+  flatFeeDOP?: number;           // Frais fixe optionnel en DOP
+  description?: string;
+}
+
+export interface OperatorCommissionConfig {
+  operator: OperatorCode;
+  operatorName: string;
+  adminCommissionRate: number;   // Commission Admin (%)
+  defaultFeeRate: number;        // Frais client globaux (%)
+  flatCommissionDOP?: number;    // Commission / Frais fixe optionnel en DOP
+  currency: string;
+  description: string;
+}
+
 export type ChannelType = 'haiti_cash' | 'digital_telecom';
 
 export type TransactionStatus = 'pending_routing' | 'in_progress' | 'completed' | 'cancelled';
@@ -139,7 +158,6 @@ export type ActiveTab =
   | 'treasury' 
   | 'history'
   | 'guichet' 
-  | 'supervision'
   | 'settlements'
   | 'users' 
   | 'user_list'

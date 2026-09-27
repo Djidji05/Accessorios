@@ -90,6 +90,21 @@ router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
     });
 
     const { password: _, ...safeUser } = newUser;
+
+    // Tracé dans le journal d'audit
+    await prisma.auditLog.create({
+      data: {
+        nodeId: req.user?.nodeId || 'node-admin-01',
+        actorName: req.user?.name || 'Alexis D\'Alexis (Admin)',
+        actorRole: req.user?.role || 'admin',
+        action: 'CREATION_UTILISATEUR',
+        targetType: 'user',
+        details: `Création du compte utilisateur ${newUser.name} (@${cleanUsername}) avec le rôle ${role.toUpperCase()}.`,
+        nodeStatus: 'SYNCED',
+        priority: 'Medium',
+      }
+    });
+
     return res.status(201).json({ success: true, message: 'Utilisateur créé avec succès.', user: safeUser });
   } catch (error: any) {
     console.error('Erreur create user:', error);
@@ -174,6 +189,21 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
     }
 
     const { password: _, ...safeUser } = updatedUser;
+
+    // Tracé d'audit
+    await prisma.auditLog.create({
+      data: {
+        nodeId: req.user?.nodeId || 'node-admin-01',
+        actorName: req.user?.name || 'Alexis D\'Alexis (Admin)',
+        actorRole: req.user?.role || 'admin',
+        action: 'MAJ_UTILISATEUR',
+        targetType: 'user',
+        details: `Mise à jour des informations de l'agent ${updatedUser.name} (@${updatedUser.username || ''}).`,
+        nodeStatus: 'SYNCED',
+        priority: 'Medium',
+      }
+    });
+
     return res.json({
       success: true,
       message: 'Informations de l\'utilisateur mises à jour avec succès.',
@@ -220,6 +250,20 @@ router.patch('/:id/permissions', authMiddleware, requireRole('admin'), async (re
     const updated = await prisma.userPermission.update({
       where: { userId: id },
       data: dataToUpdate,
+    });
+
+    // Tracé d'audit
+    await prisma.auditLog.create({
+      data: {
+        nodeId: req.user?.nodeId || 'node-admin-01',
+        actorName: req.user?.name || 'Alexis D\'Alexis (Admin)',
+        actorRole: req.user?.role || 'admin',
+        action: 'PERMISSIONS_MAJ',
+        targetType: 'permission',
+        details: `Mise à jour de la matrice de permissions pour l'utilisateur ${updated.userName} (${updated.role}).`,
+        nodeStatus: 'SYNCED',
+        priority: 'High',
+      }
     });
 
     return res.json({

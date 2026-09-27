@@ -21,7 +21,8 @@ import {
   LogOut,
   PlusCircle,
   ClipboardList,
-  Landmark
+  Landmark,
+  X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ActiveTab } from '../types';
@@ -29,8 +30,6 @@ import { ActiveTab } from '../types';
 export const Sidebar: React.FC = () => {
   const { 
     currentUser, 
-    setCurrentUser, 
-    availableUsers, 
     activeTab, 
     setActiveTab, 
     unreadTasksCount,
@@ -38,6 +37,8 @@ export const Sidebar: React.FC = () => {
     isSidebarCollapsed,
     setIsSidebarCollapsed,
     toggleSidebar,
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen,
     logout,
     transactions
   } = useApp();
@@ -76,15 +77,36 @@ export const Sidebar: React.FC = () => {
   const canSeeAdminSection = canSeeUsers || canSeePermissions || canSeeKillSwitch || canSeeAuditLogs;
 
   return (
-    <aside className={`hidden md:flex bg-[#FFFFFF] border-r border-[#E2E8F0] flex-col h-screen sticky top-0 z-30 select-none text-slate-700 font-sans transition-all duration-300 ease-in-out flex-shrink-0 ${
-      isSidebarCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    <>
+      {/* Mobile Drawer Overlay Backdrop */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      <aside 
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('button')) {
+            setIsMobileSidebarOpen(false);
+          }
+        }}
+        className={`${
+          isMobileSidebarOpen 
+            ? 'fixed inset-y-0 left-0 z-50 flex w-64 shadow-2xl bg-white border-r border-slate-200' 
+            : 'hidden md:flex sticky top-0'
+        } bg-[#FFFFFF] border-r border-slate-200 flex-col h-screen z-30 select-none text-slate-700 font-sans transition-all duration-300 ease-in-out flex-shrink-0 ${
+          isSidebarCollapsed && !isMobileSidebarOpen ? 'w-16' : 'w-64'
+        }`}
+      >
       
       {/* Brand Header: Logo + "D'Alexis Transferencia" + Collapse/Expand Icon */}
       <div className={`h-14 flex items-center border-b border-slate-200/80 bg-slate-50/50 transition-all duration-300 ${
-        isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'
+        isSidebarCollapsed && !isMobileSidebarOpen ? 'justify-center px-2' : 'justify-between px-3.5'
       }`}>
-        {!isSidebarCollapsed ? (
+        {(!isSidebarCollapsed || isMobileSidebarOpen) ? (
           <>
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-slate-900/10 flex-shrink-0">
@@ -101,14 +123,24 @@ export const Sidebar: React.FC = () => {
             </div>
 
             <div className="flex items-center flex-shrink-0">
-              <button
-                onClick={() => setIsSidebarCollapsed(true)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors flex items-center justify-center"
-                title="Réduire la barre latérale"
-                aria-label="Réduire la barre latérale"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
+              {isMobileSidebarOpen ? (
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+                  title="Fermer le menu"
+                >
+                  <X className="w-5 h-5 text-slate-700" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsSidebarCollapsed(true)}
+                  className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors items-center justify-center"
+                  title="Réduire la barre latérale"
+                  aria-label="Réduire la barre latérale"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </>
         ) : (
@@ -143,17 +175,17 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('guichet')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all relative ${
                 activeTab === 'guichet' 
-                  ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="➕ Nouvelle Transaction (Guichet Saisie)"
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <PlusCircle className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-white' : 'text-emerald-600'}`} />
+                <PlusCircle className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Nouvelle Transaction</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'guichet' ? 'text-emerald-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'guichet' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Guichet Saisie
                     </span>
                   </div>
@@ -166,7 +198,7 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('tasks')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all relative ${
                 activeTab === 'tasks' 
-                  ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="📋 Mes Transactions du Jour"
@@ -176,7 +208,7 @@ export const Sidebar: React.FC = () => {
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Mes Transactions</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-emerald-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Suivi & Reçus du Jour
                     </span>
                   </div>
@@ -184,10 +216,10 @@ export const Sidebar: React.FC = () => {
               </div>
               {agentRDPendingCount > 0 && (
                 isSidebarCollapsed ? (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-amber-400 text-slate-950' : 'bg-amber-100 text-amber-900'
+                    activeTab === 'tasks' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
                   }`}>
                     {agentRDPendingCount} en attente
                   </span>
@@ -205,7 +237,7 @@ export const Sidebar: React.FC = () => {
               }`}
               title="Versements & Liquidations Hebdo"
             >
-              <Landmark className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settlements' ? 'text-white' : 'text-emerald-600'}`} />
+              <Landmark className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settlements' ? 'text-white' : 'text-slate-500'}`} />
               {!isSidebarCollapsed && (
                 <div className="text-left">
                   <span className="block font-bold leading-tight">Versements & Liquidations</span>
@@ -297,17 +329,17 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('overview')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all ${
                 activeTab === 'overview' 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="Tableau de bord de l'entreprise (KPIs & Statistiques)"
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <LayoutDashboard className={`w-4 h-4 flex-shrink-0 ${activeTab === 'overview' ? 'text-white' : 'text-purple-600'}`} />
+                <LayoutDashboard className={`w-4 h-4 flex-shrink-0 ${activeTab === 'overview' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Tableau de bord</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'overview' ? 'text-purple-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'overview' ? 'text-slate-300' : 'text-slate-400'}`}>
                       KPIs & Statistiques
                     </span>
                   </div>
@@ -320,17 +352,17 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('guichet')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all relative ${
                 activeTab === 'guichet' 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="➕ Nouvelle Transaction (Saisie Directe Gestionnaire)"
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <PlusCircle className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-white' : 'text-purple-600'}`} />
+                <PlusCircle className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Nouvelle Transaction</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'guichet' ? 'text-purple-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'guichet' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Saisie Directe (Guichet)
                     </span>
                   </div>
@@ -343,17 +375,17 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('tasks')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all relative ${
                 activeTab === 'tasks' 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="Flux en Temps Réel (Tâches Numériques)"
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <Zap className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-amber-300 fill-amber-300' : 'text-amber-500'}`} />
+                <Zap className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Flux en Temps Réel</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-purple-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Tâches Numériques & MonCash
                     </span>
                   </div>
@@ -361,10 +393,10 @@ export const Sidebar: React.FC = () => {
               </div>
               {gestionnairePendingCount > 0 && (
                 isSidebarCollapsed ? (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-amber-400 text-slate-950' : 'bg-purple-100 text-purple-900'
+                    activeTab === 'tasks' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
                   }`}>
                     {gestionnairePendingCount}
                   </span>
@@ -377,41 +409,18 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('treasury')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all ${
                 activeTab === 'treasury' 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="Suivi de la Trésorerie"
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <Wallet className={`w-4 h-4 flex-shrink-0 ${activeTab === 'treasury' ? 'text-white' : 'text-emerald-600'}`} />
+                <Wallet className={`w-4 h-4 flex-shrink-0 ${activeTab === 'treasury' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Suivi Trésorerie</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'treasury' ? 'text-purple-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'treasury' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Soldes & Liquidités
-                    </span>
-                  </div>
-                )}
-              </div>
-            </button>
-
-            {/* 4. 👥 Supervision des Agents */}
-            <button
-              onClick={() => setActiveTab('supervision')}
-              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all ${
-                activeTab === 'supervision' 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/25' 
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
-              }`}
-              title="Supervision des Agents"
-            >
-              <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <Users className={`w-4 h-4 flex-shrink-0 ${activeTab === 'supervision' ? 'text-white' : 'text-purple-600'}`} />
-                {!isSidebarCollapsed && (
-                  <div className="text-left">
-                    <span className="block font-bold leading-tight">Supervision Agents</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'supervision' ? 'text-purple-100' : 'text-slate-400'}`}>
-                      Équipes R.D. & Haïti
                     </span>
                   </div>
                 )}
@@ -423,17 +432,17 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('history')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all ${
                 activeTab === 'history' 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-600/25' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title="Historique & Rapports"
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-400'}`} />
+                <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
                     <span className="block font-bold leading-tight">Historique & Rapports</span>
-                    <span className={`text-[10px] block font-medium ${activeTab === 'history' ? 'text-purple-100' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] block font-medium ${activeTab === 'history' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Archives & Bilans
                     </span>
                   </div>
@@ -501,20 +510,6 @@ export const Sidebar: React.FC = () => {
                 {!isSidebarCollapsed && <span>Trésorerie & Soldes</span>}
               </button>
             )}
-
-            {/* 👥 Supervision des Agents - Admin */}
-            <button
-              onClick={() => setActiveTab('supervision')}
-              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2'} rounded-xl text-xs transition-all ${
-                activeTab === 'supervision' 
-                  ? 'bg-slate-900 text-white font-bold shadow-xs' 
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
-              }`}
-              title="Supervision des Agents"
-            >
-              <Users className={`w-4 h-4 flex-shrink-0 ${activeTab === 'supervision' ? 'text-white' : 'text-purple-600'}`} />
-              {!isSidebarCollapsed && <span>Supervision Agents</span>}
-            </button>
 
             {/* 📁 Historique & Pièces Justificatives */}
             <button
@@ -764,33 +759,13 @@ export const Sidebar: React.FC = () => {
             )}
           </button>
 
-          {/* Logout & Persona Switcher Dropdown (Desktop PC Mode Only) */}
+          {/* Logout Dropdown (Desktop PC Mode Only) */}
           {isPersonaOpen && (
-            <div className={`absolute bottom-full ${isSidebarCollapsed ? 'left-14 w-56' : 'left-0 w-full'} mb-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in`}>
-              {isAdmin && (
-                <>
-                  <p className="text-[9px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">Changer de Profil</p>
-                  <div className="space-y-0.5 mb-1 pb-1 border-b border-slate-100">
-                    {availableUsers.map((u) => (
-                      <button
-                        key={u.id}
-                        onClick={() => {
-                          setCurrentUser(u);
-                          setIsPersonaOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-2 p-1.5 rounded-lg text-left text-xs transition-colors ${
-                          currentUser.id === u.id ? 'bg-slate-900 text-white font-semibold' : 'hover:bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        <img src={u.avatar} className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
-                        <div className="truncate">
-                          <p className="font-semibold text-xs leading-tight">{u.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+            <div className={`absolute bottom-full ${isSidebarCollapsed ? 'left-14 w-56' : 'left-0 w-full'} mb-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in`}>
+              <div className="px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                <p className="font-bold text-xs text-slate-800 dark:text-white leading-tight">{currentUser.name}</p>
+                <p className="text-[10px] text-slate-400 capitalize">{currentUser.role.replace('_', ' ')}</p>
+              </div>
 
               {/* Bouton Déconnexion */}
               <button
@@ -808,5 +783,6 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
     </aside>
+  </>
   );
 };

@@ -4,213 +4,71 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --card: 0 0% 100%;
-    --card-border: 214.3 31.8% 91.4%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+  
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
   }
 
   body {
-    background-color: #FFFFFF;
-    color: #0F172A;
-    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    transition: background-color 0.2s ease, color 0.2s ease;
-  }
-
-  .dark body {
-    background-color: #070B14;
-    color: #F8FAFC;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Custom Scrollbars */
+/* Custom Scrollbars - Professional and subtle */
 ::-webkit-scrollbar, .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track, .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(226, 232, 240, 0.5);
-  border-radius: 9999px;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb, .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #94A3B8;
-  border-radius: 9999px;
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover, .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #64748B;
+  background: #94a3b8;
 }
 
-.dark ::-webkit-scrollbar-track, .dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
-}
 .dark ::-webkit-scrollbar-thumb, .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
-}
-.dark ::-webkit-scrollbar-thumb:hover, .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+.dark ::-webkit-scrollbar-thumb:hover, .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
 
-/* Kravlo UI Custom Card Utility */
+/* Kravlo UI Custom Card Utility - Flattened for SaaS look */
 .kravlo-card {
   background: #FFFFFF;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
-  transition: all 0.2s ease-in-out;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  transition: all 0.15s ease-in-out;
 }
 
 .dark .kravlo-card {
-  background: #0F172A;
-  border-color: rgba(51, 65, 85, 0.7);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  background: #0f172a;
+  border-color: #1e293b;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .kravlo-card-hover:hover {
-  border-color: rgba(203, 213, 225, 0.9);
-  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1);
 }
 
 .dark .kravlo-card-hover:hover {
-  border-color: rgba(71, 85, 105, 0.9);
-  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.6);
+  border-color: #334155;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
-/* 🌙 LUXURIOUS COMPREHENSIVE DARK MODE SYSTEM */
+/* Minimalist Dark Mode Scheme */
 .dark {
   color-scheme: dark;
-}
-
-/* Base Surfaces and Cards in Dark Mode */
-.dark .bg-white {
-  background-color: #0F172A !important;
-}
-
-.dark .bg-slate-50,
-.dark .bg-slate-50\/50,
-.dark .bg-slate-50\/40,
-.dark .bg-slate-50\/60,
-.dark .bg-slate-100,
-.dark .bg-\[\#FAFAFC\],
-.dark .bg-\[\#F8FAFC\],
-.dark .bg-\[\#F1F5F9\] {
-  background-color: #151F32 !important;
-}
-
-/* Typography Contrast in Dark Mode */
-.dark .text-slate-900,
-.dark .text-slate-800 {
-  color: #F8FAFC !important;
-}
-
-.dark .text-slate-700,
-.dark .text-slate-600 {
-  color: #CBD5E1 !important;
-}
-
-.dark .text-slate-500,
-.dark .text-slate-400 {
-  color: #94A3B8 !important;
-}
-
-/* Borders & Separators in Dark Mode */
-.dark .border-slate-200,
-.dark .border-slate-200\/80,
-.dark .border-slate-200\/70,
-.dark .border-slate-200\/60,
-.dark .border-slate-100,
-.dark .border-\[\#E2E8F0\] {
-  border-color: #243247 !important;
-}
-
-.dark .divide-slate-100 > * + * {
-  border-color: #1E293B !important;
-}
-
-/* Form Controls & Inputs */
-.dark input[type="text"],
-.dark input[type="number"],
-.dark input[type="date"],
-.dark select,
-.dark textarea {
-  background-color: #151F32 !important;
-  color: #F8FAFC !important;
-  border-color: #2A3B54 !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #64748B !important;
-}
-
-/* Interactive Hover States */
-.dark .hover\:bg-slate-100:hover,
-.dark .hover\:bg-slate-50:hover,
-.dark .hover\:bg-slate-50\/80:hover {
-  background-color: #1E2B42 !important;
-}
-
-.dark .bg-slate-900 {
-  background-color: #1E293B !important;
-  color: #F8FAFC !important;
-}
-
-.dark .hover\:bg-slate-800:hover {
-  background-color: #2D3D58 !important;
-}
-
-/* Header & Sidebar Specific Dark Elegance */
-.dark header,
-.dark aside {
-  background-color: #0B1120 !important;
-  border-color: #1E293B !important;
-}
-
-.dark header .bg-\[\#F8FAFC\] {
-  background-color: #162032 !important;
-  border-color: #253347 !important;
-}
-
-/* Badges & Accents in Dark Mode */
-.dark .bg-blue-50,
-.dark .bg-blue-50\/80 {
-  background-color: rgba(37, 99, 235, 0.15) !important;
-  color: #93C5FD !important;
-  border-color: rgba(59, 130, 246, 0.3) !important;
-}
-
-.dark .bg-emerald-50,
-.dark .bg-emerald-100 {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-  color: #6EE7B7 !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
-}
-
-.dark .bg-amber-50,
-.dark .bg-amber-100 {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-  color: #FCD34D !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
-}
-
-.dark .bg-rose-50,
-.dark .bg-rose-100 {
-  background-color: rgba(244, 63, 94, 0.15) !important;
-  color: #FDA4AF !important;
-  border-color: rgba(244, 63, 94, 0.3) !important;
-}
-
-.dark .bg-purple-50,
-.dark .bg-purple-100 {
-  background-color: rgba(168, 85, 247, 0.15) !important;
-  color: #D8B4FE !important;
-  border-color: rgba(168, 85, 247, 0.3) !important;
-}
-
-/* Custom Sparkline Animations */
-@keyframes sparklinePulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
-}
-
-.animate-sparkline {
-  animation: sparklinePulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// Logs d'audit (Authentifié)
+// Logs d'audit (Admin & Gestionnaire; Fallback sécurisé sans erreur 403 pour agents)
 router.get('/', authMiddleware, async (req, res) => {
   try {
+    const role = req.user?.role;
+    // Si l'utilisateur n'est ni Admin ni Gestionnaire, retourner une liste vide sans lever d'erreur 403
+    if (role !== 'admin' && role !== 'gestionnaire') {
+      return res.json([]);
+    }
+
     const { targetType, priority } = req.query;
 
     const where: any = {};

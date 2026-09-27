@@ -36,12 +36,14 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
 
   const rangeTotalVolume = filteredTx.length > 0
     ? filteredTx.reduce((sum, tx) => sum + tx.amountDOP, 0)
-    : 479000;
+    : 0;
 
-  const data = baseData.map(item => ({
-    ...item,
-    volume: dateRange?.preset === 'today' ? Math.round(item.volume * 0.3) : item.volume
-  }));
+  const data = filteredTx.length > 0
+    ? baseData.map(item => ({
+        ...item,
+        volume: dateRange?.preset === 'today' ? Math.round(item.volume * 0.3) : item.volume
+      }))
+    : baseData.map(item => ({ ...item, volume: 0 }));
 
   const activeItem = data[activeIndex] || data[2];
 
@@ -54,7 +56,7 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
   const activeXPercent = getTagLeftPercent(activeIndex);
 
   return (
-    <div className="bg-white dark:bg-[#0F172A] rounded-[22px] border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between space-y-4">
+    <div className="bg-white dark:bg-slate-900 rounded-[22px] border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between space-y-4">
       
       {/* Header inside card */}
       <div className="flex items-center justify-between">
@@ -73,9 +75,15 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
         <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-mono">
           {rangeTotalVolume.toLocaleString()} DOP
         </span>
-        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-          +8% <span className="text-slate-400 dark:text-slate-500 font-normal">vs période précédente</span>
-        </span>
+        {filteredTx.length > 0 ? (
+          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            +8% <span className="text-slate-400 dark:text-slate-500 font-normal">vs période précédente</span>
+          </span>
+        ) : (
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+            0% <span className="text-slate-400 dark:text-slate-500 font-normal">(Réseau initialisé à 0)</span>
+          </span>
+        )}
       </div>
 
       {/* Chart Canvas Area */}
@@ -97,12 +105,12 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
           className="absolute z-20 top-[-2px] -translate-x-1/2 flex flex-col items-center pointer-events-none transition-all duration-200"
           style={{ left: `${activeXPercent}%` }}
         >
-          <div className="bg-[#0F172A] text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 border border-slate-700">
+          <div className="bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 border border-slate-700">
             <span>{activeItem.day}:</span>
             <span className="font-extrabold text-white">{activeItem.volume}</span>
           </div>
           {/* Downward triangle indicator */}
-          <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-[#0F172A]" />
+          <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-[#0A192F]" />
         </div>
 
         {/* Horizontal Dotted Line from Tooltip to Chart Right Edge */}
@@ -148,7 +156,7 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
                 {data.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
-                    fill={index === activeIndex ? '#0F172A' : '#E2E8F0'} 
+                    fill={index === activeIndex ? '#0A192F' : '#E2E8F0'} 
                     className="transition-colors duration-150 cursor-pointer hover:fill-slate-900"
                     onMouseEnter={() => setActiveIndex(index)}
                   />

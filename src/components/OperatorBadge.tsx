@@ -1,10 +1,12 @@
 import React from 'react';
 import { OperatorCode } from '../types';
+import { getOperatorLogo } from '../utils/operatorLogos';
 
 interface OperatorBadgeProps {
   operator: OperatorCode;
   showText?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  showLogo?: boolean;
 }
 
 export const OPERATOR_CONFIG: Record<
@@ -69,7 +71,7 @@ export const OPERATOR_CONFIG: Record<
   },
 };
 
-export const OperatorBadge: React.FC<OperatorBadgeProps> = ({ operator, showText = true, size = 'md' }) => {
+export const OperatorBadge: React.FC<OperatorBadgeProps> = ({ operator, showText = true, size = 'md', showLogo = true }) => {
   const config = OPERATOR_CONFIG[operator] || {
     name: operator,
     bg: 'bg-slate-700',
@@ -79,6 +81,14 @@ export const OperatorBadge: React.FC<OperatorBadgeProps> = ({ operator, showText
     logoText: operator ? operator.substring(0, 2).toUpperCase() : 'OP',
   };
 
+  const logoUrl = getOperatorLogo(operator);
+
+  const imgSize = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
+  }[size];
+
   const sizeClasses = {
     sm: 'text-xs font-extrabold',
     md: 'text-xs font-black',
@@ -86,8 +96,23 @@ export const OperatorBadge: React.FC<OperatorBadgeProps> = ({ operator, showText
   }[size];
 
   return (
-    <span className={`inline-block ${config.text} ${sizeClasses} tracking-tight`}>
-      {config.name}
+    <span className="inline-flex items-center gap-1.5 shrink-0">
+      {showLogo && (
+        <img 
+          src={logoUrl} 
+          alt={config.name} 
+          className={`${imgSize} object-contain rounded-md shadow-xs border border-slate-200 dark:border-slate-700 bg-white`}
+          onError={(e) => {
+            // fallback if image not found
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
+      )}
+      {showText && (
+        <span className={`${config.text} ${sizeClasses} tracking-tight`}>
+          {config.name}
+        </span>
+      )}
     </span>
   );
 };

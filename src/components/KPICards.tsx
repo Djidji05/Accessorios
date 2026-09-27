@@ -9,7 +9,7 @@ interface KPICardsProps {
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
-  const { currentUser, transactions, accountBalances, killSwitchList, dopToHtgRate } = useApp();
+  const { currentUser, transactions, accountBalances, killSwitchList, dopToHtgRate, adminCommissionRate, serviceCommissionRates } = useApp();
   const preset = dateRange?.preset || 'last_7_days';
 
   // Dynamic KPI numbers based on selected period & role
@@ -38,7 +38,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           isPositive: true,
           sparklineColor: '#14B8A6',
           gradientId: 'gradCard2',
-          sparklineData: [10, 15, 20, 25, 35, 40, 50, 55],
+          sparklineData: [10, 15, 20, 35, 40, 50, 55],
         },
         {
           title: 'Taux Officiel du Jour',
@@ -55,7 +55,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
 
     // 2. Spécifique Agent Haïti
     if (currentUser.role === 'agent_haiti') {
-      const htTxs = transactions.filter(t => t.channel === 'haiti_cash' || t.assignedToRole === 'agent_haiti' || t.operator === 'moncash' || t.operator === 'natcash');
+      const htTxs = transactions.filter(t => t.channel === 'haiti_cash' || t.assignedToRole === 'agent_haiti' || t.operator === 'moncash' || t.operator === 'natcash' || t.operator === 'natcom');
       const htVolHTG = htTxs.filter(t => t.status === 'completed').reduce((acc, t) => acc + t.amountHTG, 0);
       const htPending = htTxs.filter(t => t.status === 'in_progress').length;
       return [
@@ -96,7 +96,19 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     if (currentUser.role === 'gestionnaire') {
       const htgFloat = accountBalances.filter(b => b.currency === 'HTG').reduce((acc, b) => acc + b.balance, 0);
       const dopFloat = accountBalances.filter(b => b.currency === 'DOP').reduce((acc, b) => acc + b.balance, 0);
-      const lockedCount = killSwitchList.filter(k => !k.enabled).length;
+
+      const totalCommissionDOP = transactions.reduce((acc, t) => {
+        const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
+        return acc + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
+      }, 0);
+
+      const completedCommissionDOP = transactions
+        .filter(t => t.status === 'completed')
+        .reduce((acc, t) => {
+          const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
+          return acc + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
+        }, 0);
+
       return [
         {
           title: 'Liquidités Flottes HTG',
@@ -119,14 +131,14 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           sparklineData: [20, 22, 25, 27, 28, 30, 32, 35],
         },
         {
-          title: 'Opérateurs Télécom',
-          value: lockedCount === 0 ? "100% Actifs" : `${lockedCount} coupure(s)`,
-          percentage: lockedCount === 0 ? 'Optimal' : 'Alerte',
-          comparison: 'Statut Sécurité',
-          isPositive: lockedCount === 0,
-          sparklineColor: lockedCount === 0 ? '#10B981' : '#F43F5E',
+          title: 'Commissions Admin Encaissées',
+          value: `${totalCommissionDOP.toLocaleString()} DOP`,
+          percentage: `+${completedCommissionDOP.toLocaleString()} DOP`,
+          comparison: 'soldées',
+          isPositive: true,
+          sparklineColor: '#3B82F6',
           gradientId: 'gradCard3',
-          sparklineData: [6, 6, 6, 6, 6, 6, 6, 6 - lockedCount],
+          sparklineData: [10, 25, 45, 70, 95, 125, 160, Math.max(180, totalCommissionDOP)],
         },
       ];
     }
@@ -136,7 +148,19 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     const completedCount = transactions.filter(t => t.status === 'completed').length;
     const pendingCount = transactions.filter(t => t.status === 'in_progress').length;
     const totalVolumeDOP = transactions.reduce((acc, t) => acc + t.amountDOP, 0);
-    const slaCompliance = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 100;
+
+    // Calcul de la commission Admin selon le pourcentage configuré pour chaque service/opérateur
+    const totalCommissionDOP = transactions.reduce((acc, t) => {
+      const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
+      return acc + Math.round(t.amountDOP * (commRate / 100));
+    }, 0);
+
+    const completedCommissionDOP = transactions
+      .filter(t => t.status === 'completed')
+      .reduce((acc, t) => {
+        const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
+        return acc + Math.round(t.amountDOP * (commRate / 100));
+      }, 0);
 
     return [
       {
@@ -160,14 +184,14 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
         sparklineData: [20, 35, 50, 80, 120, 150, 180, 220],
       },
       {
-        title: 'Conformité SLA Réseau',
-        value: `${slaCompliance}%`,
-        percentage: slaCompliance >= 90 ? 'Optimal' : 'Sous surveillance',
-        comparison: 'taux de clôture',
-        isPositive: slaCompliance >= 90,
-        sparklineColor: slaCompliance >= 90 ? '#10B981' : '#F59E0B',
+        title: 'Commissions Admin (DOP)',
+        value: `${totalCommissionDOP.toLocaleString()} DOP`,
+        percentage: `+${completedCommissionDOP.toLocaleString()} DOP`,
+        comparison: 'soldées',
+        isPositive: true,
+        sparklineColor: '#3B82F6',
         gradientId: 'gradCard3',
-        sparklineData: [85, 88, 90, 92, 94, 95, 96, slaCompliance],
+        sparklineData: [10, 25, 45, 70, 95, 125, 160, Math.max(180, totalCommissionDOP)],
       },
     ];
   };
@@ -179,7 +203,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
       {cards.map((card, idx) => (
         <div 
           key={idx} 
-          className="bg-white dark:bg-[#0F172A] rounded-[22px] border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
+          className="bg-white dark:bg-slate-900 rounded-[22px] border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
         >
           {/* Card Header: Title on Left + Rotated Diamond/Layers Icon on Right */}
           <div className="flex items-center justify-between mb-3">

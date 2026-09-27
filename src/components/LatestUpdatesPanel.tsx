@@ -6,6 +6,7 @@ export const LatestUpdatesPanel: React.FC = () => {
   const { auditLogs, transactions, setSelectedReceiptTx } = useApp();
   const [filterPill, setFilterPill] = useState<'today' | 'yesterday' | 'week'>('today');
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileLimit, setMobileLimit] = useState(10);
 
   // Today reference: 2026-09-12 / current date
   const now = new Date();
@@ -80,10 +81,10 @@ export const LatestUpdatesPanel: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden h-full min-h-0 flex flex-col font-sans">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden h-full min-h-0 flex flex-col font-sans">
       
       {/* Header Bar */}
-      <div className="bg-[#F8FAFC] dark:bg-[#0B1120] border-b border-slate-200/70 dark:border-slate-800 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
+      <div className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200/70 dark:border-slate-800 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
         <h3 className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider flex items-center gap-2">
           <Activity className="w-4 h-4 text-slate-700 dark:text-slate-300" />
           <span>Activité Réseau en Temps Réel</span>
@@ -94,7 +95,7 @@ export const LatestUpdatesPanel: React.FC = () => {
       </div>
 
       {/* Main Content Area with Flex-1 scroll */}
-      <div className="p-4 bg-white dark:bg-[#0F172A] flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="p-4 bg-white dark:bg-slate-900 flex-1 flex flex-col min-h-0 overflow-hidden">
         
         {/* Fixed controls: Pills & Search */}
         <div className="flex-shrink-0 space-y-3 mb-3">
@@ -147,13 +148,13 @@ export const LatestUpdatesPanel: React.FC = () => {
 
         {/* Scrollable Activity Items List */}
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
-          {filtered.map((item) => {
+          {filtered.map((item, index) => {
             const Icon = item.icon;
             return (
               <div 
                 key={item.id} 
                 onClick={() => handleActivityClick(item)}
-                className="flex items-start justify-between text-xs p-2.5 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer group"
+                className={`${index >= mobileLimit ? 'hidden md:flex' : 'flex'} items-start justify-between text-xs p-2.5 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer group`}
                 title={item.txRef ? "Cliquer pour afficher le reçu" : undefined}
               >
                 <div className="flex items-start gap-2.5 min-w-0">
@@ -174,6 +175,25 @@ export const LatestUpdatesPanel: React.FC = () => {
               </div>
             );
           })}
+
+          <div className="md:hidden flex flex-col gap-2 mt-2">
+            {filtered.length > mobileLimit && (
+              <button
+                onClick={() => setMobileLimit(prev => prev + 10)}
+                className="w-full py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                Voir plus
+              </button>
+            )}
+            {mobileLimit > 10 && (
+              <button
+                onClick={() => setMobileLimit(10)}
+                className="w-full py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Voir moins
+              </button>
+            )}
+          </div>
         </div>
 
       </div>

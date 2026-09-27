@@ -11,7 +11,9 @@ import {
   Role,
   ServiceType,
   ChannelType,
-  WeeklySettlement
+  WeeklySettlement,
+  ServiceCommissionConfig,
+  OperatorCommissionConfig
 } from '../types';
 import { 
   INITIAL_USERS, 
@@ -20,10 +22,22 @@ import {
   INITIAL_KILL_SWITCH, 
   INITIAL_PERMISSIONS, 
   INITIAL_AUDIT_LOGS,
-  INITIAL_SETTLEMENTS
+  INITIAL_SETTLEMENTS,
+  INITIAL_SERVICE_COMMISSIONS,
+  INITIAL_OPERATOR_COMMISSIONS
 } from '../core/initialData';
 import { eventBus } from '../core/eventBus';
 import { api } from '../services/api';
+
+export const DEFAULT_SERVICE_COMMISSION_RATES: Record<string, number> = {
+  moncash: 1.0,
+  natcash: 1.0,
+  zelle: 1.5,
+  digicel: 2.0,
+  natcom: 2.0,
+  claro: 2.5,
+  altice: 2.5,
+};
 
 interface AppContextType {
   // Active User / Node Persona
@@ -40,10 +54,14 @@ interface AppContextType {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   
-  // Financial Rates
+  // Financial Rates & System Commissions
   dopToHtgRate: number;
   usdToHtgRate: number;
   setDopToHtgRate: (rate: number) => void;
+  adminCommissionRate: number;
+  setAdminCommissionRate: (rate: number) => void;
+  serviceCommissionRates: Record<string, number>;
+  updateServiceCommissionRate: (serviceKey: string, rate: number) => void;
   
   // Core Business State
   transactions: Transaction[];
@@ -52,6 +70,12 @@ interface AppContextType {
   permissions: UserPermissionMatrix[];
   auditLogs: AuditLog[];
   settlements: WeeklySettlement[];
+  serviceCommissions: ServiceCommissionConfig[];
+  operatorCommissions: OperatorCommissionConfig[];
+
+  // Service & Operator Commissions Management
+  updateServiceCommission: (serviceType: ServiceType, adminCommissionRate: number, defaultFeeRate: number) => void;
+  updateOperatorCommission: (operator: OperatorCode, adminCommissionRate: number, defaultFeeRate: number, flatCommissionDOP?: number) => void;
   
   // Business Actions
   createTransaction: (data: {
@@ -86,10 +110,18 @@ interface AppContextType {
   updateUser: (userId: string, data: Partial<User> & { password?: string }) => Promise<{ success: boolean; message: string; user?: User }>;
   toggleUserStatus: (userId: string) => void;
 
+  // Global Toast Feedback Notification
+  toastNotification: { text: string; type: 'success' | 'error' | 'info' } | null;
+  showToast: (text: string, type?: 'success' | 'error' | 'info') => void;
+  hideToast: () => void;
+
   // Sidebar visibility state
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   toggleSidebar: () => void;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
+  toggleMobileSidebar: () => void;
 
   // Dark Mode Theme State
   isDarkMode: boolean;
@@ -100,6 +132,10 @@ interface AppContextType {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   openSearch: () => void;
+
+  // Selected Mobile Service state
+  selectedService: OperatorCode | null;
+  setSelectedService: (service: OperatorCode | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -134,10 +170,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const toggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+  const toggleMobileSidebar = () => setIsMobileSidebarOpen((prev) => !prev);
+
+  // Global Toast Notification State & Handlers
+  const [toastNotification, setToastNotification] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastNotification({ text, type });
+  };
+
+  const hideToast = () => {
+    setToastNotification(null);
+  };
 
   // Global Search Palette (⌘K)
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const openSearch = () => setIsSearchOpen(true);
+
+  // Selected Mobile Service state
+  const [selectedService, setSelectedService] = useState<OperatorCode | null>(null);
 
   // Dark mode initialized to true as requested by user
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -161,12 +213,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [dopToHtgRate, setDopToHtgRateState] = useState<number>(2.35);
   const [usdToHtgRate, setUsdToHtgRate] = useState<number>(140.5);
   
+  const [adminCommissionRate, setAdminCommissionRateState] = useState<number>(() => {
+    const saved = localStorage.getItem('admin_commission_rate');
+    return saved ? parseFloat(saved) : 1.0;
+  });
+
+  const setAdminCommissionRate = (rate: number) => {
+    setAdminCommissionRateState(rate);
+    localStorage.setItem('admin_commission_rate', rate.toString());
+  };
+
+  const [serviceCommissionRates, setServiceCommissionRates] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('service_commission_rates');
+    if (saved) {
+      try {
+        return { ...DEFAULT_SERVICE_COMMISSION_RATES, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error('Failed to parse service_commission_rates', e);
+      }
+    }
+    return DEFAULT_SERVICE_COMMISSION_RATES;
+  });
+
+  const updateServiceCommissionRate = (serviceKey: string, rate: number) => {
+    setServiceCommissionRates((prev) => {
+      const updated = { ...prev, [serviceKey]: rate };
+      localStorage.setItem('service_commission_rates', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>(INITIAL_BALANCES);
   const [killSwitchList, setKillSwitchList] = useState<KillSwitchItem[]>(INITIAL_KILL_SWITCH);
   const [permissions, setPermissions] = useState<UserPermissionMatrix[]>(INITIAL_PERMISSIONS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [settlements, setSettlements] = useState<WeeklySettlement[]>(INITIAL_SETTLEMENTS);
+  
+  const [serviceCommissions, setServiceCommissions] = useState<ServiceCommissionConfig[]>(() => {
+    const saved = localStorage.getItem('service_commissions');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse service_commissions from localStorage', e);
+      }
+    }
+    return INITIAL_SERVICE_COMMISSIONS;
+  });
+
+  const updateServiceCommission = (serviceType: ServiceType, adminCommissionRate: number, defaultFeeRate: number) => {
+    setServiceCommissions((prev) => {
+      const updated = prev.map((item) =>
+        item.serviceType === serviceType
+          ? { ...item, adminCommissionRate, defaultFeeRate }
+          : item
+      );
+      localStorage.setItem('service_commissions', JSON.stringify(updated));
+      return updated;
+    });
+
+    const logDetails = `[COMMISSIONS SYSTEME] Admin (${currentUser.name}) a mis à jour les commissions pour le service ${serviceType.toUpperCase()} (Taux Admin: ${adminCommissionRate}%, Frais: ${defaultFeeRate}%).`;
+    eventBus.publish('TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
+  };
+
+  const [operatorCommissions, setOperatorCommissions] = useState<OperatorCommissionConfig[]>(() => {
+    const saved = localStorage.getItem('operator_commissions');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse operator_commissions from localStorage', e);
+      }
+    }
+    return INITIAL_OPERATOR_COMMISSIONS;
+  });
+
+  const updateOperatorCommission = (operator: OperatorCode, adminCommissionRate: number, defaultFeeRate: number, flatCommissionDOP: number = 0) => {
+    setOperatorCommissions((prev) => {
+      const updated = prev.map((item) =>
+        item.operator === operator
+          ? { ...item, adminCommissionRate, defaultFeeRate, flatCommissionDOP }
+          : item
+      );
+      localStorage.setItem('operator_commissions', JSON.stringify(updated));
+      return updated;
+    });
+
+    const logDetails = `[COMMISSIONS OPERATEUR] Admin (${currentUser.name}) a configuré la commission pour l'opérateur ${operator.toUpperCase()} (Taux Admin: ${adminCommissionRate}%, Frais: ${defaultFeeRate}%).`;
+    eventBus.publish('TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
+  };
   
   const recordAgentDeposit = (settlementId: string, amount: number, note: string) => {
     setSettlements((prev) =>
@@ -298,6 +434,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Subscribe to distributed event bus for audit logging
   useEffect(() => {
     const unsubscribe = eventBus.subscribe('*', (event) => {
+      const targetType = 
+        event.type.includes('USER') ? 'user' :
+        event.type.includes('PERMISSION') ? 'permission' :
+        event.type.includes('TRANSACTION') || event.type.includes('TASK') ? 'transaction' :
+        event.type.includes('KILL_SWITCH') ? 'kill_switch' :
+        event.type.includes('TREASURY') ? 'treasury' : 'system';
+
       const newLog: AuditLog = {
         id: `log_${Date.now()}`,
         timestamp: event.timestamp,
@@ -305,7 +448,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         actorName: currentUser.name,
         actorRole: currentUser.role,
         action: event.type,
-        targetType: 'system',
+        targetType,
         details: typeof event.payload === 'string' ? event.payload : JSON.stringify(event.payload),
         nodeStatus: 'ACK',
         priority: event.type.includes('KILL_SWITCH') || event.type.includes('SECURITY') ? 'High' : 'Medium',
@@ -342,18 +485,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (ks && !ks.enabled) {
       return {
         success: false,
-        message: `Le service ${data.operator.toUpperCase()} est actuellement temporairement suspendu (${ks.reason || 'Maintenance technique'}).`,
+        message: `Le service ${data.operator.toUpperCase()} est temporairement indisponible (${ks.reason || 'en maintenance'}).`,
       };
     }
 
-    // 1b. Check Operator Restrictions (Gestionnaire / Superviseur cannot do Natcash / Natcom)
+    // 1b. Check Zelle Restriction (Zelle is STRICTLY Admin only)
+    if (data.operator === 'zelle' && currentUser.role !== 'admin') {
+      return {
+        success: false,
+        message: `Le service Zelle Pay est réservé à l'administrateur.`,
+      };
+    }
+
+    // 1c. Check Operator Restrictions (Gestionnaire / Superviseur cannot do Natcash / Natcom)
     const isGestionnaire = currentUser.role === 'gestionnaire';
     const isHaitiOp = data.operator === 'natcash' || data.operator === 'natcom';
 
     if (isGestionnaire && isHaitiOp) {
       return {
         success: false,
-        message: `RÈGLE DE SÉCURITÉ : Un gestionnaire/superviseur ne peut pas effectuer de transactions Natcash ou Natcom.`,
+        message: `Les transferts Natcash et Natcom sont réservés aux agents d'exécution.`,
       };
     }
 
@@ -362,7 +513,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (userPerm && userPerm.servicesAllowed && !userPerm.servicesAllowed.includes(data.operator) && currentUser.role !== 'admin') {
       return {
         success: false,
-        message: `RÈGLE DE SÉCURITÉ : L'opérateur ${data.operator.toUpperCase()} n'est pas autorisé pour votre profil d'utilisateur.`,
+        message: `L'opérateur ${data.operator.toUpperCase()} n'est pas autorisé pour votre compte.`,
       };
     }
 
@@ -371,24 +522,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'PERMISSIONS_UPDATED',
         currentUser.nodeId,
         currentUser.role,
-        `[ALERTE SÉCURITÉ PLAFOND] Tentative de transfert de ${data.amountDOP.toLocaleString()} DOP par ${currentUser.name} (Plafond max autorisé: ${userPerm.maxSingleTransactionDOP.toLocaleString()} DOP)`
+        `[Plafond dépassé] Tentative de transfert de ${data.amountDOP.toLocaleString()} DOP par ${currentUser.name} (Max autorisé: ${userPerm.maxSingleTransactionDOP.toLocaleString()} DOP)`
       );
       return {
         success: false,
-        message: `PLAFOND DÉPASSÉ : Le montant de ${data.amountDOP.toLocaleString()} DOP dépasse le plafond maximal autorisé pour votre compte (${userPerm.maxSingleTransactionDOP.toLocaleString()} DOP). Contactez l'administrateur.`,
+        message: `Le montant de ${data.amountDOP.toLocaleString()} DOP dépasse la limite autorisée pour votre compte (maximum : ${userPerm.maxSingleTransactionDOP.toLocaleString()} DOP).`,
       };
     }
 
-    // 3. Determine Channel & Intelligent Task Routing
-    // Canal Haïti (Natcash / Natcom) -> Agent Haïti & Admin
-    // Canal Numérique (MonCash / Digicel / Claro / Altice) -> Gestionnaire & Admin
-    const isHaitiCashChannel = data.operator === 'natcash' || data.operator === 'natcom';
+    // 3. Determine Channel & Intelligent Task Routing :
+    // - Haïti Cash / Mobile Money (MonCash, Natcash, Natcom) -> Agent Haïti
+    // - Télécoms & Numériques (Digicel, Claro, Altice) -> Gestionnaire
+    const isHaitiCashChannel = data.operator === 'moncash' || data.operator === 'natcash' || data.operator === 'natcom';
     const channel: ChannelType = isHaitiCashChannel ? 'haiti_cash' : 'digital_telecom';
     
     const assignedRole: Role = isHaitiCashChannel ? 'agent_haiti' : 'gestionnaire';
     const assignedUser = availableUsers.find((u) => u.role === assignedRole);
-    const assignedNodeId = assignedUser ? assignedUser.nodeId : 'node-unassigned';
-    const assignedName = assignedUser ? assignedUser.name : 'Nœud File d\'attente';
+    const assignedNodeId = assignedUser ? assignedUser.nodeId : (isHaitiCashChannel ? 'node-agent-haiti-01' : 'node-gestionnaire-01');
+    const assignedName = assignedUser ? assignedUser.name : (isHaitiCashChannel ? 'Agent Haïti' : 'Gestionnaire');
 
     const newTxId = `tx_${Date.now()}`;
     const refNum = `#TX-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -466,7 +617,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return {
       success: true,
-      message: `Transaction ${refNum} initiée avec succès ! Routée vers le canal ${channel === 'haiti_cash' ? 'Agent Haïti' : 'Gestionnaire Télécom'}.`,
+      message: isHaitiCashChannel
+        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise à l'agent en Haïti pour validation avec photo de preuve.`
+        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise au Gestionnaire pour validation avec photo de preuve.`,
       transaction: newTx,
     };
   };
@@ -497,7 +650,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     // Sync backend
-    api.transactions.complete(transactionId, proofNotes, currentUser.name).catch(() => null);
+    api.transactions.complete(transactionId, proofNotes, proofUrl, currentUser.name).then((res) => {
+      if (res && res.transaction) {
+        setTransactions((prev) =>
+          prev.map((t) => (t.id === transactionId ? { ...t, ...res.transaction, proofUrl: res.transaction.proofUrl || proofUrl || t.proofUrl } : t))
+        );
+      }
+    }).catch(() => null);
 
     return { success: true, message: 'Tâche clôturée et validée avec succès !' };
   };
@@ -507,7 +666,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentUser.role !== 'admin') {
       return {
         success: false,
-        message: 'RÈGLE DE SÉCURITÉ : Les employés ne peuvent pas annuler de transaction. Seul l\'Administrateur est autorisé.',
+        message: 'Seul l\'administrateur est autorisé à annuler un transfert.',
       };
     }
 
@@ -879,12 +1038,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dopToHtgRate,
         usdToHtgRate,
         setDopToHtgRate,
+        adminCommissionRate,
+        setAdminCommissionRate,
+        serviceCommissionRates,
+        updateServiceCommissionRate,
         transactions,
         accountBalances,
         killSwitchList,
         permissions,
         auditLogs,
         settlements,
+        serviceCommissions,
+        updateServiceCommission,
+        operatorCommissions,
+        updateOperatorCommission,
         recordAgentDeposit,
         createTransaction,
         completeTask,
@@ -904,12 +1071,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isSidebarCollapsed,
         setIsSidebarCollapsed,
         toggleSidebar,
+        isMobileSidebarOpen,
+        setIsMobileSidebarOpen,
+        toggleMobileSidebar,
         isDarkMode,
         setIsDarkMode,
         toggleDarkMode,
         isSearchOpen,
         setIsSearchOpen,
         openSearch,
+        selectedService,
+        setSelectedService,
+        toastNotification,
+        showToast,
+        hideToast,
       }}
     >
       {children}

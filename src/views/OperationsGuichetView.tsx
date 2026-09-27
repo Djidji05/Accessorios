@@ -26,6 +26,7 @@ import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { MobileAgentHome } from '../components/MobileAgentHome';
+import { getOperatorLogo } from '../utils/operatorLogos';
 
 const OPERATOR_VISUAL_CARDS: Record<
   OperatorCode,
@@ -176,8 +177,15 @@ export const OperationsGuichetView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!senderName || !receiverName || !receiverPhone) {
-      setFeedback({ type: 'error', message: 'Veuillez remplir les informations obligatoires (Expéditeur et Destinataire).' });
+    const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(operator);
+
+    if (!receiverPhone.trim()) {
+      setFeedback({ type: 'error', message: 'Veuillez saisir le numéro de téléphone récepteur.' });
+      return;
+    }
+
+    if (!isTelecom && !receiverName.trim()) {
+      setFeedback({ type: 'error', message: 'Veuillez saisir le nom du bénéficiaire.' });
       return;
     }
 
@@ -186,11 +194,17 @@ export const OperationsGuichetView: React.FC = () => {
       return;
     }
 
+    const finalSenderName = senderName.trim() || 'Client Comptoir';
+    const finalSenderPhone = senderPhone.trim() || '+1 809 000 0000';
+    const finalReceiverName = isTelecom 
+      ? (receiverName.trim() || `Recharge ${operator.toUpperCase()}`)
+      : receiverName.trim();
+
     const result = createTransaction({
-      senderName,
-      senderPhone: senderPhone || '+1 809 000 0000',
-      receiverName,
-      receiverPhone,
+      senderName: finalSenderName,
+      senderPhone: finalSenderPhone,
+      receiverName: finalReceiverName,
+      receiverPhone: receiverPhone.trim(),
       operator,
       serviceType,
       amountDOP: numAmountDOP,
@@ -214,18 +228,20 @@ export const OperationsGuichetView: React.FC = () => {
     }
   };
 
+  const isAdmin = currentUser.role === 'admin';
+
   return (
     <>
-      {/* 📱 MOBILE AGENT MODE (md:hidden) - Layout Agent Mobile */}
+      {/* 📱 MODE MOBILE (block md:hidden) - Interface Mobile Agent pour tous (y compris Admin) */}
       <div className="block md:hidden">
         <MobileAgentHome />
       </div>
 
-      {/* 💻 PC DESKTOP MODE (hidden md:block) - Conservative & Untouched */}
-      <div className="hidden md:block p-4 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in">
+      {/* 💻 MODE DESKTOP PC (hidden md:block) */}
+      <div className="hidden md:block p-3 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in">
       
-      {/* 1. PAGE HEADER & RATE CONTROLLER (Masqué sur mobile pour Agent RD, conservé sur PC) */}
-      <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+      {/* 1. PAGE HEADER & RATE CONTROLLER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
@@ -298,26 +314,26 @@ export const OperationsGuichetView: React.FC = () => {
 
       {/* POST-CREATION INSTANT CONFIRMATION & RECEIPT CARD */}
       {lastCreatedTx && (
-        <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-3xl shadow-xl space-y-4 animate-in fade-in slide-in-from-top-3">
+        <div className="p-5 bg-slate-900 text-white rounded-xl shadow-md space-y-4 animate-in fade-in slide-in-from-top-3 border border-slate-800">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center font-black text-white text-xl shadow-inner">
+              <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-xl shadow-sm">
                 ✓
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-black px-2.5 py-0.5 rounded-lg bg-white/20 uppercase tracking-wider">
+                  <span className="text-xs font-mono font-black px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 uppercase tracking-wider">
                     {lastCreatedTx.referenceNumber}
                   </span>
-                  <span className="text-xs font-extrabold uppercase text-emerald-100">
+                  <span className="text-xs font-extrabold uppercase text-blue-400">
                     Transmis avec succès au flux opérationnel
                   </span>
                 </div>
-                <h3 className="text-lg font-black mt-0.5">
+                <h3 className="text-lg font-black mt-0.5 text-white">
                   {lastCreatedTx.amountDOP.toLocaleString()} DOP versé ➔ {lastCreatedTx.amountHTG.toLocaleString()} HTG à décaisser
                 </h3>
-                <p className="text-xs text-emerald-100 font-medium">
-                  Bénéficiaire : <strong>{lastCreatedTx.receiverName}</strong> ({lastCreatedTx.receiverPhone}) • Opérateur : <strong>{lastCreatedTx.operator.toUpperCase()}</strong>
+                <p className="text-xs text-slate-400 font-medium">
+                  Bénéficiaire : <strong className="text-slate-200">{lastCreatedTx.receiverName}</strong> ({lastCreatedTx.receiverPhone}) • Opérateur : <strong className="text-slate-200">{lastCreatedTx.operator.toUpperCase()}</strong>
                 </p>
               </div>
             </div>
@@ -325,15 +341,15 @@ export const OperationsGuichetView: React.FC = () => {
             <div className="flex items-center gap-2.5 flex-wrap">
               <button
                 onClick={() => setSelectedReceiptTx(lastCreatedTx)}
-                className="px-4 py-2.5 bg-white text-emerald-900 hover:bg-emerald-50 rounded-xl font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-2 cursor-pointer"
               >
-                <Printer className="w-4 h-4 text-emerald-700" />
+                <Printer className="w-4 h-4 text-blue-100" />
                 <span>Imprimer le Reçu Guichet</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('tasks')}
-                className="px-4 py-2.5 bg-emerald-800/80 hover:bg-emerald-900 text-white rounded-xl font-extrabold text-xs transition-all border border-emerald-400/30 flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs transition-all border border-slate-700 flex items-center gap-2 cursor-pointer"
               >
                 <span>Suivre dans Mes Transactions</span>
                 <ChevronRight className="w-4 h-4" />
@@ -341,7 +357,7 @@ export const OperationsGuichetView: React.FC = () => {
 
               <button
                 onClick={() => setLastCreatedTx(null)}
-                className="p-2 text-emerald-200 hover:text-white text-xs font-bold"
+                className="p-2 text-slate-500 hover:text-white text-xs font-bold"
                 title="Masquer cette bannière"
               >
                 ✕
@@ -384,7 +400,8 @@ export const OperationsGuichetView: React.FC = () => {
                 const conf = OPERATOR_VISUAL_CARDS[opKey];
                 const ks = killSwitchList.find(k => k.operator === opKey);
                 const isForbiddenForGestionnaire = currentUser.role === 'gestionnaire' && (opKey === 'natcash' || opKey === 'natcom');
-                const isLocked = (ks && !ks.enabled) || isForbiddenForGestionnaire;
+                const isForbiddenZelleNonAdmin = opKey === 'zelle' && currentUser.role !== 'admin';
+                const isLocked = (ks && !ks.enabled) || isForbiddenForGestionnaire || isForbiddenZelleNonAdmin;
                 const isSelected = operator === opKey;
 
                 return (
@@ -402,18 +419,29 @@ export const OperationsGuichetView: React.FC = () => {
                           ? `${conf.activeBorder} scale-102 cursor-pointer` 
                           : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs cursor-pointer'
                     }`}
-                    title={isForbiddenForGestionnaire ? "Service restreint : Un gestionnaire/superviseur ne peut pas effectuer d'opérations Natcash ou Natcom" : undefined}
+                    title={isForbiddenZelleNonAdmin ? "Service Zelle Pay (USD) réservé exclusivement à l'Administrateur" : isForbiddenForGestionnaire ? "Service restreint : Un gestionnaire/superviseur ne peut pas effectuer d'opérations Natcash ou Natcom" : undefined}
                   >
                     <div className="flex items-start justify-between">
-                      {/* Logo Emblem */}
-                      <div className={`w-10 h-10 rounded-xl ${conf.badgeBg} flex items-center justify-center font-black text-xs shadow-md tracking-tight`}>
-                        {conf.symbol}
+                      {/* Logo Emblem Image */}
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-white border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center p-1 shrink-0">
+                        <img 
+                          src={getOperatorLogo(opKey)} 
+                          alt={conf.name} 
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
                       </div>
 
                       {/* Country Flag & Locked indicator */}
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs">{conf.country}</span>
-                        {isForbiddenForGestionnaire ? (
+                        {isForbiddenZelleNonAdmin ? (
+                          <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-900 font-extrabold text-[9px]" title="Réservé Administrateur">
+                            Admin Only
+                          </span>
+                        ) : isForbiddenForGestionnaire ? (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-extrabold text-[9px]" title="Non autorisé Superviseur">
                             Restreint
                           </span>
@@ -433,7 +461,7 @@ export const OperationsGuichetView: React.FC = () => {
                         {conf.name}
                       </span>
                       <span className="text-[10px] font-semibold text-slate-500 block truncate">
-                        {isForbiddenForGestionnaire ? "Non disponible Superviseur" : conf.category}
+                        {isForbiddenZelleNonAdmin ? "Réservé Administrateur" : isForbiddenForGestionnaire ? "Non disponible Superviseur" : conf.category}
                       </span>
                     </div>
                   </button>
@@ -450,93 +478,61 @@ export const OperationsGuichetView: React.FC = () => {
           </div>
 
           {/* Client Details Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                2. Informations Expéditeur (R.D.) ➔ Bénéficiaire (Haïti)
-              </label>
-              <span className="text-[11px] font-bold text-slate-400">
-                Vérifiez attentivement le numéro de téléphone récepteur
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/* Expéditeur RD */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Expéditeur au Comptoir (République Dominicaine 🇩🇴)
-                </span>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Nom complet du client</span>
+          {(() => {
+            const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(operator);
+            return (
+              <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                    2. Informations Récepteur ({isTelecom ? operator.toUpperCase() : 'Haïti 🇭🇹'})
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="ex: Carlos Mendoza"
-                    value={senderName}
-                    onChange={(e) => setSenderName(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                  />
+                  <span className="text-[11px] font-bold text-slate-400">
+                    {isTelecom ? 'Entrez uniquement le numéro de téléphone à recharger' : 'Saisissez les informations du compte récepteur (MonCash / Natcash)'}
+                  </span>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Téléphone du client (R.D.)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="+1 809 555 0000"
-                    value={senderPhone}
-                    onChange={(e) => setSenderPhone(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                  />
-                </div>
-              </div>
+                <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-4">
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
+                    {isTelecom ? `Recharge Directe (${operator.toUpperCase()})` : 'Bénéficiaire Récepteur (Haïti 🇭🇹)'}
+                  </span>
 
-              {/* Bénéficiaire Haïti */}
-              <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-3">
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
-                  Bénéficiaire Récepteur (Haïti 🇭🇹)
-                </span>
+                  <div className={`grid grid-cols-1 ${isTelecom ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-4`}>
+                    {!isTelecom && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                          <User className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Nom complet du bénéficiaire en Haïti</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="ex: Jean-Baptiste Pierre"
+                          value={receiverName}
+                          onChange={(e) => setReceiverName(e.target.value)}
+                          className="w-full bg-white border border-blue-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    )}
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Nom complet du bénéficiaire en Haïti</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="ex: Jean-Baptiste Pierre"
-                    value={receiverName}
-                    onChange={(e) => setReceiverName(e.target.value)}
-                    className="w-full bg-white border border-blue-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Numéro Portefeuille / Compte (Haïti)</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="+509 3700 0000"
-                    value={receiverPhone}
-                    onChange={(e) => setReceiverPhone(e.target.value)}
-                    className="w-full bg-white border border-blue-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-blue-500" />
+                        <span>{isTelecom ? `Numéro de Téléphone à Recharger (${operator.toUpperCase()})` : 'Numéro Portefeuille / Compte (Haïti)'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={isTelecom ? "ex: 3700 0000 ou 809 000 0000" : "+509 3700 0000"}
+                        value={receiverPhone}
+                        onChange={(e) => setReceiverPhone(e.target.value)}
+                        className="w-full bg-white border border-blue-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-
-            </div>
-          </div>
+            );
+          })()}
 
         </div>
 
@@ -606,7 +602,7 @@ export const OperationsGuichetView: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-slate-200/70 text-slate-900">
                 <span className="font-black text-xs uppercase tracking-tight whitespace-nowrap">Montant net en Haïti :</span>
-                <span className="font-mono font-black text-emerald-600 text-lg whitespace-nowrap">
+                <span className="font-mono font-black text-blue-600 text-lg whitespace-nowrap">
                   {computedHTG.toLocaleString()} HTG
                 </span>
               </div>
@@ -642,7 +638,7 @@ export const OperationsGuichetView: React.FC = () => {
               className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
                 isOperatorLocked 
                   ? 'bg-slate-400 cursor-not-allowed shadow-none' 
-                  : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 hover:shadow-xl hover:shadow-emerald-600/30 active:scale-[0.99]'
+                  : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 active:scale-[0.99]'
               }`}
             >
               <Send className="w-4 h-4" />
@@ -670,7 +666,7 @@ export const OperationsGuichetView: React.FC = () => {
           
           <button
             onClick={() => setActiveTab('tasks')}
-            className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            className="text-xs font-extrabold text-blue-600 hover:text-blue-700 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
           >
             <span>Voir le tableau de suivi complet ("Mes Transactions du Jour")</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -722,20 +718,20 @@ export const OperationsGuichetView: React.FC = () => {
                       {tx.amountDOP.toLocaleString()} DOP
                     </td>
 
-                    <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 text-sm">
+                    <td className="py-3 px-3 text-right font-mono font-black text-blue-600 text-sm">
                       {tx.amountHTG.toLocaleString()} HTG
                     </td>
 
                     <td className="py-3 px-3 text-center">
                       {isCompleted ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          🟢 Clôturé / Validé
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
+                          <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                          Clôturé / Validé
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          🟠 En attente en Haïti
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-800 border border-slate-200">
+                          <Clock className="w-3 h-3 text-slate-500 animate-pulse" />
+                          En attente en Haïti
                         </span>
                       )}
                     </td>
@@ -745,7 +741,7 @@ export const OperationsGuichetView: React.FC = () => {
                         onClick={() => setSelectedReceiptTx(tx)}
                         className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer ${
                           isCompleted
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                            ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                         }`}
                         title={isCompleted ? "Imprimer le reçu officiel validé" : "Imprimer le reçu provisoire"}

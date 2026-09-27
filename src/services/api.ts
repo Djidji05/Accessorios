@@ -81,10 +81,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-    complete: (id: string, proofNotes: string, actorName?: string) =>
+    complete: (id: string, proofNotes: string, proofUrl?: string, actorName?: string) =>
       request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/complete`, {
         method: 'PATCH',
-        body: JSON.stringify({ proofNotes, actorName }),
+        body: JSON.stringify({ proofNotes, proofUrl, actorName }),
       }),
     cancel: (id: string, reason: string, actorName?: string) =>
       request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/cancel`, {
@@ -129,7 +129,7 @@ export const api = {
 
   // 6. Taux de change officiel
   rates: {
-    get: () => request<{ baseCurrency: string; targetCurrency: string; rate: number }>('/rates'),
+    get: () => request<{ baseCurrency: string; targetCurrency: string; rate: number }>('/rates').catch(() => ({ baseCurrency: 'DOP', targetCurrency: 'HTG', rate: 2.35 })),
     update: (rate: number, actorName?: string) =>
       request<{ success: boolean; message: string; rate: { rate: number } }>('/rates', {
         method: 'PUT',
@@ -144,7 +144,7 @@ export const api = {
       if (params?.targetType) query.append('targetType', params.targetType);
       if (params?.priority) query.append('priority', params.priority);
       const qs = query.toString();
-      return request<AuditLog[]>(`/audit-logs${qs ? `?${qs}` : ''}`);
+      return request<AuditLog[]>(`/audit-logs${qs ? `?${qs}` : ''}`).catch(() => []);
     },
   },
 

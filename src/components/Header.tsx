@@ -18,7 +18,8 @@ import {
   LogOut,
   Clock,
   ChevronRight,
-  Lock
+  Lock,
+  Menu
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -34,13 +35,15 @@ export const Header: React.FC = () => {
     isSidebarCollapsed,
     setIsSidebarCollapsed,
     toggleSidebar,
+    toggleMobileSidebar,
     isDarkMode,
     toggleDarkMode,
     openSearch,
     nodeConnectionStatus,
     logout,
     transactions,
-    setSelectedReceiptTx
+    setSelectedReceiptTx,
+    selectedService
   } = useApp();
   const [currentLang, setCurrentLang] = useState<'FR' | 'ES' | 'HT' | 'EN'>('FR');
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -50,6 +53,7 @@ export const Header: React.FC = () => {
 
   const isAgentRD = currentUser.role === 'agent_rd';
   const isAgentHaiti = currentUser.role === 'agent_haiti';
+  const isDesktopNavRole = currentUser.role === 'admin' || currentUser.role === 'gestionnaire';
 
   // Role-scoped notifications (strictly respects user permissions)
   const notifications = React.useMemo(() => {
@@ -137,22 +141,23 @@ export const Header: React.FC = () => {
   ];
 
   return (
-    <header className="hidden md:flex h-14 bg-white dark:bg-[#0B1120] border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 items-center justify-between sticky top-0 z-20 transition-colors">
+    <header className={`${isDesktopNavRole ? (selectedService ? 'hidden md:flex' : 'flex') : 'hidden md:flex'} h-14 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 px-2 sm:px-6 items-center justify-between sticky top-0 z-20 transition-colors w-full min-w-0`}>
       {/* Left Section: Mobile Brand Header & Desktop Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 flex-shrink-0">
-        {/* Mobile-only Brand Badge (md:hidden) */}
-        <div className="flex md:hidden items-center gap-2 mr-1">
-          <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs shadow-xs">
-            D
-          </div>
-          <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">
-            D'Alexis
-          </span>
-        </div>
+      <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 min-w-0 flex-shrink">
+        {/* Mobile Menu Toggle Button */}
+        {isDesktopNavRole && (
+          <button
+            onClick={toggleMobileSidebar}
+            className="md:hidden p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+            title="Menu Principal"
+          >
+            <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
+          </button>
+        )}
 
         {/* Desktop Sidebar Toggle & Breadcrumbs (md:flex) */}
         {isSidebarCollapsed && (
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setIsSidebarCollapsed(false)}
               className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700"
@@ -165,9 +170,9 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">Overview</span>
-        <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">/</span>
-        <span className="font-bold text-slate-900 dark:text-slate-100 capitalize truncate">
+        <span className="text-slate-500 dark:text-slate-400 font-medium hidden md:inline">Overview</span>
+        <span className="text-slate-300 dark:text-slate-600 hidden md:inline">/</span>
+        <span className="font-bold text-slate-900 dark:text-slate-100 capitalize truncate hidden md:inline">
           {activeTab === 'overview' ? 'Dashboard' : activeTab === 'guichet' ? 'Nouvelle Transaction' : activeTab.replace('_', ' ')}
         </span>
       </div>
@@ -190,23 +195,21 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Right Tools: Mobile Search, Taux, Notification Bell, Language Globe Icon, Dark mode, Settings */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
         
         {/* Mobile Search Icon Button */}
         <button 
           onClick={openSearch}
-          className="md:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+          className="md:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex-shrink-0"
           title="Rechercher (⌘K / Ctrl+K)"
         >
           <Search className="w-4 h-4" />
         </button>
 
-
-
-        {/* Real-time Exchange Rate Widget */}
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F8FAFC] dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 px-2 sm:px-2.5 py-1 rounded-xl text-xs font-medium">
-          <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">Taux:</span>
+        {/* Real-time Exchange Rate Widget (Hidden on mobile) */}
+        <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 px-2.5 py-1 rounded-xl text-xs font-medium flex-shrink-0">
+          <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <span className="text-slate-500 dark:text-slate-400 hidden lg:inline">Taux:</span>
           <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
             100 Pesos = {Math.round(dopToHtgRate * 100)} HTG
           </span>
@@ -243,7 +246,10 @@ export const Header: React.FC = () => {
 
           {/* Notifications Dropdown Panel */}
           {isNotificationsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 z-50 animate-in fade-in">
+            <>
+              {/* Mobile overlay */}
+              <div className="fixed inset-0 z-40 bg-black/10 dark:bg-black/40 sm:hidden" onClick={() => setIsNotificationsOpen(false)} />
+              <div className="fixed top-16 left-4 right-4 sm:absolute sm:top-full sm:left-auto sm:right-0 sm:mt-2 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
                 <div className="flex items-center gap-1.5">
                   <Bell className="w-4 h-4 text-slate-900 dark:text-slate-100" />
@@ -291,25 +297,16 @@ export const Header: React.FC = () => {
                     setActiveTab('notifications');
                     setIsNotificationsOpen(false);
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <span>Voir toutes les notifications</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
+            </>
           )}
         </div>
-
-        {/* LOGOUT BUTTON (Déconnexion) NEXT TO NOTIFICATION BELL */}
-        <button
-          onClick={logout}
-          className="px-2.5 py-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer font-extrabold text-xs"
-          title="Déconnexion"
-        >
-          <LogOut className="w-4 h-4 text-rose-500" />
-          <span className="hidden sm:inline">Déconnexion</span>
-        </button>
 
         {/* Language Globe Icon Selector Button */}
         <div className="relative">
@@ -325,7 +322,7 @@ export const Header: React.FC = () => {
 
           {/* Language Dropdown Menu */}
           {isLangOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in">
+            <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in">
               <div className="space-y-0.5">
                 {languages.map((lang) => (
                   <button
@@ -360,10 +357,10 @@ export const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Settings Gear Button */}
+        {/* Settings Gear Button (Hidden on mobile) */}
         <button 
           onClick={() => setActiveTab('settings')}
-          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+          className="hidden md:block p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
           title="Paramètres"
         >
           <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />

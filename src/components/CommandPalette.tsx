@@ -152,7 +152,7 @@ export const CommandPalette: React.FC = () => {
 
   // Transactions scopées au rôle
   const scopedTransactions = transactions.filter((tx) => {
-    if (isAgentHaiti) return tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash';
+    if (isAgentHaiti) return tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash' || tx.operator === 'natcom';
     if (isAgentRD) return tx.createdByRole === 'agent_rd' || tx.createdByName === currentUser.name || tx.assignedToRole === 'agent_rd';
     return true;
   });
@@ -238,7 +238,7 @@ export const CommandPalette: React.FC = () => {
       onClick={() => setIsSearchOpen(false)}
     >
       <div 
-        className="w-full max-w-2xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-700/80 rounded-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[80vh] animate-in zoom-in-95 duration-150"
+        className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[80vh] animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDownList}
       >
@@ -454,7 +454,7 @@ export const CommandPalette: React.FC = () => {
         </div>
 
         {/* Command Palette Footer (Desktop only) */}
-        <div className="hidden sm:flex px-4 py-2.5 bg-slate-50 dark:bg-[#0B1120] border-t border-slate-100 dark:border-slate-800 items-center justify-between text-[11px] text-slate-500 font-medium">
+        <div className="hidden sm:flex px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 items-center justify-between text-[11px] text-slate-500 font-medium">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px]">↑↓</kbd>

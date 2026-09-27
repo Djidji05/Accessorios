@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode } from '../types';
-import { OPERATOR_CONFIG } from '../components/OperatorBadge';
+import { OPERATOR_CONFIG, OperatorBadge } from '../components/OperatorBadge';
 
 export const KillSwitchView: React.FC = () => {
   const { killSwitchList, toggleKillSwitch, currentUser } = useApp();
@@ -53,7 +53,7 @@ export const KillSwitchView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
       
       {/* 1. HEADER & EMERGENCY STATUS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
@@ -119,11 +119,7 @@ export const KillSwitchView: React.FC = () => {
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className={`w-3.5 h-3.5 rounded-full ${config.bg}`} />
-                  <div>
-                    <span className="font-extrabold text-slate-900 text-sm block">{config.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{item.serviceName}</span>
-                  </div>
+                  <OperatorBadge operator={item.operator} size="md" showLogo={true} />
                 </div>
 
                 <span className={`px-2.5 py-1 text-[11px] font-black rounded-xl flex items-center gap-1.5 ${

@@ -46,9 +46,9 @@ import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 export const TaskQueueView: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<DateRange>({
     preset: 'last_7_days',
-    startDate: new Date(2026, 8, 5),
-    endDate: new Date(2026, 8, 12),
-    label: '7 derniers jours (Last week)'
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    endDate: new Date(),
+    label: '7 derniers jours'
   });
   const { 
     transactions, 
@@ -279,7 +279,8 @@ export const TaskQueueView: React.FC = () => {
   // Périmètre strict selon le rôle connecté + filtre par calendrier
   const roleScopedTasks = transactions.filter((tx) => {
     let matchesDate = true;
-    if (selectedRange && selectedRange.startDate && selectedRange.endDate) {
+    // Les tâches en attente / en cours (in_progress, pending_routing) restent toujours visibles pour l'agent
+    if (tx.status !== 'in_progress' && tx.status !== 'pending_routing' && selectedRange && selectedRange.startDate && selectedRange.endDate) {
       const txDate = new Date(tx.createdAt);
       const start = new Date(selectedRange.startDate);
       start.setHours(0, 0, 0, 0);
@@ -290,8 +291,8 @@ export const TaskQueueView: React.FC = () => {
     if (!matchesDate) return false;
 
     if (isAgentHaiti) {
-      // Agent Haïti : strictement les flux Natcash et Natcom
-      return tx.operator === 'natcash' || tx.operator === 'natcom';
+      // Agent Haïti : flux destinés à Haïti (MonCash, Natcash, Natcom, Digicel)
+      return tx.operator === 'natcash' || tx.operator === 'natcom' || tx.operator === 'moncash' || tx.operator === 'digicel' || tx.channel === 'haiti_cash';
     }
     if (isAgentRD) {
       // Agent RD : uniquement les transferts initiés par son guichet/agence ou qui lui sont assignés
@@ -567,7 +568,7 @@ export const TaskQueueView: React.FC = () => {
                       className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50"
                       onClick={() => setIsNotificationsOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
+                    <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
                       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
                         <div className="flex items-center gap-2">
                           <div className="p-1.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
@@ -660,7 +661,7 @@ export const TaskQueueView: React.FC = () => {
           </div>
 
           {/* MAIN LARGE BALANCE CARD (Natcash & Natcom) */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-[#0F172A] dark:via-[#1E293B] dark:to-[#090D16] text-white p-5 shadow-xl border border-slate-800/80 space-y-4">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 text-white p-5 shadow-xl border border-slate-800/80 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center font-black text-xs border border-orange-500/30">
@@ -733,7 +734,7 @@ export const TaskQueueView: React.FC = () => {
               className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
                 haitiStatusFilter === 'in_progress'
                   ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-md'
-                  : 'bg-white dark:bg-[#0F172A] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800'
               }`}
             >
               En Attente ({haitiPendingCount})
@@ -744,7 +745,7 @@ export const TaskQueueView: React.FC = () => {
               className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
                 haitiStatusFilter === 'completed'
                   ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-md'
-                  : 'bg-white dark:bg-[#0F172A] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800'
               }`}
             >
               Validées ({haitiCompletedCount})
@@ -755,7 +756,7 @@ export const TaskQueueView: React.FC = () => {
               className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
                 haitiOperatorFilter === 'natcash'
                   ? 'bg-emerald-600 text-white border-emerald-600 font-extrabold'
-                  : 'bg-white dark:bg-[#0F172A] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
               }`}
             >
               Natcash
@@ -766,7 +767,7 @@ export const TaskQueueView: React.FC = () => {
               className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
                 haitiOperatorFilter === 'natcom'
                   ? 'bg-blue-600 text-white border-blue-600 font-extrabold'
-                  : 'bg-white dark:bg-[#0F172A] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
               }`}
             >
               Natcom
@@ -782,7 +783,7 @@ export const TaskQueueView: React.FC = () => {
                 return (
                   <div
                     key={tx.id}
-                    className="bg-white dark:bg-[#0F172A] p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3"
+                    className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3"
                   >
                     {/* Header: Operator, Reference, Status */}
                     <div className="flex items-center justify-between">
@@ -858,7 +859,7 @@ export const TaskQueueView: React.FC = () => {
                 );
               })
             ) : (
-              <div className="bg-white dark:bg-[#0F172A] p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-2">
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-slate-300 mx-auto" />
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Aucune tâche en attente</p>
                 <p className="text-[11px] text-slate-400">Tous les décaissements Natcash et Natcom sont à jour.</p>
@@ -1062,10 +1063,10 @@ export const TaskQueueView: React.FC = () => {
 
           {/* 4. Table des Tâches Entrantes (Épurée & Simplifiée) */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden">
-            {/* Table content... */}
-          
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-3 px-6 py-3.5 bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 items-center">
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px]">
+                {/* Table Header */}
+                <div className="grid grid-cols-12 gap-3 px-6 py-3.5 bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-200 items-center">
             <div className="col-span-2">ID</div>
             <div className="col-span-2">Arrivée</div>
             <div className="col-span-2 text-right">Montant</div>
@@ -1209,8 +1210,10 @@ export const TaskQueueView: React.FC = () => {
               })}
             </div>
           )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
         {/* MODAL 1: 🔍 VOIR LES DÉTAILS DE LA TRANSACTION */}
         {haitiDetailTx && (
@@ -1379,7 +1382,7 @@ export const TaskQueueView: React.FC = () => {
         {/* MODAL 2: 📁 PAGE / ÉCRAN DÉDIÉ : DÉCAISSEMENT & PREUVE PHOTO */}
         {haitiProofModalTx && (
           <div className="fixed inset-0 z-50 bg-slate-900/80 sm:bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto animate-in fade-in">
-            <div className="bg-white dark:bg-[#0F172A] min-h-screen sm:min-h-0 sm:rounded-3xl border-0 sm:border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full p-4 sm:p-6 space-y-4 animate-in zoom-in-95 flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-900 min-h-screen sm:min-h-0 sm:rounded-3xl border-0 sm:border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full p-4 sm:p-6 space-y-4 animate-in zoom-in-95 flex flex-col justify-between">
               
               {/* Top Header with Back Button */}
               <div className="space-y-4">
@@ -1611,10 +1614,10 @@ export const TaskQueueView: React.FC = () => {
         )}
 
         {/* 1. Header & Live Counter Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-600/25 ring-4 ring-emerald-50">
-              <FileText className="w-7 h-7 text-emerald-100" />
+            <div className="w-14 h-14 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black shadow-md">
+              <FileText className="w-7 h-7 text-slate-100" />
             </div>
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -1631,10 +1634,10 @@ export const TaskQueueView: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveTab('guichet')}
-              className="px-5 py-3 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-md flex items-center gap-2 cursor-pointer hover:shadow-lg active:scale-98"
+              className="px-5 py-3 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-md flex items-center gap-2 cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4 text-emerald-400" />
-              <span>➕ Nouvelle Transaction (Guichet Saisie)</span>
+              <PlusCircle className="w-4 h-4 text-blue-100" />
+              <span>Nouvelle Transaction</span>
             </button>
           </div>
         </div>
@@ -1643,49 +1646,47 @@ export const TaskQueueView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           
           {/* Card 1: Total Saisies */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-1">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+          <div className="bg-white p-5 rounded border border-slate-200 shadow-sm space-y-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
               Opérations Saisies (Jour)
             </span>
             <div className="flex items-baseline justify-between pt-1">
               <span className="text-2xl font-black text-slate-900 font-mono">{totalRdCount}</span>
-              <span className="text-xs font-bold text-slate-500 font-mono">
+              <span className="text-xs font-bold text-slate-700 font-mono">
                 {totalDopEncashed.toLocaleString()} DOP
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">Total encaissé aujourd'hui</p>
+            <p className="text-[11px] text-slate-500 mt-1">Total encaissé aujourd'hui</p>
           </div>
 
           {/* Card 2: En attente Haïti */}
-          <div className="bg-white p-5 rounded-3xl border border-amber-200 shadow-2xs space-y-1 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-2 h-full bg-amber-500" />
-            <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider block flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
-              🟠 En attente Haïti
+          <div className="bg-white p-5 rounded border border-slate-200 shadow-sm space-y-1 relative overflow-hidden border-l-4 border-l-slate-400">
+            <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-slate-500" />
+              En attente Haïti
             </span>
             <div className="flex items-baseline justify-between pt-1">
-              <span className="text-2xl font-black text-amber-600 font-mono">{rdPendingCount}</span>
-              <span className="text-xs font-bold text-amber-700 font-mono">
+              <span className="text-2xl font-black text-slate-900 font-mono">{rdPendingCount}</span>
+              <span className="text-xs font-bold text-slate-700 font-mono">
                 {rdPendingTasks.reduce((acc, t) => acc + t.amountDOP, 0).toLocaleString()} DOP
               </span>
             </div>
-            <p className="text-[11px] text-amber-800 font-medium">À traiter en Haïti</p>
+            <p className="text-[11px] text-slate-500 font-medium">À traiter en Haïti</p>
           </div>
 
           {/* Card 3: Clôturées / Validées */}
-          <div className="bg-white p-5 rounded-3xl border border-emerald-200 shadow-2xs space-y-1 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-2 h-full bg-emerald-500" />
-            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider block flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              🟢 Clôturé / Validé
+          <div className="bg-white p-5 rounded border border-slate-200 shadow-sm space-y-1 relative overflow-hidden border-l-4 border-l-blue-600">
+            <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider block flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+              Clôturé / Validé
             </span>
             <div className="flex items-baseline justify-between pt-1">
-              <span className="text-2xl font-black text-emerald-600 font-mono">{rdCompletedCount}</span>
-              <span className="text-xs font-bold text-emerald-700 font-mono">
+              <span className="text-2xl font-black text-slate-900 font-mono">{rdCompletedCount}</span>
+              <span className="text-xs font-bold text-blue-700 font-mono">
                 {totalHtgDisbursed.toLocaleString()} HTG
               </span>
             </div>
-            <p className="text-[11px] text-emerald-800 font-medium">Reçus officiels prêts ({totalHtgDisbursed.toLocaleString()} HTG)</p>
+            <p className="text-[11px] text-slate-500 font-medium">Reçus officiels prêts ({totalHtgDisbursed.toLocaleString()} HTG)</p>
           </div>
 
         </div>
@@ -1694,12 +1695,12 @@ export const TaskQueueView: React.FC = () => {
         <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-50 border border-slate-200 rounded">
             <button
               onClick={() => setRdStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
                 rdStatusFilter === 'all'
-                  ? 'bg-white text-slate-900 shadow-xs'
+                  ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -1707,25 +1708,25 @@ export const TaskQueueView: React.FC = () => {
             </button>
             <button
               onClick={() => setRdStatusFilter('in_progress')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 rdStatusFilter === 'in_progress'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                  : 'text-amber-800 hover:text-amber-950'
+                  ? 'bg-slate-400 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-amber-600" />
-              🟠 En attente ({rdPendingCount})
+              <Clock className="w-3.5 h-3.5" />
+              En attente ({rdPendingCount})
             </button>
             <button
               onClick={() => setRdStatusFilter('completed')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 rdStatusFilter === 'completed'
-                  ? 'bg-emerald-600 text-white font-black shadow-xs'
-                  : 'text-emerald-800 hover:text-emerald-950'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              🟢 Clôturées ({rdCompletedCount})
+              Clôturées ({rdCompletedCount})
             </button>
           </div>
 
@@ -1857,21 +1858,21 @@ export const TaskQueueView: React.FC = () => {
                         </td>
 
                         {/* Amount Net HTG */}
-                        <td className="py-3.5 px-4 text-right font-mono font-black text-emerald-600 text-sm">
+                        <td className="py-3.5 px-4 text-right font-mono font-black text-blue-600 text-sm">
                           {tx.amountHTG.toLocaleString()} HTG
                         </td>
 
                         {/* Real-time Status */}
                         <td className="py-3.5 px-4 text-center">
                           {isCompleted ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>🟢 Clôturé / Validé</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                              <span>Clôturé / Validé</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
-                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                              <span>🟠 En attente Haïti</span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-slate-500 animate-pulse" />
+                              <span>En attente Haïti</span>
                             </span>
                           )}
                         </td>
@@ -1883,7 +1884,7 @@ export const TaskQueueView: React.FC = () => {
                               onClick={() => setSelectedReceiptTx(tx)}
                               className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
                                 isCompleted
-                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                                  ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20'
                                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                               }`}
                               title={isCompleted ? "Imprimer le reçu officiel client (Décaissement certifié)" : "Imprimer le bordereau de dépôt provisoire"}
@@ -1913,7 +1914,7 @@ export const TaskQueueView: React.FC = () => {
         {/* 5. MODAL DÉTAILS DE L'OPÉRATION (AGENT R.D.) */}
         {rdDetailTx && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in zoom-in-95">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in zoom-in-95 max-h-[95vh] overflow-y-auto custom-scrollbar">
               
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1943,43 +1944,48 @@ export const TaskQueueView: React.FC = () => {
               </div>
 
               {/* Status Banner */}
-              <div className={`p-4 rounded-2xl border flex items-center justify-between ${
-                rdDetailTx.status === 'completed'
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                  : 'bg-amber-50 border-amber-200 text-amber-900'
-              }`}>
-                <div className="flex items-center gap-2.5">
-                  {rdDetailTx.status === 'completed' ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  ) : (
-                    <Clock className="w-5 h-5 text-amber-600 animate-spin" />
-                  )}
-                  <div>
-                    <p className="text-xs font-black">
-                      {rdDetailTx.status === 'completed'
-                        ? '🟢 Clôturé & Validé en Haïti'
-                        : '🟠 En attente de traitement'}
-                    </p>
-                    <p className="text-[11px] text-slate-600">
-                      {rdDetailTx.status === 'completed'
-                        ? 'Les fonds ont été décaissés et remis au bénéficiaire de l\'autre côté de la frontière.'
-                        : 'L\'équipe en Haïti a reçu la tâche et s\'apprête à effectuer le décaissement.'}
-                    </p>
-                  </div>
-                </div>
+              {(() => {
+                const isHaitiOp = ['moncash', 'natcash', 'natcom'].includes(rdDetailTx.operator);
+                return (
+                  <div className={`p-4 rounded-2xl border flex items-center justify-between ${
+                    rdDetailTx.status === 'completed'
+                      ? 'bg-blue-50 border-blue-200 text-blue-900'
+                      : 'bg-slate-100 border-slate-200 text-slate-900'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      {rdDetailTx.status === 'completed' ? (
+                        <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-slate-600 animate-spin" />
+                      )}
+                      <div>
+                        <p className="text-xs font-black">
+                          {rdDetailTx.status === 'completed'
+                            ? (isHaitiOp ? 'Clôturé & Validé en Haïti' : 'Clôturé & Validé par le Gestionnaire')
+                            : (isHaitiOp ? 'En attente de décaissement (Haïti)' : 'En attente de validation par le Gestionnaire')}
+                        </p>
+                        <p className="text-[11px] text-slate-600">
+                          {rdDetailTx.status === 'completed'
+                            ? (isHaitiOp ? 'Les fonds ont été décaissés et remis au bénéficiaire de l\'autre côté de la frontière.' : 'L\'opération a été vérifiée, traitée et certifiée par le Gestionnaire.')
+                            : (isHaitiOp ? 'L\'équipe en Haïti a reçu la tâche et s\'apprête à effectuer le décaissement.' : 'Le Gestionnaire a reçu la tâche et s\'apprête à effectuer la validation avec photo.')}
+                        </p>
+                      </div>
+                    </div>
 
-                <button
-                  onClick={() => {
-                    const target = rdDetailTx;
-                    setRdDetailTx(null);
-                    setSelectedReceiptTx(target);
-                  }}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer hover:bg-slate-800"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Imprimer le reçu</span>
-                </button>
-              </div>
+                    <button
+                      onClick={() => {
+                        const target = rdDetailTx;
+                        setRdDetailTx(null);
+                        setSelectedReceiptTx(target);
+                      }}
+                      className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer hover:bg-slate-800"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Imprimer le reçu</span>
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Parties Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2018,15 +2024,15 @@ export const TaskQueueView: React.FC = () => {
               </div>
 
               {/* Financial Box */}
-              <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-emerald-800 uppercase">Montant Net en Haïti</span>
-                  <span className="font-semibold text-emerald-700">Taux appliqué : 100 DOP = {Math.round(rdDetailTx.exchangeRate * 100)} HTG</span>
+                  <span className="font-bold text-blue-800 uppercase">Montant Net en Haïti</span>
+                  <span className="font-semibold text-blue-700">Taux appliqué : 100 DOP = {Math.round(rdDetailTx.exchangeRate * 100)} HTG</span>
                 </div>
-                <div className="text-3xl font-black text-emerald-700 font-mono">
+                <div className="text-3xl font-black text-blue-700 font-mono">
                   {rdDetailTx.amountHTG.toLocaleString()} HTG
                 </div>
-                <div className="text-xs text-slate-600 flex justify-between border-t border-emerald-200/70 pt-2">
+                <div className="text-xs text-blue-800/80 flex justify-between border-t border-blue-200/70 pt-2">
                   <span>Encaissé au comptoir : <strong>{rdDetailTx.amountDOP.toLocaleString()} Pesos</strong></span>
                   <span>Frais de service : <strong>{rdDetailTx.feeDOP} Pesos</strong></span>
                   <span>Commission : <strong>{rdDetailTx.commissionDOP} Pesos</strong></span>
@@ -2070,7 +2076,7 @@ export const TaskQueueView: React.FC = () => {
                     setRdDetailTx(null);
                     setSelectedReceiptTx(target);
                   }}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Imprimer le Reçu Officiel</span>
@@ -2319,7 +2325,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-2xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <DollarSign className="w-4 h-4 text-blue-600" />
                   <span>Détails Financiers & Conversion</span>
                 </h3>
                 <OperatorBadge operator={tx.operator} />
@@ -2332,10 +2338,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   <p className="text-[11px] text-slate-400 mt-1">Frais de transfert: {tx.feeDOP} Pesos</p>
                 </div>
 
-                <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80">
-                  <p className="text-xs font-bold text-emerald-800 uppercase">Montant à Verser (Haïti)</p>
-                  <p className="text-2xl font-black text-emerald-700 font-mono mt-1">{tx.amountHTG.toLocaleString()} HTG</p>
-                  <p className="text-[11px] text-emerald-600 font-bold mt-1">Taux: 100 Pesos = {Math.round(tx.exchangeRate * 100)} HTG</p>
+                <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200/80">
+                  <p className="text-xs font-bold text-blue-800 uppercase">Montant à Verser (Haïti)</p>
+                  <p className="text-2xl font-black text-blue-700 font-mono mt-1">{tx.amountHTG.toLocaleString()} HTG</p>
+                  <p className="text-[11px] text-blue-600 font-bold mt-1">Taux: 100 Pesos = {Math.round(tx.exchangeRate * 100)} HTG</p>
                 </div>
               </div>
             </div>
@@ -2367,7 +2373,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                       className="p-1 rounded bg-slate-200/80 hover:bg-slate-300 text-slate-700 transition-colors"
                       title="Copier le numéro"
                     >
-                      {copiedId === tx.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedId === tx.id ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
@@ -2378,15 +2384,15 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
             {/* Preuve & Formulaire de Validation */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
               <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <Upload className="w-4 h-4 text-emerald-600" />
+                <Upload className="w-4 h-4 text-blue-600" />
                 <span>Preuve de Décaissement & Validation</span>
               </h3>
 
               {tx.proofNotes ? (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl font-mono text-xs text-emerald-900 space-y-3">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl font-mono text-xs text-blue-900 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="font-bold text-emerald-800 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <p className="font-bold text-blue-800 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
                       <span>✓ Preuve de paiement enregistrée :</span>
                     </p>
                     {tx.completedAt && (
@@ -2396,21 +2402,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     )}
                   </div>
 
-                  <p className="text-slate-800 font-sans font-semibold bg-white/90 p-3 rounded-xl border border-emerald-100">
+                  <p className="text-slate-800 font-sans font-semibold bg-white/90 p-3 rounded-xl border border-blue-100">
                     {tx.proofNotes}
                   </p>
 
                   {/* Visual Proof Image Preview if available */}
                   {tx.proofUrl && (
                     <div className="pt-1">
-                      <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider block mb-1.5 font-sans">
+                      <span className="text-[10px] font-black uppercase text-blue-800 tracking-wider block mb-1.5 font-sans">
                         Capture / Quittance de paiement associée :
                       </span>
                       <div className="relative inline-block group">
                         <img 
                           src={tx.proofUrl} 
                           alt="Quittance de transaction" 
-                          className="w-36 h-36 object-cover rounded-xl border-2 border-emerald-300 shadow-sm group-hover:scale-105 transition-transform bg-white"
+                          className="w-36 h-36 object-cover rounded-xl border-2 border-blue-300 shadow-sm group-hover:scale-105 transition-transform bg-white"
                         />
                         <a 
                           href={tx.proofUrl} 
@@ -2431,7 +2437,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
                       <span>Code de Référence / SMS {tx.operator.toUpperCase()} :</span>
-                      <span className="text-[10px] text-emerald-600 font-semibold">Preuve de transmission</span>
+                      <span className="text-[10px] text-blue-600 font-semibold">Preuve de transmission</span>
                     </label>
                     <div className="relative">
                       <Hash className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -2447,7 +2453,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           tx.operator === 'natcash' ? 'Ex: NC-44109 (Code Natcash)' :
                           'Ex: REF-88902'
                         }
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
                     </div>
@@ -2461,18 +2467,18 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </label>
 
                     {proofImage ? (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           <img 
                             src={proofImage} 
                             alt="Aperçu quittance" 
-                            className="w-14 h-14 rounded-xl object-cover border border-emerald-300 shadow-2xs flex-shrink-0"
+                            className="w-14 h-14 rounded-xl object-cover border border-blue-300 shadow-2xs flex-shrink-0"
                           />
                           <div className="truncate">
                             <span className="text-xs font-bold text-slate-900 block truncate">
                               ✓ Capture / Reçu attaché
                             </span>
-                            <span className="text-[10px] text-emerald-600 font-semibold block">
+                            <span className="text-[10px] text-blue-600 font-semibold block">
                               Prête pour validation et archivage
                             </span>
                           </div>
@@ -2487,11 +2493,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         </button>
                       </div>
                     ) : (
-                      <label className="border-2 border-dashed border-slate-200 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all group">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <label className="border-2 border-dashed border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all group">
+                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Camera className="w-5 h-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-700 group-hover:text-emerald-700">
+                        <span className="text-xs font-bold text-slate-700 group-hover:text-blue-700">
                           Joindre la capture ou le reçu opérateur ({tx.operator.toUpperCase()})
                         </span>
                         <span className="text-[10px] text-slate-400">
@@ -2731,9 +2737,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
       {/* CLEAN OVERFLOW-FREE TABLE CONTAINER */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        
-        {/* Table Header */}
-        <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/80 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
+        <div className="overflow-x-auto">
+          <div className="min-w-[900px]">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/80 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
           <div className="col-span-2">Référence & Horodatage</div>
           <div className="col-span-2">Opérateur</div>
           <div className="col-span-3">Bénéficiaire / Téléphone</div>
@@ -2850,6 +2857,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </div>
         )}
 
+          </div>
+        </div>
       </div>
 
       {/* MODAL: AJOUTER UNE NOUVELLE TRANSACTION (GESTIONNAIRE / ADMIN) */}

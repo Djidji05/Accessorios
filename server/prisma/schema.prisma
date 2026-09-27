@@ -50,6 +50,7 @@ model Transaction {
   assignedToName      String   @default("Agent Haïti")
 
   proofNotes          String?
+  proofUrl            String?
   status              String   @default("pending_routing") // pending_routing | in_progress | completed | cancelled
   createdAt           DateTime @default(now())
   completedAt         DateTime?

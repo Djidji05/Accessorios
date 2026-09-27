@@ -33,12 +33,14 @@ import {
   UserCheck,
   Clock,
   Home,
-  PlusCircle
+  PlusCircle,
+  Users
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
 import { OperatorBadge } from './OperatorBadge';
 import { BottomNavBar } from './BottomNavBar';
+import { getOperatorLogo } from '../utils/operatorLogos';
 
 const SERVICES_LIST: {
   id: OperatorCode | 'more';
@@ -126,11 +128,11 @@ export const MobileAgentHome: React.FC = () => {
     setSelectedReceiptTx,
     setActiveTab,
     openSearch,
-    logout
+    logout,
+    selectedService,
+    setSelectedService
   } = useApp();
 
-  // State to manage selected service transfer form page
-  const [selectedService, setSelectedService] = useState<OperatorCode | null>(null);
   const [showBalance, setShowBalance] = useState<boolean>(true);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
@@ -149,6 +151,9 @@ export const MobileAgentHome: React.FC = () => {
   // Role Scoped Notifications (Strictly respects Agent RD & user rights)
   const isAgentRD = currentUser.role === 'agent_rd';
   const isAgentHaiti = currentUser.role === 'agent_haiti';
+  const isGestionnaire = currentUser.role === 'gestionnaire';
+  const isAdmin = currentUser.role === 'admin';
+  const isDesktopNavRole = isAdmin || isGestionnaire;
 
   const notifications = React.useMemo(() => {
     const list: Array<{
@@ -247,6 +252,10 @@ export const MobileAgentHome: React.FC = () => {
   const displayTotalDOP = weeklyTotalDOP > 0 ? weeklyTotalDOP : myTxs.reduce((sum, t) => sum + t.amountDOP, 0);
   const displayTotalHTG = Math.round(displayTotalDOP * dopToHtgRate);
 
+  const zelleTxs = myTxs.filter(t => t.operator === 'zelle');
+  const zelleTotalDOP = zelleTxs.reduce((sum, t) => sum + t.amountDOP, 0);
+  const zelleTotalUSD = zelleTxs.reduce((sum, t) => sum + (t.amountUSD || Math.round((t.amountDOP / 60) * 100) / 100), 0);
+
   const recentTxs = myTxs.slice(0, 6);
 
   // Step 1: Transfer Form Submission Handler -> Opens Confirmation Page
@@ -325,7 +334,7 @@ export const MobileAgentHome: React.FC = () => {
     // SUCCESS RECAP PAGE (After confirming transaction)
     if (lastCreatedTx) {
       return (
-        <div className="min-h-screen bg-[#F4F5F7] dark:bg-[#070B14] p-4 pb-36 flex flex-col justify-between animate-in fade-in">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-56 flex flex-col justify-between animate-in fade-in">
           
           {/* Header */}
           <div className="flex items-center justify-center py-2">
@@ -335,8 +344,8 @@ export const MobileAgentHome: React.FC = () => {
           </div>
 
           {/* Main Success Card */}
-          <div className="my-auto space-y-5">
-            <div className="bg-white dark:bg-[#0F172A] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-4 shadow-lg">
+          <div className="my-auto space-y-5 pb-6">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-4 shadow-lg">
               
               {/* Green Animated Checkmark Icon with Clock badge */}
               <div className="relative w-20 h-20 mx-auto">
@@ -390,6 +399,10 @@ export const MobileAgentHome: React.FC = () => {
                   <span className="text-slate-500 font-medium">Montant Envoyé</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">{lastCreatedTx.amountDOP.toLocaleString()} DOP</span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Commission Admin</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || Math.round(lastCreatedTx.amountDOP * 0.01)} DOP</span>
+                </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
                   <span className="text-slate-500 font-medium">Montant Reçu</span>
                   <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">{lastCreatedTx.amountHTG.toLocaleString()} HTG</span>
@@ -399,47 +412,49 @@ export const MobileAgentHome: React.FC = () => {
             </div>
           </div>
 
-          {/* Sticky Bottom Actions: 3 Options (Imprimer, Nouveau Transfert, Accueil) */}
-          <div className="fixed bottom-0 left-0 right-0 z-40 p-4 pointer-events-none">
-            <div className="max-w-md mx-auto pointer-events-auto space-y-2">
+          {/* Sticky Bottom Actions Container */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 shadow-2xl">
+            <div className="max-w-md mx-auto space-y-2">
               <button
                 type="button"
                 onClick={() => setSelectedReceiptTx(lastCreatedTx)}
                 className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-4 h-4 text-emerald-400" />
                 <span>Imprimer Reçu</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setLastCreatedTx(null);
-                  setShowConfirmation(false);
-                  setSenderName('');
-                  setSenderPhone('');
-                  setReceiverName('');
-                  setReceiverPhone('');
-                  setAmountDOP('5000');
-                }}
-                className="w-full py-3 rounded-2xl font-bold text-xs text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 dark:bg-orange-500/20 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Nouveau Transfert</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLastCreatedTx(null);
+                    setShowConfirmation(false);
+                    setSenderName('');
+                    setSenderPhone('');
+                    setReceiverName('');
+                    setReceiverPhone('');
+                    setAmountDOP('5000');
+                  }}
+                  className="w-full py-3 rounded-2xl font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 dark:bg-blue-500/20 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Nouveau Transfert</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setLastCreatedTx(null);
-                  setSelectedService(null);
-                  setShowConfirmation(false);
-                }}
-                className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
-              >
-                <Home className="w-4 h-4" />
-                <span>Accueil</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLastCreatedTx(null);
+                    setSelectedService(null);
+                    setShowConfirmation(false);
+                  }}
+                  className="w-full py-3 rounded-2xl font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Accueil</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -450,7 +465,7 @@ export const MobileAgentHome: React.FC = () => {
     // CONFIRMATION RECAP PAGE
     if (showConfirmation) {
       return (
-        <div className="min-h-screen bg-[#F4F5F7] dark:bg-[#070B14] p-4 pb-32 space-y-4 animate-in fade-in">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-32 space-y-4 animate-in fade-in">
           
           {/* Top Header Bar */}
           <div className="flex items-center justify-between py-2">
@@ -470,12 +485,12 @@ export const MobileAgentHome: React.FC = () => {
           </div>
 
           {/* Main Confirmation Card */}
-          <div className="bg-white dark:bg-[#0F172A] p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-5 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-5 shadow-sm">
             
             {/* Service Title */}
             <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="w-10 h-10 rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 font-black flex items-center justify-center text-lg">
-                {serviceInfo?.name.charAt(0) || selectedService.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-2xl bg-white p-1 border border-slate-200 dark:border-slate-800 font-black flex items-center justify-center text-lg overflow-hidden shadow-2xs">
+                <img src={getOperatorLogo(selectedService)} alt={selectedService} className="w-full h-full object-contain rounded-xl" />
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Service</span>
@@ -494,10 +509,10 @@ export const MobileAgentHome: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/20">
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase block">Montant Recevant</span>
-                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                  {computedHTG.toLocaleString()} <span className="text-xs font-bold text-emerald-500">HTG</span>
+              <div className="p-3.5 rounded-2xl bg-blue-500/10 dark:bg-blue-950/40 border border-blue-500/20">
+                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase block">Montant Recevant</span>
+                <p className="text-lg font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5">
+                  {computedHTG.toLocaleString()} <span className="text-xs font-bold text-blue-500">HTG</span>
                 </p>
               </div>
             </div>
@@ -533,7 +548,7 @@ export const MobileAgentHome: React.FC = () => {
               <button
                 type="button"
                 onClick={executeTransaction}
-                className="w-full py-4 rounded-full font-black text-sm text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition-all shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 rounded-full font-black text-sm text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Confirmer & Effectuer le Transfert</span>
               </button>
@@ -552,7 +567,7 @@ export const MobileAgentHome: React.FC = () => {
     }
 
     return (
-      <div className="min-h-screen bg-[#F4F5F7] dark:bg-[#070B14] p-4 pb-28 space-y-4 animate-in fade-in">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-28 space-y-4 animate-in fade-in">
         
         {/* Top Header Bar with Centered Title */}
         <div className="flex items-center justify-between py-2">
@@ -588,7 +603,7 @@ export const MobileAgentHome: React.FC = () => {
 
         {/* Main Form Card (Matching the Reference Screenshot) */}
         <form onSubmit={handleTransferSubmit} className="space-y-4">
-          <div className="bg-white dark:bg-[#0F172A] p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-sm">
             
             {/* Phone Number Field (Numero de telephone) */}
             <div className="space-y-1">
@@ -617,7 +632,7 @@ export const MobileAgentHome: React.FC = () => {
 
                 <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 mx-1" />
 
-                <div className="p-2 rounded-xl bg-orange-500 text-white font-bold text-xs flex items-center justify-center ml-1">
+                <div className="p-2 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center ml-1">
                   <UserCheck className="w-4 h-4" />
                 </div>
               </div>
@@ -660,7 +675,7 @@ export const MobileAgentHome: React.FC = () => {
 
             {/* Taux Section (Sans fond, sans somme de conversion) */}
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 px-1 py-0.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
               <span className="font-semibold">Taux du jour :</span>
               <span className="font-mono font-bold text-slate-900 dark:text-white">
                 100 DOP = {Math.round(dopToHtgRate * 100)} HTG
@@ -688,7 +703,7 @@ export const MobileAgentHome: React.FC = () => {
           </div>
 
           {/* Bottom Card: Beneficiaire recent */}
-          <div className="bg-white dark:bg-[#0F172A] p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-sm">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-slate-900 dark:text-white tracking-tight">
                 Beneficiaire recent
@@ -696,7 +711,7 @@ export const MobileAgentHome: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('history')}
-                className="text-xs font-bold text-orange-500 dark:text-orange-400 flex items-center gap-0.5 hover:underline cursor-pointer"
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 hover:underline cursor-pointer"
               >
                 <span>Voir Tout</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -714,10 +729,10 @@ export const MobileAgentHome: React.FC = () => {
                       setReceiverName(b.name);
                       setReceiverPhone(b.phone);
                     }}
-                    className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/80 text-left hover:bg-orange-50/50 dark:hover:bg-slate-800 transition-all cursor-pointer group"
+                    className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800/80 text-left hover:bg-blue-50/50 dark:hover:bg-slate-800 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center font-black text-xs flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-xs flex-shrink-0">
                         {b.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -730,7 +745,7 @@ export const MobileAgentHome: React.FC = () => {
                       </div>
                     </div>
 
-                    <span className="text-[11px] font-extrabold text-orange-500 dark:text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    <span className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                       Sélectionner
                     </span>
                   </button>
@@ -750,7 +765,7 @@ export const MobileAgentHome: React.FC = () => {
                 className={`w-full py-4 rounded-full font-black text-sm text-white transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer ${
                   isOperatorLocked
                     ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed'
-                    : 'bg-orange-500 hover:bg-orange-600 active:scale-[0.99] shadow-orange-500/30'
+                    : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] shadow-blue-600/30'
                 }`}
               >
                 <span>Continuez</span>
@@ -765,148 +780,164 @@ export const MobileAgentHome: React.FC = () => {
 
   // DEFAULT MOBILE AGENT HOME VIEW (matching the provided screenshot structure)
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#070B14] p-4 pb-24 space-y-5 animate-in fade-in">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-24 space-y-5 animate-in fade-in">
       
-      {/* 1. TOP HEADER: Agent Avatar, Greeting, Notifications & Icons */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Agent Avatar */}
-          <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md ring-2 ring-white dark:ring-slate-800">
-            {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
-          </div>
-
-          <div>
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block leading-none">
-              Hello,
-            </span>
-            <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
-              {currentUser.name}
-            </h3>
-          </div>
-        </div>
-
-        {/* Top Right Action Icons */}
-        <div className="flex items-center gap-2">
-          {/* Search Trigger */}
-          <button 
-            onClick={openSearch}
-            className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50"
-            title="Rechercher"
-          >
-            <Search className="w-4 h-4" />
+      {/* Feedback Alert Banner */}
+      {feedback && (
+        <div className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-xs ${
+          feedback.type === 'error'
+            ? 'bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300'
+            : 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300'
+        }`}>
+          <span className="pr-2">{feedback.message}</span>
+          <button onClick={() => setFeedback(null)} className="p-1 hover:opacity-80 flex-shrink-0 cursor-pointer">
+            <X className="w-3.5 h-3.5" />
           </button>
+        </div>
+      )}
 
-          {/* Notification Bell with Red Badge */}
-          <div className="relative">
-            <button 
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
-              title="Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+      {/* 1. TOP HEADER: Agent Avatar, Greeting, Notifications & Icons (Hidden for Admin & Gestionnaire) */}
+      {!isDesktopNavRole && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Agent Avatar */}
+            <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md ring-2 ring-white dark:ring-slate-800">
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
+            </div>
+
+            <div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block leading-none">
+                {isGestionnaire ? 'Gestionnaire Numérique' : isAgentRD ? 'Agent Comptoir R.D.' : isAgentHaiti ? 'Agent Terrain Haïti' : 'Hello,'}
               </span>
+              <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
+                {currentUser.name}
+              </h3>
+            </div>
+          </div>
+
+          {/* Top Right Action Icons */}
+          <div className="flex items-center gap-2">
+            {/* Search Trigger */}
+            <button 
+              onClick={openSearch}
+              className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50"
+              title="Rechercher"
+            >
+              <Search className="w-4 h-4" />
             </button>
 
-            {/* Notifications Dropdown Panel */}
-            {isNotificationsOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 sm:hidden"
-                  onClick={() => setIsNotificationsOpen(false)}
-                />
-                
-                <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
-                        <Bell className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-slate-900 dark:text-white text-xs uppercase tracking-wider">
-                          Notifications
-                        </h4>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                          {isAgentRD ? 'Compte Agent RD' : currentUser.role}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setIsNotificationsOpen(false)}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+            {/* Notification Bell with Red Badge */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+                title="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1 right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                </span>
+              </button>
 
-                  <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                    {notifications.map((notif) => {
-                      const IconComp = notif.icon;
-                      return (
-                        <div 
-                          key={notif.id}
-                          onClick={() => {
-                            if (notif.tx) setSelectedReceiptTx(notif.tx);
-                            setIsNotificationsOpen(false);
-                          }}
-                          className="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-800/80"
-                        >
-                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
-                            <IconComp className="w-4 h-4" />
-                          </div>
-                          <div className="flex-1 min-w-0 text-xs">
-                            <div className="flex items-center justify-between gap-1">
-                              <p className="font-bold text-slate-900 dark:text-white truncate">{notif.title}</p>
-                              <span className="text-[10px] text-slate-400 whitespace-nowrap">{notif.time}</span>
-                            </div>
-                            <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5 line-clamp-2">
-                              {notif.message}
-                            </p>
-                          </div>
+              {/* Notifications Dropdown Panel */}
+              {isNotificationsOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50 sm:hidden"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  
+                  <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                          <Bell className="w-4 h-4" />
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div>
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-xs uppercase tracking-wider">
+                            Notifications
+                          </h4>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            {isAgentRD ? 'Compte Agent RD' : currentUser.role}
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsNotificationsOpen(false);
-                        setActiveTab('notifications');
-                      }}
-                      className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] cursor-pointer"
-                    >
-                      <span>Voir toutes les notifications</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                      {notifications.map((notif) => {
+                        const IconComp = notif.icon;
+                        return (
+                          <div 
+                            key={notif.id}
+                            onClick={() => {
+                              if (notif.tx) setSelectedReceiptTx(notif.tx);
+                              setIsNotificationsOpen(false);
+                            }}
+                            className="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-800/80"
+                          >
+                            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
+                              <IconComp className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-xs">
+                              <div className="flex items-center justify-between gap-1">
+                                <p className="font-bold text-slate-900 dark:text-white truncate">{notif.title}</p>
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap">{notif.time}</span>
+                              </div>
+                              <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5 line-clamp-2">
+                                {notif.message}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNotificationsOpen(false);
+                          setActiveTab('notifications');
+                        }}
+                        className="w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] cursor-pointer"
+                      >
+                        <span>Voir toutes les notifications</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 shadow-2xs hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+              title="Se déconnecter"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-
-          {/* Logout Button */}
-          <button
-            onClick={logout}
-            className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 shadow-2xs hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-            title="Se déconnecter"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
-      </div>
+      )}
 
       {/* 2. MAIN AGENT CARD */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-[#0F172A] dark:via-[#1E293B] dark:to-[#090D16] text-white p-6 shadow-xl border border-slate-800/80">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 text-white p-6 shadow-xl border border-slate-800/80">
         
         <div className="relative space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">
-                Montant des transactions cette semaine
+                {isGestionnaire ? "Flux numérique cette semaine" : "Montant des transactions cette semaine"}
               </span>
               <button
                 type="button"
@@ -933,8 +964,34 @@ export const MobileAgentHome: React.FC = () => {
               {showBalance ? displayTotalDOP.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '••••••••'}
             </h2>
           </div>
+
+          {/* Zelle Pay Stat Row (Admin / Zelle) */}
+          {(isAdmin || zelleTotalDOP > 0) && (
+            <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">🇺🇸</span>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase text-purple-300 tracking-wider block">
+                    Zelle Pay (USD)
+                  </span>
+                  <p className="text-base font-black font-mono text-purple-200">
+                    {showBalance ? `$${zelleTotalUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD` : '••••••••'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
+                  Équivalent DOP
+                </span>
+                <span className="text-xs font-bold font-mono text-slate-300">
+                  {showBalance ? `${zelleTotalDOP.toLocaleString('fr-FR')} DOP` : '••••'}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
 
       {/* 3. TOP SERVICES SECTION */}
       <div className="space-y-3">
@@ -951,18 +1008,36 @@ export const MobileAgentHome: React.FC = () => {
         <div className="grid grid-cols-3 gap-2.5">
           {SERVICES_LIST.map((srv) => {
             const IconComponent = srv.icon;
+            const isForbiddenForGestionnaire = isGestionnaire && (srv.id === 'natcash' || srv.id === 'natcom');
             
             return (
               <button
                 key={srv.id}
                 onClick={() => {
+                  if (isForbiddenForGestionnaire) {
+                    setFeedback({
+                      type: 'error',
+                      message: 'Les transferts Natcash et Natcom sont réservés aux agents d\'exécution.'
+                    });
+                    return;
+                  }
                   setSelectedService(srv.id as OperatorCode);
                 }}
-                className="flex flex-col items-center justify-between p-3 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all cursor-pointer h-24 group"
+                className={`flex flex-col items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer h-24 group relative ${
+                  isForbiddenForGestionnaire
+                    ? 'bg-slate-100/60 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800/40 opacity-80'
+                    : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80'
+                }`}
               >
-                {/* Service Icon inside soft pill */}
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-transform group-hover:scale-105 ${srv.badgeBg}`}>
-                  <IconComponent className={`w-5 h-5 ${srv.badgeText}`} />
+                {isForbiddenForGestionnaire && (
+                  <span className="absolute top-1.5 right-1.5 p-0.5 rounded-full bg-slate-500 text-white shadow-xs" title="Restreint pour le Gestionnaire">
+                    <Lock className="w-2.5 h-2.5" />
+                  </span>
+                )}
+
+                {/* Service Logo inside soft pill */}
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center border transition-transform group-hover:scale-105 overflow-hidden bg-white p-1 shadow-2xs border-slate-200 dark:border-slate-800">
+                  <img src={getOperatorLogo(srv.id as string)} alt={srv.name} className="w-full h-full object-contain rounded-xl" />
                 </div>
 
                 {/* Service Name Label */}
@@ -970,6 +1045,11 @@ export const MobileAgentHome: React.FC = () => {
                   <span className="text-[11px] font-extrabold text-slate-900 dark:text-slate-100 block leading-tight truncate">
                     {srv.name}
                   </span>
+                  {isForbiddenForGestionnaire && (
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 block leading-none mt-0.5">
+                      🔒 Réservé HT
+                    </span>
+                  )}
                 </div>
               </button>
             );
@@ -987,7 +1067,7 @@ export const MobileAgentHome: React.FC = () => {
           </h4>
           <button
             onClick={() => setActiveTab('history')}
-            className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1 hover:underline cursor-pointer"
+            className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline cursor-pointer"
           >
             <span>See all</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -1002,7 +1082,7 @@ export const MobileAgentHome: React.FC = () => {
             return (
               <div
                 key={tx.id}
-                className="p-3.5 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
               >
                 {/* Left: Operator Icon & Transaction Info */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -1029,11 +1109,11 @@ export const MobileAgentHome: React.FC = () => {
                   
                   <div className="flex items-center gap-1.5 justify-end mt-0.5">
                     {isCompleted ? (
-                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
                         Clôturé
                       </span>
                     ) : (
-                      <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-1.5 py-0.5 rounded">
                         En cours
                       </span>
                     )}
@@ -1052,9 +1132,6 @@ export const MobileAgentHome: React.FC = () => {
           })}
         </div>
       </div>
-
-      {/* Mobile Bottom Navigation Bar (Visible only on Dashboard Home) */}
-      <BottomNavBar />
     </div>
   );
 };

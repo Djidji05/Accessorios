@@ -5,23 +5,34 @@ import {
   Printer, 
   Clock, 
   ArrowLeft,
-  X
+  X,
+  Upload,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Camera,
+  FileText
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction } from '../types';
-import { BottomNavBar } from '../components/BottomNavBar';
 
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
 export const HistoryView: React.FC = () => {
-  const { transactions, currentUser, setSelectedReceiptTx } = useApp();
+  const { transactions, currentUser, setSelectedReceiptTx, completeTask } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>('all');
   const [operatorFilter, setOperatorFilter] = useState<string>('all');
   
   // Full-page inspection state
   const [inspectedTx, setInspectedTx] = useState<Transaction | null>(null);
+
+  // Proof Modal state inside HistoryView
+  const [proofModalTx, setProofModalTx] = useState<Transaction | null>(null);
+  const [proofNotes, setProofNotes] = useState('');
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
 
   const isAgentHaiti = currentUser.role === 'agent_haiti';
   const isAgentRD = currentUser.role === 'agent_rd';
@@ -104,7 +115,7 @@ export const HistoryView: React.FC = () => {
         </div>
 
         {/* Main Details Card - Styled as a clean vertical list */}
-        <div className="bg-white dark:bg-[#0F172A] p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-sm">
           
           {/* Header Row: Reference & Status */}
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
@@ -116,11 +127,11 @@ export const HistoryView: React.FC = () => {
             </div>
 
             {inspectedTx.status === 'completed' ? (
-              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/50">
+              <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50">
                 ✓ Clôturé
               </span>
             ) : (
-              <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/50 flex items-center gap-1">
+              <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60 px-2.5 py-1 rounded-full border border-slate-200/50 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> En attente
               </span>
             )}
@@ -160,9 +171,16 @@ export const HistoryView: React.FC = () => {
               <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{inspectedTx.amountDOP.toLocaleString()} DOP</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40">
-              <span className="text-emerald-700 dark:text-emerald-400 font-bold">Montant Reçu</span>
-              <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-base">{inspectedTx.amountHTG.toLocaleString()} HTG</span>
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+              <span className="text-blue-700 dark:text-blue-400 font-bold">Commission Admin (DOP)</span>
+              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                +{(inspectedTx.commissionDOP || Math.round(inspectedTx.amountDOP * 0.01)).toLocaleString()} DOP
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+              <span className="text-blue-700 dark:text-blue-400 font-bold">Montant Reçu</span>
+              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{inspectedTx.amountHTG.toLocaleString()} HTG</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
@@ -178,17 +196,57 @@ export const HistoryView: React.FC = () => {
               </span>
             </div>
 
+            {/* Proof Section in Details */}
+            {(inspectedTx.proofNotes || inspectedTx.proofUrl) && (
+              <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-400">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <span>Preuve de Clôture & Validation :</span>
+                </div>
+                {inspectedTx.proofNotes && (
+                  <p className="text-[11px] font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 break-words">
+                    {inspectedTx.proofNotes}
+                  </p>
+                )}
+                {inspectedTx.proofUrl && (
+                  <div className="mt-2 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-52 bg-slate-900 flex items-center justify-center p-1">
+                    <img 
+                      src={inspectedTx.proofUrl} 
+                      alt="Preuve de transaction" 
+                      className="max-h-48 w-auto object-contain rounded-lg"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-2">
+          {(inspectedTx.status === 'in_progress' || inspectedTx.status === 'pending_routing') && (currentUser.role === 'admin' || currentUser.role === 'gestionnaire' || currentUser.role === 'agent_haiti') && (
+            <button
+              type="button"
+              onClick={() => {
+                setProofModalTx(inspectedTx);
+                setProofNotes('');
+                setProofImage(null);
+                setProofError(null);
+              }}
+              className="w-full py-3.5 rounded-2xl font-black text-xs text-slate-950 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Valider avec Preuve</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setSelectedReceiptTx(inspectedTx)}
             className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4 text-blue-400" />
             <span>Imprimer le Reçu</span>
           </button>
 
@@ -201,6 +259,136 @@ export const HistoryView: React.FC = () => {
           </button>
         </div>
 
+        {/* Proof Validation Modal inside HistoryView */}
+        {proofModalTx && (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar p-5 space-y-4 shadow-2xl text-slate-900 dark:text-white my-auto">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      Valider la Transaction #{proofModalTx.referenceNumber}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Opérateur : <strong className="uppercase text-slate-700 dark:text-slate-200">{proofModalTx.operator}</strong> • {proofModalTx.receiverName} ({proofModalTx.receiverPhone})
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProofModalTx(null)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {proofError && (
+                <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>{proofError}</span>
+                </div>
+              )}
+
+              {/* Photo upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                  1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)
+                </label>
+
+                {proofImage ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
+                    <img src={proofImage} alt="Preuve" className="max-h-48 object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setProofImage(null)}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 text-white hover:bg-rose-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors bg-slate-50 dark:bg-slate-900/50">
+                    <Camera className="w-8 h-8 text-slate-400 mb-1" />
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Cliquez pour importer la preuve photo MonCash / Reçu</span>
+                    <span className="text-[10px] text-slate-400">PNG, JPG ou WEBP (Max 10 Mo)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => setProofImage(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Note / Code SMS */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                  2. Code de Référence SMS / Note de confirmation
+                </label>
+                <textarea
+                  rows={2}
+                  value={proofNotes}
+                  onChange={(e) => setProofNotes(e.target.value)}
+                  placeholder="Ex: Réf MonCash #98421049 - Transfert exécuté avec succès..."
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!proofModalTx) return;
+
+                    if (!proofImage) {
+                      setProofError('La preuve doit obligatoirement être une photo ou une capture d\'écran du reçu.');
+                      return;
+                    }
+
+                    const proofSummary = proofNotes.trim()
+                      ? proofNotes.trim()
+                      : `Preuve validée par ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+
+                    const result = completeTask(proofModalTx.id, proofSummary, proofImage || undefined);
+
+                    if (result.success) {
+                      const updatedTx: Transaction = {
+                        ...proofModalTx,
+                        status: 'completed',
+                        proofNotes: proofSummary,
+                        proofUrl: proofImage || proofModalTx.proofUrl,
+                        completedAt: new Date().toISOString()
+                      };
+                      setInspectedTx(updatedTx);
+                      setProofModalTx(null);
+                      setProofNotes('');
+                      setProofImage(null);
+                      setProofError(null);
+                    } else {
+                      setProofError(result.message || 'Erreur lors de la validation.');
+                    }
+                  }}
+                  className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Confirmer & Valider la Transaction</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -243,7 +431,7 @@ export const HistoryView: React.FC = () => {
             className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
               timeFilter === f.id
                 ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
-                : 'bg-white dark:bg-[#0F172A] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100'
             }`}
           >
             {f.label}
@@ -259,7 +447,7 @@ export const HistoryView: React.FC = () => {
           placeholder="Rechercher par nom, téléphone, ou référence TRX..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
         />
         {searchQuery && (
           <button
@@ -277,7 +465,7 @@ export const HistoryView: React.FC = () => {
           filteredTransactions.map((tx) => (
             <div
               key={tx.id}
-              className="p-4 rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+              className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
             >
               {/* Header Row: Operator + Reference + Status */}
               <div className="flex items-center justify-between">
@@ -289,11 +477,11 @@ export const HistoryView: React.FC = () => {
                 </div>
 
                 {tx.status === 'completed' ? (
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-900/50">
+                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50 dark:border-blue-900/50">
                     ✓ Clôturé
                   </span>
                 ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
-                  <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/50 dark:border-amber-900/50 flex items-center gap-1">
+                  <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-900/50 flex items-center gap-1">
                     <Clock className="w-3 h-3 animate-pulse" /> En attente
                   </span>
                 ) : (
@@ -319,7 +507,7 @@ export const HistoryView: React.FC = () => {
                   <span className="text-sm font-black font-mono text-slate-900 dark:text-white block">
                     {tx.amountDOP.toLocaleString()} DOP
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 block">
+                  <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 block">
                     {tx.amountHTG.toLocaleString()} HTG
                   </span>
                 </div>
@@ -359,7 +547,7 @@ export const HistoryView: React.FC = () => {
             </div>
           ))
         ) : (
-          <div className="p-8 text-center bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-2">
+          <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-2">
             <FolderArchive className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
             <h4 className="text-sm font-bold text-slate-800 dark:text-white">
               Aucune transaction trouvée
@@ -382,8 +570,136 @@ export const HistoryView: React.FC = () => {
         )}
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Visible on History List, hidden when inspecting transaction details) */}
-      <BottomNavBar />
+      {/* Proof Validation Modal inside HistoryView */}
+      {proofModalTx && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar p-5 space-y-4 shadow-2xl text-slate-900 dark:text-white my-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Valider la Transaction #{proofModalTx.referenceNumber}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Opérateur : <strong className="uppercase text-slate-700 dark:text-slate-200">{proofModalTx.operator}</strong> • {proofModalTx.receiverName} ({proofModalTx.receiverPhone})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProofModalTx(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {proofError && (
+              <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{proofError}</span>
+              </div>
+            )}
+
+            {/* Photo upload */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)
+              </label>
+
+              {proofImage ? (
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
+                  <img src={proofImage} alt="Preuve" className="max-h-48 object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => setProofImage(null)}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 text-white hover:bg-rose-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors bg-slate-50 dark:bg-slate-900/50">
+                  <Camera className="w-8 h-8 text-slate-400 mb-1" />
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Cliquez pour importer la preuve photo MonCash / Reçu</span>
+                  <span className="text-[10px] text-slate-400">PNG, JPG ou WEBP (Max 10 Mo)</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => setProofImage(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Note / Code SMS */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                2. Code de Référence SMS / Note de confirmation
+              </label>
+              <textarea
+                rows={2}
+                value={proofNotes}
+                onChange={(e) => setProofNotes(e.target.value)}
+                placeholder="Ex: Réf MonCash #98421049 - Transfert exécuté avec succès..."
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!proofModalTx) return;
+
+                  if (!proofImage) {
+                    setProofError('La preuve doit obligatoirement être une photo ou une capture d\'écran du reçu.');
+                    return;
+                  }
+
+                  const proofSummary = proofNotes.trim()
+                    ? proofNotes.trim()
+                    : `Preuve validée par ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+
+                  const result = completeTask(proofModalTx.id, proofSummary, proofImage || undefined);
+
+                  if (result.success) {
+                    const updatedTx: Transaction = {
+                      ...proofModalTx,
+                      status: 'completed',
+                      proofNotes: proofSummary,
+                      proofUrl: proofImage || proofModalTx.proofUrl,
+                      completedAt: new Date().toISOString()
+                    };
+                    setInspectedTx(updatedTx);
+                    setProofModalTx(null);
+                    setProofNotes('');
+                    setProofImage(null);
+                    setProofError(null);
+                  } else {
+                    setProofError(result.message || 'Erreur lors de la validation.');
+                  }
+                }}
+                className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Confirmer & Valider la Transaction</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

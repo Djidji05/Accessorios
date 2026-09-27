@@ -23,6 +23,7 @@ import {
   AtSign,
   ArrowLeft,
   CheckCircle2,
+  AlertCircle,
   XCircle,
   Clock,
   Layers,
@@ -45,7 +46,8 @@ export const UserManagementView: React.FC = () => {
     toggleUserStatus,
     activeTab,
     setActiveTab,
-    transactions
+    transactions,
+    settlements
   } = useApp();
 
   const [subTab, setSubTab] = useState<'user_list' | 'create_user' | 'permissions_matrix'>(
@@ -234,7 +236,7 @@ export const UserManagementView: React.FC = () => {
     if (!userPerm) return;
 
     if (userPerm.role === 'gestionnaire' && (operator === 'natcash' || operator === 'natcom')) {
-      alert("RÈGLE DE SÉCURITÉ : Un gestionnaire/superviseur ne peut pas effectuer de transactions Natcash et Natcom.");
+      alert("Les transferts Natcash et Natcom sont réservés aux agents d'exécution.");
       return;
     }
 
@@ -285,6 +287,10 @@ export const UserManagementView: React.FC = () => {
   if (inspectedUser) {
     const userPerm = permissions.find(p => p.userId === inspectedUser.id);
     const userTx = transactions.filter(t => t.assignedToName.includes(inspectedUser.name) || t.createdByName.includes(inspectedUser.name));
+    const userSettlements = settlements.filter(s => s.agentId === inspectedUser.id || s.agentName.toLowerCase() === inspectedUser.name.toLowerCase());
+    const userDebt = userSettlements.reduce((sum, s) => sum + s.remainingBalance, 0);
+    const userTotalCollected = userSettlements.reduce((sum, s) => sum + s.totalCollected, 0);
+    const userTotalDeposited = userSettlements.reduce((sum, s) => sum + s.amountDeposited, 0);
     const isOffline = inspectedUser.status === 'offline';
 
     return (
@@ -623,6 +629,54 @@ export const UserManagementView: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Situation Financière & Dette du Client / Agent Card */}
+                <div className={`p-5 rounded-3xl border shadow-xs space-y-3 ${
+                  userDebt > 0 
+                    ? 'bg-rose-50/90 border-rose-200 text-rose-900' 
+                    : 'bg-emerald-50/90 border-emerald-200 text-emerald-900'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-xs ${
+                        userDebt > 0 ? 'bg-rose-600' : 'bg-emerald-600'
+                      }`}>
+                        {userDebt > 0 ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider block opacity-75">
+                          Situation Financière & Dettes
+                        </span>
+                        <h4 className="font-black text-base tracking-tight">
+                          {userDebt > 0 ? `Solde Dû / Dette : ${userDebt.toLocaleString()} DOP` : '0 DOP — Aucune Dette en Cours'}
+                        </h4>
+                      </div>
+                    </div>
+
+                    <span className={`px-3.5 py-1.5 rounded-full text-xs font-black font-mono self-start sm:self-auto ${
+                      userDebt > 0 ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+                    }`}>
+                      {userDebt > 0 ? `🔴 DOIT ${userDebt.toLocaleString()} DOP` : '🟢 TOUT PAYÉ'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono bg-white/80 p-3 rounded-2xl border border-slate-200/60">
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Total Encaissé</span>
+                      <span className="font-extrabold text-slate-900">{userTotalCollected.toLocaleString()} DOP</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Total Déposé à l'Admin</span>
+                      <span className="font-extrabold text-blue-600">{userTotalDeposited.toLocaleString()} DOP</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Reste à Payer (Dette)</span>
+                      <span className={`font-black ${userDebt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {userDebt.toLocaleString()} DOP
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Node Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-sans">
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
@@ -900,27 +954,27 @@ export const UserManagementView: React.FC = () => {
   /* MAIN USER MANAGEMENT VIEW                                                  */
   /* -------------------------------------------------------------------------- */
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
       
-      {/* 1. PAGE HEADER & SUBTAB NAVIGATION (ONLY ICONS IN TAB BAR AS REQUESTED) */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+      {/* 1. PAGE HEADER & SUBTAB NAVIGATION */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 whitespace-nowrap">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 truncate">
               <Users className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              <span>Administration & Gestion des Utilisateurs</span>
+              <span className="truncate">Gestion des Utilisateurs</span>
             </h2>
-            <span className="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap">
-              {availableUsers.length} Comptes Enregistrés
+            <span className="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+              {availableUsers.length} Comptes
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Supervision des rôles employés, création des accès Nœud et configuration de la matrice de privilèges.
+            Supervision des rôles employés, création des accès Nœud et configuration des privilèges.
           </p>
         </div>
 
-        {/* TAB NAVIGATION BUTTONS: ONLY ICONS DISPLAYED AS REQUESTED */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200/80 self-start lg:self-auto flex-shrink-0">
+        {/* TAB NAVIGATION BUTTONS: RESPONSIVE PILLS */}
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 self-start sm:self-auto flex-shrink-0 flex-wrap">
           
           <button
             onClick={() => {
@@ -928,13 +982,14 @@ export const UserManagementView: React.FC = () => {
               setActiveTab('user_list');
             }}
             title="Liste des Utilisateurs"
-            className={`p-2.5 rounded-xl transition-all ${
+            className={`px-3 py-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${
               subTab === 'user_list' 
                 ? 'bg-slate-900 text-white shadow-2xs' 
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            <UserCheck className="w-4 h-4 text-blue-400" />
+            <UserCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <span>Liste</span>
           </button>
 
           <button
@@ -943,13 +998,14 @@ export const UserManagementView: React.FC = () => {
               setActiveTab('create_user');
             }}
             title="Créer un Utilisateur"
-            className={`p-2.5 rounded-xl transition-all ${
+            className={`px-3 py-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${
               subTab === 'create_user' 
                 ? 'bg-slate-900 text-white shadow-2xs' 
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            <UserPlus className="w-4 h-4 text-emerald-400" />
+            <UserPlus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>Créer</span>
           </button>
 
           <button
@@ -958,13 +1014,14 @@ export const UserManagementView: React.FC = () => {
               setActiveTab('permissions_matrix');
             }}
             title="Matrice de Permissions"
-            className={`p-2.5 rounded-xl transition-all ${
+            className={`px-3 py-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${
               subTab === 'permissions_matrix' 
                 ? 'bg-slate-900 text-white shadow-2xs' 
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
+            <SlidersHorizontal className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+            <span>Matrice</span>
           </button>
 
         </div>
@@ -972,17 +1029,17 @@ export const UserManagementView: React.FC = () => {
 
       {currentUser.role !== 'admin' && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold flex items-center gap-2">
-          <Lock className="w-4 h-4 text-amber-600" />
+          <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <span>Accès en Lecture Seule : Seul l'Administrateur peut activer/désactiver des comptes employés ou modifier la matrice.</span>
         </div>
       )}
 
-      {/* SUB-VIEW 1: LISTE DES UTILISATEURS (WITH VOIR UTILISATEUR AND TOGGLE ACTIVATION) */}
+      {/* SUB-VIEW 1: LISTE DES UTILISATEURS */}
       {subTab === 'user_list' && (
         <div className="space-y-4">
           
           {/* Search Control Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
             <div className="relative flex-1 w-full">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -994,13 +1051,113 @@ export const UserManagementView: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-              <span>Filtre: {filteredUsers.length} / {availableUsers.length} Utilisateurs</span>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 flex-shrink-0">
+              <span>{filteredUsers.length} / {availableUsers.length} Utilisateurs</span>
             </div>
           </div>
 
-          {/* Clean Overflow-Free Grid List */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+          {/* 📱 MOBILE CARD VIEW (md:hidden) */}
+          <div className="space-y-3 md:hidden">
+            {filteredUsers.map((user) => {
+              const isOffline = user.status === 'offline';
+              return (
+                <div 
+                  key={user.id}
+                  onClick={() => {
+                    setInspectedUser(user);
+                    setIsEditingUser(false);
+                    setSaveUserMsg(null);
+                    setPasswordMsg(null);
+                    setLastAssignedPassword(null);
+                  }}
+                  className="bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3 shadow-2xs hover:border-slate-300 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img src={user.avatar} className="w-10 h-10 rounded-full object-cover border border-slate-200 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-extrabold text-slate-900 text-sm truncate">{user.name}</h4>
+                          {user.username && (
+                            <span className="text-[10px] bg-slate-100 text-slate-600 font-mono px-1.5 py-0.5 rounded font-bold border border-slate-200">
+                              @{user.username}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 font-mono truncate">{user.email}</p>
+                      </div>
+                    </div>
+
+                    <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 flex-shrink-0 ${
+                      isOffline ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+                      {isOffline ? 'INACTIF' : 'ACTIF'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${
+                      user.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+                      user.role === 'agent_rd' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
+                      user.role === 'agent_haiti' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
+                      'bg-amber-100 text-amber-900 border border-amber-200'
+                    }`}>
+                      {user.role.replace('_', ' ')}
+                    </span>
+
+                    <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 font-extrabold text-xs border border-blue-200 font-mono">
+                      Com.: {user.commissionRate !== undefined ? `${user.commissionRate}%` : '1.0%'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                    <div className="flex items-center gap-1 font-mono">
+                      <Cpu className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                      <span className="font-bold text-slate-700">{user.nodeId}</span>
+                    </div>
+                    <div className="flex items-center gap-1 truncate max-w-[180px]">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                      <span className="font-semibold truncate">{user.location}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => {
+                        setInspectedUser(user);
+                        setIsEditingUser(false);
+                        setSaveUserMsg(null);
+                        setPasswordMsg(null);
+                        setLastAssignedPassword(null);
+                      }}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Fiche</span>
+                    </button>
+
+                    {currentUser.role === 'admin' && user.id !== currentUser.id && (
+                      <button
+                        onClick={() => toggleUserStatus(user.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isOffline
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                            : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
+                        }`}
+                      >
+                        <Power className="w-3.5 h-3.5" />
+                        <span>{isOffline ? 'Activer' : 'Désactiver'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 💻 DESKTOP TABLE VIEW (hidden md:block) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
               <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
                 Répertoire des Comptes Employés & Accès
@@ -1008,106 +1165,27 @@ export const UserManagementView: React.FC = () => {
               <span className="text-[11px] text-slate-400 font-medium">Liste des Employés</span>
             </div>
 
-            {/* Table Header Row */}
-            <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
-              <div className="col-span-3">Utilisateur / Courriel</div>
-              <div className="col-span-2">Rôle / Privilège</div>
-              <div className="col-span-1 text-center">Taux (%)</div>
-              <div className="col-span-2">Code Agence</div>
-              <div className="col-span-2">Emplacement / Agence</div>
-              <div className="col-span-1 text-center">Statut</div>
-              <div className="col-span-1 text-center">Actions</div>
-            </div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[850px]">
+                {/* Table Header Row */}
+                <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
+                  <div className="col-span-3">Utilisateur / Courriel</div>
+                  <div className="col-span-2">Rôle / Privilège</div>
+                  <div className="col-span-1 text-center">Taux (%)</div>
+                  <div className="col-span-2">Code Agence</div>
+                  <div className="col-span-2">Emplacement / Agence</div>
+                  <div className="col-span-1 text-center">Statut</div>
+                  <div className="col-span-1 text-center">Actions</div>
+                </div>
 
-            {/* Table Body Rows */}
-            <div className="divide-y divide-slate-100 text-xs font-medium">
-              {filteredUsers.map((user) => {
-                const isOffline = user.status === 'offline';
+                {/* Table Body Rows */}
+                <div className="divide-y divide-slate-100 text-xs font-medium">
+                  {filteredUsers.map((user) => {
+                    const isOffline = user.status === 'offline';
 
-                return (
-                  <div 
-                    key={user.id} 
-                    onClick={() => {
-                      setInspectedUser(user);
-                      setIsEditingUser(false);
-                      setSaveUserMsg(null);
-                      setPasswordMsg(null);
-                      setLastAssignedPassword(null);
-                    }}
-                    className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
-                    title="Cliquer pour voir la fiche utilisateur complète"
-                  >
-                    
-                    {/* 1. Utilisateur / Profil */}
-                    <div className="col-span-3 flex items-center gap-3 min-w-0">
-                      <img src={user.avatar} className="w-8 h-8 rounded-full object-cover border border-slate-200 flex-shrink-0" />
-                      <div className="truncate">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <p className="font-extrabold text-slate-900 truncate">{user.name}</p>
-                          {user.username && (
-                            <span className="text-[10px] bg-slate-100 text-slate-600 font-mono px-1.5 py-0.5 rounded font-bold border border-slate-200">
-                              @{user.username}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-400 truncate flex items-center gap-1 font-mono">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* 2. Rôle & Responsabilité */}
-                    <div className="col-span-2 flex items-center">
-                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
-                        user.role === 'agent_rd' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
-                        user.role === 'agent_haiti' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
-                        'bg-amber-100 text-amber-900 border border-amber-200'
-                      }`}>
-                        {user.role.replace('_', ' ')}
-                      </span>
-                    </div>
-
-                    {/* 3. Taux % Commission Agent */}
-                    <div className="col-span-1 text-center font-mono">
-                      <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 font-extrabold text-xs border border-blue-200 whitespace-nowrap">
-                        {user.commissionRate !== undefined ? `${user.commissionRate}%` : '1.0%'}
-                      </span>
-                    </div>
-
-                    {/* 3. Nœud Identifiant */}
-                    <div className="col-span-2 font-mono text-[11px]">
-                      <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded font-bold text-slate-700">
-                        <Cpu className="w-3 h-3 text-slate-400" />
-                        {user.nodeId}
-                      </span>
-                    </div>
-
-                    {/* 4. Emplacement / Agence */}
-                    <div className="col-span-2 text-slate-700 truncate">
-                      <span className="flex items-center gap-1 font-semibold truncate">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                        <span className="truncate">{user.location}</span>
-                      </span>
-                    </div>
-
-                    {/* 5. Statut Compte */}
-                    <div className="col-span-1 text-center">
-                      <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 ${
-                        isOffline 
-                          ? 'bg-rose-100 text-rose-800' 
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
-                        {isOffline ? 'INACTIF' : 'ACTIF'}
-                      </span>
-                    </div>
-
-                    {/* 6. Actions Admin (Voir Utilisateur + Activer/Désactiver Toggle) */}
-                    <div className="col-span-1 flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      
-                      {/* Bouton Voir Utilisateur */}
-                      <button
+                    return (
+                      <div 
+                        key={user.id} 
                         onClick={() => {
                           setInspectedUser(user);
                           setIsEditingUser(false);
@@ -1115,32 +1193,115 @@ export const UserManagementView: React.FC = () => {
                           setPasswordMsg(null);
                           setLastAssignedPassword(null);
                         }}
-                        className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-bold transition-all flex items-center justify-center shadow-2xs"
-                        title="Ouvrir la Fiche Complète"
+                        className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
+                        title="Cliquer pour voir la fiche utilisateur complète"
                       >
-                        <Eye className="w-3.5 h-3.5 text-white" />
-                      </button>
+                        
+                        {/* 1. Utilisateur / Profil */}
+                        <div className="col-span-3 flex items-center gap-3 min-w-0">
+                          <img src={user.avatar} className="w-8 h-8 rounded-full object-cover border border-slate-200 flex-shrink-0" />
+                          <div className="truncate">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <p className="font-extrabold text-slate-900 truncate">{user.name}</p>
+                              {user.username && (
+                                <span className="text-[10px] bg-slate-100 text-slate-600 font-mono px-1.5 py-0.5 rounded font-bold border border-slate-200">
+                                  @{user.username}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 truncate flex items-center gap-1 font-mono">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
 
-                      {/* Bouton Activer / Désactiver */}
-                      {currentUser.role === 'admin' && user.id !== currentUser.id && (
-                        <button
-                          onClick={() => toggleUserStatus(user.id)}
-                          className={`p-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center ${
-                            isOffline
-                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
-                              : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
-                          }`}
-                          title={isOffline ? "Activer le compte" : "Désactiver le compte"}
-                        >
-                          <Power className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                        {/* 2. Rôle & Responsabilité */}
+                        <div className="col-span-2 flex items-center">
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+                            user.role === 'agent_rd' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
+                            user.role === 'agent_haiti' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
+                            'bg-amber-100 text-amber-900 border border-amber-200'
+                          }`}>
+                            {user.role.replace('_', ' ')}
+                          </span>
+                        </div>
 
-                    </div>
+                        {/* 3. Taux % Commission Agent */}
+                        <div className="col-span-1 text-center font-mono">
+                          <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 font-extrabold text-xs border border-blue-200 whitespace-nowrap">
+                            {user.commissionRate !== undefined ? `${user.commissionRate}%` : '1.0%'}
+                          </span>
+                        </div>
 
-                  </div>
-                );
-              })}
+                        {/* 3. Nœud Identifiant */}
+                        <div className="col-span-2 font-mono text-[11px]">
+                          <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded font-bold text-slate-700">
+                            <Cpu className="w-3 h-3 text-slate-400" />
+                            {user.nodeId}
+                          </span>
+                        </div>
+
+                        {/* 4. Emplacement / Agence */}
+                        <div className="col-span-2 text-slate-700 truncate">
+                          <span className="flex items-center gap-1 font-semibold truncate">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                            <span className="truncate">{user.location}</span>
+                          </span>
+                        </div>
+
+                        {/* 5. Statut Compte */}
+                        <div className="col-span-1 text-center">
+                          <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 ${
+                            isOffline 
+                              ? 'bg-rose-100 text-rose-800' 
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+                            {isOffline ? 'INACTIF' : 'ACTIF'}
+                          </span>
+                        </div>
+
+                        {/* 6. Actions Admin */}
+                        <div className="col-span-1 flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          
+                          {/* Bouton Voir Utilisateur */}
+                          <button
+                            onClick={() => {
+                              setInspectedUser(user);
+                              setIsEditingUser(false);
+                              setSaveUserMsg(null);
+                              setPasswordMsg(null);
+                              setLastAssignedPassword(null);
+                            }}
+                            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-bold transition-all flex items-center justify-center shadow-2xs cursor-pointer"
+                            title="Ouvrir la Fiche Complète"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-white" />
+                          </button>
+
+                          {/* Bouton Activer / Désactiver */}
+                          {currentUser.role === 'admin' && user.id !== currentUser.id && (
+                            <button
+                              onClick={() => toggleUserStatus(user.id)}
+                              className={`p-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center cursor-pointer ${
+                                isOffline
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                                  : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
+                              }`}
+                              title={isOffline ? "Activer le compte" : "Désactiver le compte"}
+                            >
+                              <Power className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   Save, 
@@ -18,14 +18,51 @@ import {
   Printer,
   Building,
   Sparkles,
-  LogOut
+  LogOut,
+  Percent,
+  Coins,
+  ArrowRightLeft,
+  Smartphone,
+  Receipt
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { ServiceType, OperatorCode } from '../types';
+import { OperatorBadge } from '../components/OperatorBadge';
 
 export const SettingsView: React.FC = () => {
-  const { dopToHtgRate, setDopToHtgRate, usdToHtgRate, currentUser, logout } = useApp();
+  const { 
+    dopToHtgRate, 
+    setDopToHtgRate, 
+    usdToHtgRate, 
+    currentUser, 
+    logout, 
+    adminCommissionRate,
+    setAdminCommissionRate,
+    serviceCommissionRates,
+    updateServiceCommissionRate
+  } = useApp();
   const isAgentHaiti = currentUser.role === 'agent_haiti';
   const isAgentRD = currentUser.role === 'agent_rd';
+  
+  // State pour le Taux de Commission Admin par Service
+  const [svcRatesState, setSvcRatesState] = useState<Record<string, number>>(serviceCommissionRates);
+
+  useEffect(() => {
+    setSvcRatesState(serviceCommissionRates);
+  }, [serviceCommissionRates]);
+
+  const handleSvcRateChange = (key: string, val: number) => {
+    setSvcRatesState((prev) => ({ ...prev, [key]: val }));
+  };
+  
+  // State pour le Taux de Commission Admin Global
+  const [adminCommissionInput, setAdminCommissionInput] = useState(() => (adminCommissionRate || 1.0).toString());
+
+  useEffect(() => {
+    setAdminCommissionInput((adminCommissionRate || 1.0).toString());
+  }, [adminCommissionRate]);
+  
+
   
   // State pour Administrateur & Général
   const [rateInput, setRateInput] = useState(() => {
@@ -111,7 +148,13 @@ export const SettingsView: React.FC = () => {
       const finalRate = newRate > 10 ? newRate / 100 : newRate;
       setDopToHtgRate(finalRate);
     }
-    setFeedbackMessage('Paramètres système enregistrés et synchronisés sur tout le réseau !');
+
+    // Enregistrer les taux de commission par service configurés par l'Admin
+    Object.entries(svcRatesState).forEach(([serviceKey, val]) => {
+      updateServiceCommissionRate(serviceKey, val);
+    });
+
+    setFeedbackMessage('Paramètres système et grille de commission Admin par service enregistrés avec succès !');
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -538,7 +581,7 @@ export const SettingsView: React.FC = () => {
   // VUE PARAMÈTRES : ADMINISTRATEUR & GESTIONNAIRE
   // =========================================================================
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-4xl font-sans animate-in fade-in pb-36 md:pb-6">
+    <div className="p-3 sm:p-6 space-y-6 max-w-4xl font-sans animate-in fade-in pb-6">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -614,6 +657,76 @@ export const SettingsView: React.FC = () => {
               </div>
               <p className="text-[10px] text-slate-400 mt-1">Taux indicatif des marchés internationaux.</p>
             </div>
+          </div>
+        </div>
+
+        {/* Taux de Commission Admin par Service Offert */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-5 space-y-4">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+            <h3 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
+              <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Taux de Commission Admin par Service Offert</span>
+            </h3>
+            <span className="text-[11px] text-slate-400 font-mono">Prélèvement Réseau par Service</span>
+          </div>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Définissez le pourcentage de commission calculé pour l'Administrateur sur chaque type de service réseau.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            {[
+              { key: 'moncash', desc: 'Transferts & paiements mobiles MonCash Haïti' },
+              { key: 'natcash', desc: 'Portefeuille électronique & décaissement Natcash Haïti' },
+              { key: 'zelle', desc: 'Virements & transferts directs Zelle USA' },
+              { key: 'digicel', desc: 'Recharge minutes & forfaits internet Digicel Haïti' },
+              { key: 'natcom', desc: 'Recharge minutes & forfaits data Natcom Haïti' },
+              { key: 'claro', desc: 'Recharge téléphonique Claro République Dominicaine' },
+              { key: 'altice', desc: 'Recharge téléphonique Altice République Dominicaine' },
+            ].map((svc) => {
+              const currentRate = svcRatesState[svc.key] ?? 1.0;
+              const exampleEarned = Math.round(1000 * (currentRate / 100));
+
+              return (
+                <div 
+                  key={svc.key}
+                  className="p-4 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl space-y-3 hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <OperatorBadge operator={svc.key as OperatorCode} size="md" showText={true} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Commission Admin (%) pour ce Service
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        disabled={currentUser.role !== 'admin'}
+                        value={currentRate}
+                        onChange={(e) => handleSvcRateChange(svc.key, parseFloat(e.target.value) || 0)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">%</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">{svc.desc}</p>
+                  </div>
+
+                  <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-[10px] flex items-center justify-between text-emerald-900 dark:text-emerald-200 font-medium">
+                    <span>Ex. 1,000 DOP transférés :</span>
+                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      Comm. Admin = <strong className="font-black">{exampleEarned} DOP</strong>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

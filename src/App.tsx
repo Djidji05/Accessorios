@@ -11,13 +11,13 @@ import { KillSwitchView } from './views/KillSwitchView';
 import { AuditLogsView } from './views/AuditLogsView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
-import { SupervisionAgentsView } from './views/SupervisionAgentsView';
 import { WeeklySettlementsView } from './views/WeeklySettlementsView';
 import { NotificationsView } from './views/NotificationsView';
 import { ReceiptModal } from './components/ReceiptModal';
 import { CommandPalette } from './components/CommandPalette';
 import { LoginView } from './views/LoginView';
 import { BottomNavBar } from './components/BottomNavBar';
+import { GlobalToast } from './components/GlobalToast';
 
 const AppContent: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, isAuthenticated } = useApp();
@@ -43,8 +43,8 @@ const AppContent: React.FC = () => {
         setActiveTab('tasks');
       }
     } else if (isGestionnaire) {
-      // Pour Gestionnaire : Tableau de bord, Tâches numériques, Notifications, Saisie Directe (guichet), Trésorerie, Supervision, Historique, Versements, Paramètres
-      const allowedForGestionnaire: typeof activeTab[] = ['overview', 'tasks', 'notifications', 'guichet', 'treasury', 'supervision', 'history', 'settlements', 'settings'];
+      // Pour Gestionnaire : Tableau de bord, Tâches numériques, Notifications, Saisie Directe (guichet), Trésorerie, Historique, Versements, Paramètres
+      const allowedForGestionnaire: typeof activeTab[] = ['overview', 'tasks', 'notifications', 'guichet', 'treasury', 'history', 'settlements', 'settings'];
       if (!allowedForGestionnaire.includes(activeTab)) {
         setActiveTab('overview');
       }
@@ -62,8 +62,6 @@ const AppContent: React.FC = () => {
       case 'tasks': return <TaskQueueView />;
       case 'notifications': return <NotificationsView />;
       case 'treasury': return <TreasuryView />;
-      case 'supervision': 
-        return (isAdmin || isGestionnaire) ? <SupervisionAgentsView /> : <DashboardView />;
       case 'history': return <HistoryView />;
       case 'guichet': 
         return (isAdmin || isAgentRD || isGestionnaire) ? <OperationsGuichetView /> : <TaskQueueView />;
@@ -83,7 +81,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-white dark:bg-[#070B14] overflow-hidden text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white dark:selection:bg-blue-600">
+    <div className="flex h-screen bg-white dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-100 font-sans selection:bg-slate-900 selection:text-white dark:selection:bg-blue-600">
       {/* Sidebar matching D'Alexis Transferencia structure */}
       <Sidebar />
 
@@ -91,7 +89,7 @@ const AppContent: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
         
-        <main className="flex-1 overflow-y-auto bg-[#FAFAFC] dark:bg-[#070B14] pb-0">
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 pb-0">
           {renderActiveView()}
         </main>
       </div>
@@ -105,6 +103,9 @@ const AppContent: React.FC = () => {
 
       {/* Global Command Palette / Search (⌘K / Ctrl+K) */}
       <CommandPalette />
+
+      {/* Global Confirmation Toast Notification System */}
+      <GlobalToast />
     </div>
   );
 };

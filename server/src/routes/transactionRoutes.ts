@@ -77,12 +77,15 @@ router.post('/', authMiddleware, async (req, res) => {
       ? await prisma.user.findUnique({ where: { id: currentUserId } })
       : await prisma.user.findFirst({ where: { role: 'admin' } });
 
-    // 2.4 Détermination du canal et routage vers le bon agent
-    const isCashChannel = operator === 'moncash' || operator === 'natcash';
-    const channel = isCashChannel ? 'haiti_cash' : 'digital_telecom';
+    // 2.4 Détermination du canal et routage vers le bon agent :
+    // - Haïti Cash / Mobile Money (MonCash, Natcash, Natcom) -> Agent Haïti (agent_haiti)
+    // - Télécoms & Numériques (Digicel, Claro, Altice) -> Gestionnaire (gestionnaire)
+    const isHaitiCash = operator === 'moncash' || operator === 'natcash' || operator === 'natcom';
+    const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
+    const targetRole = isHaitiCash ? 'agent_haiti' : 'gestionnaire';
 
     let assignedAgent = await prisma.user.findFirst({
-      where: { role: isCashChannel ? 'agent_haiti' : 'gestionnaire' }
+      where: { role: targetRole }
     });
     if (!assignedAgent) {
       assignedAgent = actor;
@@ -92,7 +95,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const referenceNumber = `#TX-${randomSuffix}`;
 
-    // 2.6 Création de la transaction
+    // 2.6 Création de la transaction (Toutes les transactions créées au guichet restent en attente de validation)
     const newTx = await prisma.transaction.create({
       data: {
         referenceNumber,
@@ -112,11 +115,11 @@ router.post('/', authMiddleware, async (req, res) => {
         createdByName: actor?.name || 'Agent Guichet',
         createdByRole: actor?.role || 'agent_rd',
         isAdminNominalTrace: actor?.role === 'admin',
-        assignedToNode: assignedAgent?.nodeId || 'node-agent-haiti-01',
-        assignedToRole: assignedAgent?.role || 'agent_haiti',
-        assignedToName: assignedAgent?.name || 'Agent Haïti',
-        status: isCashChannel ? 'in_progress' : 'completed',
-        completedAt: !isCashChannel ? new Date() : null,
+        assignedToNode: assignedAgent?.nodeId || (isHaitiCash ? 'node-agent-haiti-01' : 'node-gestionnaire-01'),
+        assignedToRole: targetRole,
+        assignedToName: assignedAgent?.name || (isHaitiCash ? 'Agent Haïti' : 'Gestionnaire'),
+        status: 'in_progress',
+        completedAt: null,
       },
     });
 
@@ -165,7 +168,7 @@ router.post('/', authMiddleware, async (req, res) => {
 router.patch('/:id/complete', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { proofNotes, actorName } = req.body;
+    const { proofNotes, proofUrl, actorName } = req.body;
 
     const existing = await prisma.transaction.findUnique({ where: { id } });
     if (!existing) {
@@ -178,6 +181,7 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
         status: 'completed',
         completedAt: new Date(),
         proofNotes: proofNotes || 'Validé & Décaissé avec succès',
+        proofUrl: proofUrl || existing.proofUrl || null,
       },
     });
 

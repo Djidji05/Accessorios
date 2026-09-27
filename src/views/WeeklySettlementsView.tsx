@@ -206,7 +206,7 @@ export const WeeklySettlementsView: React.FC = () => {
   const currencySymbol = isAgentHaiti ? 'HTG' : 'DOP';
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto font-sans animate-in fade-in pb-36 md:pb-6">
+    <div className={`p-3 sm:p-6 space-y-6 max-w-[1600px] mx-auto font-sans animate-in fade-in ${isAdmin ? 'pb-6' : 'pb-36 md:pb-6'}`}>
       
       {/* Toast Feedback */}
       {feedback && (
@@ -229,203 +229,51 @@ export const WeeklySettlementsView: React.FC = () => {
 
 
 
-      {/* 3. Top Metrics: Single Big Card for Agent RD, 5 Cards Grid for Admin/Gestionnaire */}
-      {isAgentRD ? (
-        /* UNE SEULE GRANDE CARD POUR AGENT RD */
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white p-6 rounded-3xl border border-slate-800 shadow-xl space-y-5 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <Landmark className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block">
-                  Agent {currentUser.name}
-                </span>
-                <h2 className="text-base font-black text-white">Récapitulatif des Dépôts & Versements</h2>
-              </div>
+      {/* PAGE HEADER & ACTION BUTTON */}
+      {(isAdmin || isGestionnaire) ? (
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black">
+              <Landmark className="w-6 h-6" />
             </div>
-            <span className="px-3 py-1 bg-white/10 rounded-full text-[11px] font-bold text-slate-300 font-mono">
-              {currentWeekSettlement ? currentWeekSettlement.weekLabel : 'Semaine en cours'}
-            </span>
-          </div>
-
-          {/* Metric Highlights inside Big Card */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 1. L'argent de la semaine */}
-            <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block flex items-center gap-1">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Argent de la Semaine</span>
-              </span>
-              <p className="text-2xl font-black text-white font-mono tracking-tight">
-                {isAgentHaiti ? `${totalCollectedHTG.toLocaleString()} HTG` : `${totalCollectedDOP.toLocaleString()} DOP`}
-              </p>
-              <p className="text-[11px] text-emerald-400 font-bold">
-                +{isAgentHaiti ? (totalCollectedHTG * 0.025).toLocaleString() : totalCommissionsDOP.toLocaleString()} {currencySymbol} commissions
-              </p>
-            </div>
-
-            {/* 2. L'argent dû (Total Dû à l'Admin) */}
-            <div className="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/30 space-y-1">
-              <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider block flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span>Total Argent Dû (Admin)</span>
-              </span>
-              <p className="text-2xl font-black text-amber-400 font-mono tracking-tight">
-                {(currentWeekDue + pastDebtDue).toLocaleString()} {currencySymbol}
-              </p>
-              <p className="text-[11px] text-slate-300 font-medium">
-                {pastDebtDue > 0 
-                  ? `Semaine: ${currentWeekDue.toLocaleString()} ${currencySymbol} | Arriérés: ${pastDebtDue.toLocaleString()} ${currencySymbol}` 
-                  : '🟢 Semaine en cours uniquement'}
+            <div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                Gestion des Dépôts Agents
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                Enregistrez les versements d'espèces et dépôts bancaires reçus des agents.
               </p>
             </div>
           </div>
 
-
-
+          <button
+            onClick={openModalForNewDeposit}
+            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer self-start sm:self-auto"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Enregistrer un Dépôt Agent</span>
+          </button>
         </div>
       ) : (
-        /* 5 CARDS GRID POUR ADMIN / GESTIONNAIRE */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          
-          {/* Card 1: Total Encaissé */}
-          <div className="bg-white dark:bg-[#0F172A] p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-              Total Encaissé Réseau
-            </span>
-            <p className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono tracking-tight mt-1">
-              {isAgentHaiti 
-                ? `${totalCollectedHTG.toLocaleString()} HTG` 
-                : `${totalCollectedDOP.toLocaleString()} DOP`}
-            </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-              Cumul brut collecté par les agences
-            </p>
-          </div>
-
-          {/* Card 2: Commissions Gagnées (%) */}
-          <div className="bg-white dark:bg-[#0F172A] p-5 rounded-3xl border border-emerald-200/80 dark:border-emerald-900/40 shadow-2xs space-y-1 bg-gradient-to-br from-white to-emerald-50/40 dark:from-[#0F172A] dark:to-emerald-950/20">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-wider block">
-                Commissions Agents (%)
-              </span>
-              <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black">
+              <Landmark className="w-6 h-6" />
             </div>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight mt-1">
-              {isAgentHaiti
-                ? `${(totalCollectedHTG * 0.025).toLocaleString()} HTG`
-                : `${totalCommissionsDOP.toLocaleString()} DOP`}
-            </p>
-            <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-extrabold">
-              Total des commissions reversées
-            </p>
-          </div>
-
-          {/* Card 3: Card Versement à Déposer pour la Semaine */}
-          <div
-            className={`p-5 rounded-3xl border shadow-2xs space-y-1 relative overflow-hidden ${
-              currentWeekDue === 0
-                ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800'
-                : 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span
-                className={`text-[10px] font-black uppercase tracking-wider block ${
-                  currentWeekDue === 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-amber-800 dark:text-amber-400'
-                }`}
-              >
-                Versements Semaine Attendus
-              </span>
-              {currentWeekDue === 0 ? (
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              )}
+            <div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                Historique de mes Dépôts
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                Tous les dépôts et versements enregistrés pour vous par l'Administration.
+              </p>
             </div>
-
-            <p
-              className={`text-2xl font-black font-mono tracking-tight mt-1 ${
-                currentWeekDue === 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
-              }`}
-            >
-              {currentWeekDue === 0 ? '0 (Tout Reçu !)' : `${currentWeekDue.toLocaleString()} ${currencySymbol}`}
-            </p>
-            <p
-              className={`text-[11px] font-bold ${
-                currentWeekDue === 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-amber-800 dark:text-amber-400'
-              }`}
-            >
-              {currentWeekDue === 0
-                ? '🟢 Versements semaine 100% encaissés'
-                : '🟠 Montants dus par les agents cette semaine'}
-            </p>
           </div>
-
-          {/* Card 4: Carte Dette (Report Semaines Passées) */}
-          <div
-            className={`p-5 rounded-3xl border shadow-2xs space-y-1 relative overflow-hidden ${
-              pastDebtDue === 0
-                ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800'
-                : 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span
-                className={`text-[10px] font-black uppercase tracking-wider block ${
-                  pastDebtDue === 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-rose-800 dark:text-rose-400'
-                }`}
-              >
-                Arriérés & Dettes Agents
-              </span>
-              {pastDebtDue === 0 ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 animate-pulse" />
-              )}
-            </div>
-
-            <p
-              className={`text-2xl font-black font-mono tracking-tight mt-1 ${
-                pastDebtDue === 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
-              }`}
-            >
-              {pastDebtDue === 0 ? '0 (Aucune Dette)' : `${pastDebtDue.toLocaleString()} ${currencySymbol}`}
-            </p>
-            <p
-              className={`text-[11px] font-bold ${
-                pastDebtDue === 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-rose-800 dark:text-rose-400'
-              }`}
-            >
-              {pastDebtDue === 0
-                ? '🟢 Aucun arriéré en attente'
-                : '🔴 Total des arriérés à recouvrer'}
-            </p>
-          </div>
-
-          {/* Card 5: Créance Globale Réseau pour Admin */}
-          <div className="bg-slate-900 text-white p-5 rounded-3xl border border-slate-800 shadow-lg space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                Créance Totale Réseau
-              </span>
-              <Landmark className="w-4 h-4 text-emerald-400" />
-            </div>
-            <p className="text-2xl font-black text-emerald-400 font-mono tracking-tight mt-1">
-              {`${(currentWeekDue + pastDebtDue).toLocaleString()} ${currencySymbol}`}
-            </p>
-            <p className="text-[11px] text-slate-400 font-medium">
-              Total général à recouvrer auprès des agents
-            </p>
-          </div>
-
         </div>
       )}
 
-      {/* 3. Control & Filter Bar (Calendrier par Semaine) */}
-      <div className="bg-white dark:bg-[#0F172A] p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+      {/* 2. Control & Filter Bar (Calendrier par Semaine) */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <div className="relative w-full">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-600">
             <CalendarDays className="w-4 h-4" />
@@ -458,7 +306,7 @@ export const WeeklySettlementsView: React.FC = () => {
           </div>
 
           {filteredSettlements.length === 0 ? (
-            <div className="bg-white dark:bg-[#0F172A] rounded-3xl p-8 text-center space-y-2 border border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-center space-y-2 border border-slate-200 dark:border-slate-800">
               <Landmark className="w-8 h-8 text-slate-300 mx-auto" />
               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs">Aucun dépôt ne correspond à ce filtre</h3>
               <p className="text-[11px] text-slate-400">Veuillez sélectionner une autre semaine dans le calendrier ci-dessus.</p>
@@ -471,7 +319,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 return (
                   <div
                     key={s.id}
-                    className="bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs space-y-3"
+                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs space-y-3"
                   >
                     {/* Header: Week Label & Status Badge */}
                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
@@ -534,7 +382,7 @@ export const WeeklySettlementsView: React.FC = () => {
         </div>
       ) : (
         /* VUE TABLEAU POUR ADMIN / GESTIONNAIRE */
-        <div className="bg-white dark:bg-[#0F172A] rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-900/40">
             <span className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">
               Relevé des Liquidations Hebdomadaires ({filteredSettlements.length})

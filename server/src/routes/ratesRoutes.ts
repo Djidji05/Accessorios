@@ -4,8 +4,8 @@ import { authMiddleware, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// 1. Consulter le taux actuel (Authentifié)
-router.get('/', authMiddleware, async (_req, res) => {
+// 1. Consulter le taux actuel (Accès public & initial)
+router.get('/', async (_req, res) => {
   try {
     const rate = await prisma.exchangeRate.findUnique({
       where: { id: 'rate_official' }
