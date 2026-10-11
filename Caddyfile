@@ -1,0 +1,4 @@
+alexistransferencia.app, www.alexistransferencia.app {
+    # Redirection automatique vers HTTPS et reverse proxy vers le conteneur Frontend
+    reverse_proxy frontend:80
+}

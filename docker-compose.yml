@@ -32,7 +32,7 @@ services:
       PORT: 4000
       DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-DalexisSecureRoot2026!}@mysql:3306/accessorio_db?connection_limit=30&pool_timeout=15
       JWT_SECRET: ${JWT_SECRET:-dalexis_production_super_secret_jwt_key_2026_xyz}
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://alexistransferencia.app}
     networks:
       - accessorio_net
 
@@ -43,15 +43,34 @@ services:
       dockerfile: Dockerfile
     container_name: accessorio_frontend
     restart: always
-    ports:
-      - "80:80"
     depends_on:
       - backend
     networks:
       - accessorio_net
 
+  # 4. Reverse Proxy HTTPS Automatique (Caddy + Certificat SSL Let's Encrypt)
+  caddy:
+    image: caddy:2-alpine
+    container_name: accessorio_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    networks:
+      - accessorio_net
+
 volumes:
   mysql_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local
 
 networks:
