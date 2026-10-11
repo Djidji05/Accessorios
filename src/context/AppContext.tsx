@@ -295,6 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const logDetails = `[COMMISSIONS SYSTEME] Admin (${currentUser.name}) a mis à jour les commissions pour le service ${serviceType.toUpperCase()} (Taux Admin: ${adminCommissionRate}%, Frais: ${defaultFeeRate}%).`;
     eventBus.publish('TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
+    showToast(`Commissions du service ${serviceType.toUpperCase()} mises à jour avec succès.`, 'success');
   };
 
   const [operatorCommissions, setOperatorCommissions] = useState<OperatorCommissionConfig[]>(() => {
@@ -322,6 +323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const logDetails = `[COMMISSIONS OPERATEUR] Admin (${currentUser.name}) a configuré la commission pour l'opérateur ${operator.toUpperCase()} (Taux Admin: ${adminCommissionRate}%, Frais: ${defaultFeeRate}%).`;
     eventBus.publish('TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
+    showToast(`Commissions de l'opérateur ${operator.toUpperCase()} mises à jour avec succès.`, 'success');
   };
   
   const recordAgentDeposit = (settlementId: string, amount: number, note: string) => {
@@ -354,6 +356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const logDetails = `[VERSEMENT HEBDO] Admin (${currentUser.name}) a enregistré un dépôt de ${amount.toLocaleString()} pour la liquidation ${settlementId}.`;
     eventBus.publish('TREASURY_RECHARGED', currentUser.nodeId, currentUser.role, logDetails);
+    showToast(`Dépôt de ${amount.toLocaleString()} enregistré pour l'agent avec succès.`, 'success');
 
     return { success: true, message: 'Dépôt hebdomadaire enregistré avec succès et solde de l\'agent recalculé !' };
   };
@@ -492,6 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const normalizedRate = rate > 10 ? rate / 100 : rate;
     setDopToHtgRateState(normalizedRate);
     api.rates.update(normalizedRate, currentUser.name).catch(() => null);
+    showToast(`Taux de change officiel mis à jour : 100 DOP = ${Math.round(normalizedRate * 100)} HTG`, 'success');
   };
 
   // Subscribe to distributed event bus for audit logging
@@ -680,6 +684,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('API createTransaction error, fallback mémoire actif:', err);
     });
 
+    const toastMsg = isHaitiCashChannel
+      ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP (${Math.round(data.amountDOP * dopToHtgRate).toLocaleString()} HTG).`
+      : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP.`;
+    showToast(toastMsg, 'success');
+
     return {
       success: true,
       message: isHaitiCashChannel
@@ -723,6 +732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }).catch(() => null);
 
+    showToast('Transaction validée et clôturée avec succès !', 'success');
     return { success: true, message: 'Tâche clôturée et validée avec succès !' };
   };
 
@@ -759,6 +769,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Sync backend
     api.transactions.cancel(transactionId, reason, currentUser.name).catch(() => null);
 
+    showToast(`Transaction ${transactionId} annulée par l'Administrateur.`, 'info');
     return { success: true, message: 'Transaction annulée et archivée par l\'Administrateur.' };
   };
 
@@ -794,6 +805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `[ADMIN EDIT] Transaction ${transactionId} modifiée par Admin (${currentUser.name})`
     );
 
+    showToast('Transaction modifiée et mise à jour avec succès.', 'success');
     return { success: true, message: 'Transaction modifiée et mise à jour avec succès par l\'Administrateur !' };
   };
 
@@ -824,6 +836,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `[ADMIN ROUTAGE] Transaction ${transactionId} ré-assignée à ${targetUser.name} (${targetUser.role})`
     );
 
+    showToast(`Tâche ré-assignée avec succès à ${targetUser.name} !`, 'success');
     return { success: true, message: `Tâche ré-assignée avec succès à ${targetUser.name} !` };
   };
 
@@ -853,6 +866,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Sync backend
           api.killSwitch.toggle(operator, reason, currentUser.name).catch(() => null);
 
+          showToast(
+            newStatus
+              ? `Service ${operator.toUpperCase()} réactivé avec succès.`
+              : `Service ${operator.toUpperCase()} suspendu (Kill-Switch activé).`,
+            newStatus ? 'success' : 'error'
+          );
+
           return updated;
         }
         return item;
@@ -878,6 +898,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Sync backend
           api.users.updatePermissions(userId, newPermissions).catch(() => null);
 
+          showToast(`Permissions mises à jour avec succès pour ${perm.userName}.`, 'success');
           return updated;
         }
         return perm;
@@ -916,7 +937,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         `Flotte ${accountId} réapprovisionnée (+${amount.toLocaleString()}) par ${currentUser.name}`
       );
 
-      return { success: true, message: res?.message || 'Flotte réapprovisionnée avec succès !' };
+      const successMsg = res?.message || `Flotte ${accountId.toUpperCase()} réapprovisionnée avec succès (+${amount.toLocaleString()}) !`;
+      showToast(successMsg, 'success');
+      return { success: true, message: successMsg };
     } catch (err: any) {
       setAccountBalances((prev) =>
         prev.map((a) =>
@@ -925,6 +948,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : a
         )
       );
+      showToast(`Flotte ${accountId.toUpperCase()} réapprovisionnée localement (+${amount.toLocaleString()}).`, 'success');
       return { success: true, message: 'Réapprovisionnement appliqué localement.' };
     }
   };
@@ -958,6 +982,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         setPermissions((prev) => [...prev, newPerm]);
         eventBus.publish('USER_CREATED', currentUser.nodeId, currentUser.role, `Nouvel utilisateur créé: ${createdUser.name} (@${createdUser.username || ''})`);
+        showToast(`Utilisateur ${createdUser.name} créé avec succès !`, 'success');
         return { success: true, message: `Utilisateur ${createdUser.name} créé avec succès dans la base de données !` };
       }
     } catch (err: any) {
@@ -1008,6 +1033,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCurrentUser((prev) => ({ ...prev, ...updatedUser }));
         }
         eventBus.publish('USER_UPDATED', currentUser.nodeId, currentUser.role, `Profil de l'agent mis à jour: ${updatedUser.name}`);
+        showToast(`Profil de ${updatedUser.name} mis à jour avec succès !`, 'success');
         return { success: true, message: res.message || 'Utilisateur mis à jour avec succès.', user: updatedUser };
       }
     } catch (err: any) {
