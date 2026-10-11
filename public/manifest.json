@@ -1,0 +1,47 @@
+{
+  "name": "Alexis Transferencia",
+  "short_name": "Alexis Transfer",
+  "description": "Plateforme transfrontalière de transfert d'argent et services télécoms (DOP / HTG / USD)",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0F172A",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nouvelle Transaction",
+      "short_name": "Guichet",
+      "description": "Saisie rapide d'une opération au comptoir",
+      "url": "/?tab=guichet",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "File d'attente Tâches",
+      "short_name": "Tâches",
+      "description": "Décaissements et recharges Haïti",
+      "url": "/?tab=tasks",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Trésorerie & Soldes",
+      "short_name": "Trésorerie",
+      "description": "Suivi des réserves et soldes de flotte",
+      "url": "/?tab=treasury",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

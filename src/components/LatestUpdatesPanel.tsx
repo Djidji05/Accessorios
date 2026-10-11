@@ -3,7 +3,7 @@ import { Search, Ticket, CheckCircle2, Clock, ShieldCheck, Activity, Landmark } 
 import { useApp } from '../context/AppContext';
 
 export const LatestUpdatesPanel: React.FC = () => {
-  const { auditLogs, transactions, setSelectedReceiptTx } = useApp();
+  const { auditLogs, transactions, setSelectedReceiptTx, t } = useApp();
   const [filterPill, setFilterPill] = useState<'today' | 'yesterday' | 'week'>('today');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileLimit, setMobileLimit] = useState(10);
@@ -11,8 +11,6 @@ export const LatestUpdatesPanel: React.FC = () => {
   // Today reference: 2026-09-12 / current date
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const startOfYesterday = startOfToday - 86400000;
-  const startOfWeek = startOfToday - 7 * 86400000;
 
   // Map audit logs and transactions to dynamic activities
   const dynamicActivities = auditLogs.map((log) => {
@@ -25,7 +23,7 @@ export const LatestUpdatesPanel: React.FC = () => {
       time: new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       icon: log.action.includes('CLOTURE') || log.action.includes('VALIDATION') ? CheckCircle2 : Activity,
       iconBg: log.priority === 'High' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800',
-      txRef: log.details.match(/#TX-\d+/)?.[0]
+      txRef: log.details.match(/#TX-[\w-]+/)?.[0]
     };
   });
 
@@ -60,9 +58,7 @@ export const LatestUpdatesPanel: React.FC = () => {
         return false;
       }
     }
-    // 'week' shows all activities within the week
 
-    // 2. Search query
     return (
       a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.subtext.toLowerCase().includes(searchQuery.toLowerCase())
@@ -87,10 +83,10 @@ export const LatestUpdatesPanel: React.FC = () => {
       <div className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200/70 dark:border-slate-800 px-5 py-3.5 flex items-center justify-between flex-shrink-0">
         <h3 className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider flex items-center gap-2">
           <Activity className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-          <span>Activité Réseau en Temps Réel</span>
+          <span>{t('network_activity')}</span>
         </h3>
         <span className="text-[10px] font-bold text-slate-400 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-          {filtered.length} événements
+          {filtered.length} {t('events')}
         </span>
       </div>
 
@@ -109,7 +105,7 @@ export const LatestUpdatesPanel: React.FC = () => {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              Aujourd'hui
+              {t('today')}
             </button>
             <button
               onClick={() => setFilterPill('yesterday')}
@@ -119,7 +115,7 @@ export const LatestUpdatesPanel: React.FC = () => {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              Hier
+              {t('yesterday')}
             </button>
             <button
               onClick={() => setFilterPill('week')}
@@ -129,7 +125,7 @@ export const LatestUpdatesPanel: React.FC = () => {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              Semaine
+              {t('this_week')}
             </button>
           </div>
 
@@ -140,7 +136,7 @@ export const LatestUpdatesPanel: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filtrer l'activité (nom, réf, agent)..."
+              placeholder={t('filter_activity')}
               className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-slate-100 pl-8 pr-3 py-2 rounded-xl focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-slate-900/10"
             />
           </div>

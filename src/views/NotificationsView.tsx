@@ -165,7 +165,7 @@ export const NotificationsView: React.FC = () => {
   });
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in pb-28">
+    <div className="p-4 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in pb-28">
       
       {/* Top Bar with Back Button */}
       <div className="flex items-center justify-between pt-1">

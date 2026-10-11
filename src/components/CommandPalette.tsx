@@ -107,16 +107,7 @@ export const CommandPalette: React.FC = () => {
 
   // Quick actions filtrées
   const quickActions = [
-    {
-      id: 'action_dark_mode',
-      label: isDarkMode ? 'Passer en Mode Clair ☀️' : 'Passer en Mode Sombre 🌙',
-      icon: isDarkMode ? Sun : Moon,
-      category: 'Actions Rapides',
-      action: () => {
-        toggleDarkMode();
-        setIsSearchOpen(false);
-      }
-    },
+
     ...(isAdmin || isAgentRD ? [{
       id: 'action_new_tx',
       label: 'Nouvelle Saisie Guichet Express',

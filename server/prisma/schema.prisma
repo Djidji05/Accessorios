@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -14,7 +14,7 @@ model User {
   email     String   @unique
   password  String   // bcrypt hash
   role      String   // admin | agent_rd | agent_haiti | gestionnaire
-  avatar    String   @default("")
+  avatar    String   @default("") @db.Text
   location  String   @default("")
   nodeId    String   @default("node-default")
   status    String   @default("offline") // online | busy | offline
@@ -49,8 +49,8 @@ model Transaction {
   assignedToRole      String   @default("agent_haiti")
   assignedToName      String   @default("Agent Haïti")
 
-  proofNotes          String?
-  proofUrl            String?
+  proofNotes          String?  @db.Text
+  proofUrl            String?  @db.Text
   status              String   @default("pending_routing") // pending_routing | in_progress | completed | cancelled
   createdAt           DateTime @default(now())
   completedAt         DateTime?
@@ -82,7 +82,7 @@ model UserPermission {
   userId                  String   @id
   userName                String
   role                    String
-  servicesAllowed         String   // JSON string of OperatorCode[]
+  servicesAllowed         String   @db.Text // JSON string of OperatorCode[]
   maxSingleTransactionDOP Float    @default(100000)
   canCancelTransaction    Boolean  @default(false)
   canManageKillSwitch     Boolean  @default(false)
@@ -107,7 +107,7 @@ model AuditLog {
   actorRole  String
   action     String
   targetType String   // transaction | kill_switch | permission | treasury | user | system
-  details    String
+  details    String   @db.Text
   nodeStatus String   @default("ACK") // ACK | SYNCED | DISPATCHED
   priority   String?  @default("Medium")
 }

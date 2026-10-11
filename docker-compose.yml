@@ -1,0 +1,59 @@
+services:
+  # 1. Base de données MySQL 8
+  mysql:
+    image: mysql:8.0
+    container_name: accessorio_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-DalexisSecureRoot2026!}
+      MYSQL_DATABASE: accessorio_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - accessorio_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. API Backend Express + Prisma
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: accessorio_backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-DalexisSecureRoot2026!}@mysql:3306/accessorio_db?connection_limit=30&pool_timeout=15
+      JWT_SECRET: ${JWT_SECRET:-dalexis_production_super_secret_jwt_key_2026_xyz}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    networks:
+      - accessorio_net
+
+  # 3. Frontend Web Client (Nginx + React SPA)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: accessorio_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - accessorio_net
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  accessorio_net:
+    driver: bridge

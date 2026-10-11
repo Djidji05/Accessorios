@@ -28,6 +28,7 @@ import {
 } from '../core/initialData';
 import { eventBus } from '../core/eventBus';
 import { api } from '../services/api';
+import { Language, Translations, translations } from '../i18n/translations';
 
 export const DEFAULT_SERVICE_COMMISSION_RATES: Record<string, number> = {
   moncash: 1.0,
@@ -136,6 +137,11 @@ interface AppContextType {
   // Selected Mobile Service state
   selectedService: OperatorCode | null;
   setSelectedService: (service: OperatorCode | null) => void;
+
+  // i18n Internationalization State
+  currentLang: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: keyof Translations) => string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -191,24 +197,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Selected Mobile Service state
   const [selectedService, setSelectedService] = useState<OperatorCode | null>(null);
 
-  // Dark mode initialized to true as requested by user
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) return saved === 'dark';
-    return true;
+  // Mode Clair forcé
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(false);
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  };
+
+  // i18n Language State & Helper
+  const [currentLang, setCurrentLangState] = useState<Language>(() => {
+    const saved = localStorage.getItem('dalexis_lang');
+    if (saved === 'HT' || saved === 'ES' || saved === 'FR') {
+      return saved;
+    }
+    return 'FR';
   });
 
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+  const setLanguage = (lang: Language) => {
+    setCurrentLangState(lang);
+    localStorage.setItem('dalexis_lang', lang);
+  };
+
+  const t = (key: keyof Translations): string => {
+    const dict = translations[currentLang] || translations.FR;
+    return dict[key] || translations.FR[key] || key;
+  };
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }, []);
   
   const [dopToHtgRate, setDopToHtgRateState] = useState<number>(2.35);
   const [usdToHtgRate, setUsdToHtgRate] = useState<number>(140.5);
@@ -351,6 +371,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('dalexis_auth_unauthorized', handleUnauthorized);
   }, []);
 
+  // Déconnexion / Verrouillage automatique après 60 minutes (1 heure) sans utilisation
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let timeoutId: NodeJS.Timeout;
+    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes en millisecondes
+
+    const resetInactivityTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        // Supprimer la session et forcer la redemande du mot de passe
+        localStorage.removeItem('dalexis_token');
+        localStorage.removeItem('dalexis_user');
+        setIsAuthenticated(false);
+        showToast("Session verrouillée après 60 minutes d'inactivité. Veuillez resaisir votre mot de passe.", 'info');
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    // Événements détectant l'activité de l'utilisateur
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    activityEvents.forEach((evt) => {
+      window.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+
+    // Démarrage initial du compte à rebours
+    resetInactivityTimer();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      activityEvents.forEach((evt) => {
+        window.removeEventListener(evt, resetInactivityTimer);
+      });
+    };
+  }, [isAuthenticated]);
+
   // Synchronisation avec l'API Backend Express / SQLite
   useEffect(() => {
     let isMounted = true;
@@ -419,8 +474,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     syncWithBackend();
 
+    // Synchronisation périodique en arrière-plan (toutes les 8 secondes)
+    const intervalId = setInterval(() => {
+      if (isAuthenticated) {
+        syncWithBackend();
+      }
+    }, 8000);
+
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
     };
   }, [isAuthenticated]);
 
@@ -542,7 +605,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const assignedName = assignedUser ? assignedUser.name : (isHaitiCashChannel ? 'Agent Haïti' : 'Gestionnaire');
 
     const newTxId = `tx_${Date.now()}`;
-    const refNum = `#TX-${Math.floor(1000 + Math.random() * 9000)}`;
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const refNum = `#TX-${dateStr}-${randomSuffix}`;
 
     const newTx: Transaction = {
       id: newTxId,
@@ -1085,6 +1150,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toastNotification,
         showToast,
         hideToast,
+        currentLang,
+        setLanguage,
+        t,
       }}
     >
       {children}

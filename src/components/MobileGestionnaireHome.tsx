@@ -409,7 +409,6 @@ export const MobileGestionnaireHome: React.FC = () => {
                       <span className="text-xs font-extrabold text-white truncate group-hover:text-amber-400 transition-colors">
                         {op.name}
                       </span>
-                      <span className="text-[11px]">{op.country}</span>
                     </div>
                   </div>
                 </button>

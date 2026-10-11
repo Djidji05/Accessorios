@@ -11,11 +11,10 @@ import {
   Cell,
   BarChart,
   Bar,
-  CartesianGrid,
-  Legend
+  CartesianGrid
 } from 'recharts';
 import { TrendingUp, PieChart as PieIcon, BarChart3 } from 'lucide-react';
-import { AccountBalance, Transaction } from '../../types';
+import { AccountBalance } from '../../types';
 import { useApp } from '../../context/AppContext';
 
 // Strict Monochrome + Corporate Blue Palette
@@ -47,8 +46,8 @@ const CustomAreaTooltip: React.FC<CustomTooltipProps> = ({ active, payload, labe
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
               {item.name}
             </span>
-            <span className="font-mono font-bold text-slate-900">
-              {item.value.toLocaleString()} {item.dataKey === 'dop' || item.dataKey === 'fluxIn' ? 'Pesos' : 'HTG'}
+            <span className="font-bold text-slate-900">
+              {(item.value || 0).toLocaleString()} {item.dataKey === 'dop' || item.dataKey === 'fluxIn' ? 'Pesos' : 'HTG'}
             </span>
           </div>
         ))}
@@ -62,58 +61,52 @@ const CustomAreaTooltip: React.FC<CustomTooltipProps> = ({ active, payload, labe
 /* Helper to generate last 7 days chart data dynamically from transactions    */
 /* -------------------------------------------------------------------------- */
 const useChartData = () => {
-  const { transactions } = useApp();
+  const { transactions, accountBalances } = useApp();
   
   return useMemo(() => {
     const data = [];
     const now = new Date();
     
-    // Generate data for the last 7 days
+    // Obtenir le solde actuel des comptes Pesos et HTG
+    const currentDopBalance = accountBalances
+      .filter(b => b.currency === 'DOP')
+      .reduce((sum, b) => sum + b.balance, 0);
+
+    const currentHtgBalance = accountBalances
+      .filter(b => b.currency === 'HTG')
+      .reduce((sum, b) => sum + b.balance, 0);
+
+    // Générer les données réelles pour les 7 derniers jours
     for (let i = 6; i >= 0; i--) {
       const targetDate = new Date(now);
       targetDate.setDate(targetDate.getDate() - i);
       const dateStr = targetDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
       
-      // Filter transactions for this specific day
+      // Filtrer les transactions du jour
       const dailyTxs = transactions.filter(tx => {
-        const txDate = new Date(tx.createdAt);
-        return txDate.toDateString() === targetDate.toDateString();
+        try {
+          const txDate = new Date(tx.createdAt);
+          return txDate.toDateString() === targetDate.toDateString();
+        } catch (e) {
+          return false;
+        }
       });
 
-      // Calculate fluxes
-      // fluxIn (RD/Pesos encaissements) vs fluxOut (Haiti/HTG decaissements)
-      const fluxIn = dailyTxs.reduce((sum, tx) => sum + tx.amountDOP, 0);
-      const fluxOut = dailyTxs.reduce((sum, tx) => sum + tx.amountHTG, 0);
-      
-      // For evolution (Solde/Flottes), we simulate a running balance 
-      // based on base amounts + daily variations for visual effect
-      // In a real app, you'd calculate exact historical balances
-      const dopBalance = 1500000 + fluxIn - (fluxOut / 2.5); // Approx mock variation
-      const htgBalance = 3500000 - fluxOut + (fluxIn * 2.5); // Approx mock variation
+      // Calculer les encaissements (fluxIn DOP) et décaissements (fluxOut HTG) réels
+      const fluxIn = dailyTxs.reduce((sum, tx) => sum + (tx.amountDOP || 0), 0);
+      const fluxOut = dailyTxs.filter(tx => tx.status === 'completed').reduce((sum, tx) => sum + (tx.amountHTG || 0), 0);
 
       data.push({
         date: dateStr,
-        dop: dopBalance > 0 ? dopBalance : 0,
-        htg: htgBalance > 0 ? htgBalance : 0,
+        dop: currentDopBalance,
+        htg: currentHtgBalance,
         fluxIn: fluxIn,
         fluxOut: fluxOut
       });
     }
-    
-    // If there is strictly 0 data everywhere, provide a baseline to avoid empty charts
-    const hasData = data.some(d => d.fluxIn > 0 || d.fluxOut > 0);
-    if (!hasData) {
-      return data.map((d, idx) => ({
-        ...d,
-        fluxIn: 50000 + (idx * 15000),
-        fluxOut: 120000 + (idx * 35000),
-        dop: 1500000,
-        htg: 3500000
-      }));
-    }
 
     return data;
-  }, [transactions]);
+  }, [transactions, accountBalances]);
 };
 
 
@@ -177,7 +170,8 @@ export const TreasuryEvolutionChart: React.FC = () => {
               axisLine={false} 
               tickLine={false} 
               tick={{ fill: '#64748B', fontSize: 10 }} 
-              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} 
+              domain={[0, (max: number) => Math.max(max, 1000)]}
+              tickFormatter={(v) => (v === 0 ? '0' : `${(v / 1000).toFixed(0)}k`)} 
             />
             <Tooltip content={<CustomAreaTooltip />} />
             <Area 
@@ -213,7 +207,7 @@ export const TreasuryEvolutionChart: React.FC = () => {
             <span className="font-bold text-slate-700">Flottes Haïti (HTG)</span>
           </div>
         </div>
-        <span className="text-slate-400 font-mono text-[10px]">Mise à jour: En direct</span>
+        <span className="text-slate-400 font-medium text-[10px]">Mise à jour: En direct</span>
       </div>
     </div>
   );
@@ -235,7 +229,6 @@ export const TreasuryPieChart: React.FC<PieProps> = ({ accountBalances }) => {
   }));
 
   const totalBalanceApproxDOP = accountBalances.reduce((sum, b) => {
-    // Approx rate 1 DOP = 2.65 HTG
     if (b.currency === 'HTG') return sum + b.balance / 2.65;
     return sum + b.balance;
   }, 0);
@@ -248,22 +241,22 @@ export const TreasuryPieChart: React.FC<PieProps> = ({ accountBalances }) => {
             <PieIcon className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Répartition par Opérateur</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Part de chaque banque et portefeuille</p>
+            <h3 className="font-bold text-slate-900 text-sm">Répartition des Flottes</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Répartition par opérateur & caisses</p>
           </div>
         </div>
       </div>
 
-      <div className="relative h-56 w-full flex items-center justify-center">
+      <div className="h-52 w-full relative flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={85}
-              paddingAngle={2}
+              innerRadius={55}
+              outerRadius={75}
+              paddingAngle={3}
               dataKey="value"
             >
               {pieData.map((entry, index) => (
@@ -272,7 +265,7 @@ export const TreasuryPieChart: React.FC<PieProps> = ({ accountBalances }) => {
             </Pie>
             <Tooltip
               formatter={(val: number, name: string, entry: any) => [
-                `${val.toLocaleString()} ${entry.payload.currency}`,
+                `${(val || 0).toLocaleString()} ${entry.payload.currency}`,
                 entry.payload.name
               ]}
               contentStyle={{ backgroundColor: '#ffffff', color: '#0F172A', borderRadius: '4px', fontSize: '11px', border: '1px solid #E2E8F0', fontWeight: 'bold' }}
@@ -328,9 +321,15 @@ export const TreasuryFlowBarChart: React.FC = () => {
           <BarChart data={evolutionData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
             <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 11 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <YAxis 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fill: '#64748B', fontSize: 10 }} 
+              domain={[0, (max: number) => Math.max(max, 1000)]}
+              tickFormatter={(v) => (v === 0 ? '0' : `${(v / 1000).toFixed(0)}k`)} 
+            />
             <Tooltip
-              formatter={(v: number, name: any) => [`${v.toLocaleString()} ${name && name.includes('Pesos') ? 'Pesos' : 'HTG'}`, name]}
+              formatter={(v: number, name: any) => [`${(v || 0).toLocaleString()} ${name && name.includes('Pesos') ? 'Pesos' : 'HTG'}`, name]}
               contentStyle={{ backgroundColor: '#ffffff', color: '#0F172A', borderRadius: '4px', fontSize: '11px', border: '1px solid #E2E8F0', fontWeight: 'bold' }}
             />
             <Bar dataKey="fluxIn" name="Entrées Pesos" fill="#3B82F6" radius={[2, 2, 0, 0]} barSize={16} />
@@ -341,4 +340,3 @@ export const TreasuryFlowBarChart: React.FC = () => {
     </div>
   );
 };
-

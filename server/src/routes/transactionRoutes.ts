@@ -39,9 +39,31 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+import { z } from 'zod';
+
+const createTransactionSchema = z.object({
+  senderName: z.string().min(1, 'Nom de l\'expéditeur requis'),
+  senderPhone: z.string().optional().default(''),
+  receiverName: z.string().min(1, 'Nom du destinataire requis'),
+  receiverPhone: z.string().min(1, 'Téléphone du destinataire requis'),
+  operator: z.string().min(1, 'Opérateur requis'),
+  serviceType: z.string().optional().default('transfer'),
+  amountDOP: z.number().gt(0, 'Le montant en DOP doit être supérieur à 0'),
+  feeDOP: z.number().optional().default(0),
+  commissionDOP: z.number().optional().default(0),
+  currentUserId: z.string().optional(),
+});
+
 // 2. Création d'une transaction (Guichet authentifié)
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    const parseResult = createTransactionSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ 
+        error: parseResult.error.errors.map(e => e.message).join(', ') 
+      });
+    }
+
     const {
       senderName,
       senderPhone,
@@ -53,11 +75,7 @@ router.post('/', authMiddleware, async (req, res) => {
       feeDOP,
       commissionDOP,
       currentUserId,
-    } = req.body;
-
-    if (!senderName || !receiverName || !receiverPhone || !operator || !amountDOP) {
-      return res.status(400).json({ error: 'Champs obligatoires manquants pour la transaction.' });
-    }
+    } = parseResult.data;
 
     // 2.1 Vérification Kill-Switch
     const ks = await prisma.killSwitch.findUnique({ where: { operator } });
@@ -70,16 +88,14 @@ router.post('/', authMiddleware, async (req, res) => {
     // 2.2 Récupération du taux officiel
     const officialRateObj = await prisma.exchangeRate.findUnique({ where: { id: 'rate_official' } });
     const exchangeRate = officialRateObj?.rate || 2.35;
-    const amountHTG = Math.round(Number(amountDOP) * exchangeRate);
+    const amountHTG = Math.round(amountDOP * exchangeRate);
 
     // 2.3 Récupération de l'agent émetteur
     const actor = currentUserId 
       ? await prisma.user.findUnique({ where: { id: currentUserId } })
       : await prisma.user.findFirst({ where: { role: 'admin' } });
 
-    // 2.4 Détermination du canal et routage vers le bon agent :
-    // - Haïti Cash / Mobile Money (MonCash, Natcash, Natcom) -> Agent Haïti (agent_haiti)
-    // - Télécoms & Numériques (Digicel, Claro, Altice) -> Gestionnaire (gestionnaire)
+    // 2.4 Détermination du canal et routage vers le bon agent
     const isHaitiCash = operator === 'moncash' || operator === 'natcash' || operator === 'natcom';
     const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
     const targetRole = isHaitiCash ? 'agent_haiti' : 'gestionnaire';
@@ -91,72 +107,75 @@ router.post('/', authMiddleware, async (req, res) => {
       assignedAgent = actor;
     }
 
-    // 2.5 Génération du numéro de référence unique
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const referenceNumber = `#TX-${randomSuffix}`;
+    // 2.5 Génération du numéro de référence unique anti-collision (Date AAMMJJ + 6 chiffres)
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const referenceNumber = `#TX-${dateStr}-${randomSuffix}`;
 
-    // 2.6 Création de la transaction (Toutes les transactions créées au guichet restent en attente de validation)
-    const newTx = await prisma.transaction.create({
-      data: {
-        referenceNumber,
-        senderName,
-        senderPhone: senderPhone || '',
-        receiverName,
-        receiverPhone,
-        operator,
-        serviceType: serviceType || 'transfer',
-        channel,
-        amountDOP: Number(amountDOP),
-        amountHTG,
-        exchangeRate,
-        feeDOP: Number(feeDOP) || 0,
-        commissionDOP: Number(commissionDOP) || 0,
-        createdByNode: actor?.nodeId || 'node-agent-rd-01',
-        createdByName: actor?.name || 'Agent Guichet',
-        createdByRole: actor?.role || 'agent_rd',
-        isAdminNominalTrace: actor?.role === 'admin',
-        assignedToNode: assignedAgent?.nodeId || (isHaitiCash ? 'node-agent-haiti-01' : 'node-gestionnaire-01'),
-        assignedToRole: targetRole,
-        assignedToName: assignedAgent?.name || (isHaitiCash ? 'Agent Haïti' : 'Gestionnaire'),
-        status: 'in_progress',
-        completedAt: null,
-      },
-    });
-
-    // 2.7 Débit / Ajustement des balances de trésorerie
-    // Débit du compte correspondant (ex: flotte MonCash ou Natcash en HTG, ou caisse Pesos)
-    const targetBalance = await prisma.accountBalance.findFirst({
-      where: { operator }
-    });
-    if (targetBalance) {
-      const deduction = targetBalance.currency === 'HTG' ? amountHTG : Number(amountDOP);
-      await prisma.accountBalance.update({
-        where: { id: targetBalance.id },
+    // 2.6 Transaction Atomique prisma.$transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Création de la transaction
+      const newTx = await tx.transaction.create({
         data: {
-          balance: Math.max(0, targetBalance.balance - deduction),
-          lastUpdated: new Date()
+          referenceNumber,
+          senderName,
+          senderPhone: senderPhone || '',
+          receiverName,
+          receiverPhone,
+          operator,
+          serviceType: serviceType || 'transfer',
+          channel,
+          amountDOP,
+          amountHTG,
+          exchangeRate,
+          feeDOP: feeDOP || 0,
+          commissionDOP: commissionDOP || 0,
+          createdByNode: actor?.nodeId || 'node-agent-rd-01',
+          createdByName: actor?.name || 'Agent Guichet',
+          createdByRole: actor?.role || 'agent_rd',
+          isAdminNominalTrace: actor?.role === 'admin',
+          assignedToNode: assignedAgent?.nodeId || (isHaitiCash ? 'node-agent-haiti-01' : 'node-gestionnaire-01'),
+          assignedToRole: targetRole,
+          assignedToName: assignedAgent?.name || (isHaitiCash ? 'Agent Haïti' : 'Gestionnaire'),
+          status: 'in_progress',
+          completedAt: null,
+        },
+      });
+
+      // 2. Débit de la balance du compte correspondant
+      const targetBalance = await tx.accountBalance.findFirst({ where: { operator } });
+      if (targetBalance) {
+        const deduction = targetBalance.currency === 'HTG' ? amountHTG : amountDOP;
+        await tx.accountBalance.update({
+          where: { id: targetBalance.id },
+          data: {
+            balance: Math.max(0, targetBalance.balance - deduction),
+            lastUpdated: new Date()
+          }
+        });
+      }
+
+      // 3. Tracé d'audit
+      await tx.auditLog.create({
+        data: {
+          nodeId: actor?.nodeId || 'node-01',
+          actorName: actor?.name || 'Guichetier',
+          actorRole: actor?.role || 'agent_rd',
+          action: 'CREATION_TRANSACTION',
+          targetType: 'transaction',
+          details: `Saisie transaction ${operator.toUpperCase()} (${referenceNumber}) de ${amountDOP.toLocaleString()} Pesos (${amountHTG.toLocaleString()} HTG) par ${actor?.name}.`,
+          nodeStatus: 'SYNCED',
+          priority: 'Medium',
         }
       });
-    }
 
-    // 2.8 Tracé dans le journal d'audit
-    await prisma.auditLog.create({
-      data: {
-        nodeId: actor?.nodeId || 'node-01',
-        actorName: actor?.name || 'Guichetier',
-        actorRole: actor?.role || 'agent_rd',
-        action: 'CREATION_TRANSACTION',
-        targetType: 'transaction',
-        details: `Saisie transaction ${operator.toUpperCase()} (${referenceNumber}) de ${Number(amountDOP).toLocaleString()} Pesos (${amountHTG.toLocaleString()} HTG) par ${actor?.name}.`,
-        nodeStatus: 'SYNCED',
-        priority: 'Medium',
-      }
+      return newTx;
     });
 
     return res.status(201).json({
       success: true,
       message: `Transaction ${referenceNumber} enregistrée avec succès.`,
-      transaction: newTx,
+      transaction: result,
     });
   } catch (error) {
     console.error('Erreur create transaction:', error);
@@ -175,28 +194,31 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Transaction introuvable.' });
     }
 
-    const updated = await prisma.transaction.update({
-      where: { id },
-      data: {
-        status: 'completed',
-        completedAt: new Date(),
-        proofNotes: proofNotes || 'Validé & Décaissé avec succès',
-        proofUrl: proofUrl || existing.proofUrl || null,
-      },
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      const completedTx = await tx.transaction.update({
+        where: { id },
+        data: {
+          status: 'completed',
+          completedAt: new Date(),
+          proofNotes: proofNotes || 'Validé & Décaissé avec succès',
+          proofUrl: proofUrl || existing.proofUrl || null,
+        },
+      });
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        nodeId: 'node-agent-haiti-01',
-        actorName: actorName || 'Agent Haïti',
-        actorRole: 'agent_haiti',
-        action: 'CLOTURE_TACHE',
-        targetType: 'transaction',
-        details: `Clôture certifiée de la transaction ${existing.referenceNumber}. Preuve : ${proofNotes || 'SMS confirmé'}.`,
-        nodeStatus: 'ACK',
-        priority: 'Low',
-      }
+      await tx.auditLog.create({
+        data: {
+          nodeId: 'node-agent-haiti-01',
+          actorName: actorName || 'Agent Haïti',
+          actorRole: 'agent_haiti',
+          action: 'CLOTURE_TACHE',
+          targetType: 'transaction',
+          details: `Clôture certifiée de la transaction ${existing.referenceNumber}. Preuve : ${proofNotes || 'SMS confirmé'}.`,
+          nodeStatus: 'ACK',
+          priority: 'Low',
+        }
+      });
+
+      return completedTx;
     });
 
     return res.json({ success: true, message: 'Tâche clôturée avec succès.', transaction: updated });
@@ -205,7 +227,7 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
   }
 });
 
-// 4. Annulation sécurisée (Admin uniquement)
+// 4. Annulation sécurisée & Remboursement de solde (Admin uniquement)
 router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -216,30 +238,52 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
       return res.status(404).json({ error: 'Transaction introuvable.' });
     }
 
-    const updated = await prisma.transaction.update({
-      where: { id },
-      data: {
-        status: 'cancelled',
-        cancelledAt: new Date(),
-        cancellationReason: reason || 'Annulé par l\'administrateur',
-      },
-    });
+    if (existing.status === 'cancelled') {
+      return res.status(400).json({ error: 'Cette transaction est déjà annulée.' });
+    }
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        nodeId: 'node-admin-01',
-        actorName: actorName || 'Alexis D\'Alexis (Admin)',
-        actorRole: 'admin',
-        action: 'ANNULATION_TRANSACTION',
-        targetType: 'transaction',
-        details: `Annulation de la transaction ${existing.referenceNumber}. Motif : ${reason || 'Non spécifié'}.`,
-        nodeStatus: 'ACK',
-        priority: 'High',
+    const updated = await prisma.$transaction(async (tx) => {
+      // 1. Marquer comme annulée
+      const cancelledTx = await tx.transaction.update({
+        where: { id },
+        data: {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancellationReason: reason || 'Annulé par l\'administrateur',
+        },
+      });
+
+      // 2. Remboursement automatique du solde sur le compte flotte
+      const targetBalance = await tx.accountBalance.findFirst({ where: { operator: existing.operator } });
+      if (targetBalance) {
+        const refundAmount = targetBalance.currency === 'HTG' ? existing.amountHTG : existing.amountDOP;
+        await tx.accountBalance.update({
+          where: { id: targetBalance.id },
+          data: {
+            balance: targetBalance.balance + refundAmount,
+            lastUpdated: new Date()
+          }
+        });
       }
+
+      // 3. Tracé d'audit
+      await tx.auditLog.create({
+        data: {
+          nodeId: 'node-admin-01',
+          actorName: actorName || 'Alexis D\'Alexis (Admin)',
+          actorRole: 'admin',
+          action: 'ANNULATION_TRANSACTION',
+          targetType: 'transaction',
+          details: `Annulation et restitution du solde pour la transaction ${existing.referenceNumber}. Motif : ${reason || 'Non spécifié'}.`,
+          nodeStatus: 'ACK',
+          priority: 'High',
+        }
+      });
+
+      return cancelledTx;
     });
 
-    return res.json({ success: true, message: 'Transaction annulée.', transaction: updated });
+    return res.json({ success: true, message: 'Transaction annulée et solde restitué.', transaction: updated });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors de l\'annulation de la transaction.' });
   }

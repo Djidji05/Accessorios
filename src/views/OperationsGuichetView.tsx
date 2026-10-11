@@ -132,12 +132,13 @@ export const OperationsGuichetView: React.FC = () => {
     killSwitchList,
     setSelectedReceiptTx,
     transactions,
-    setActiveTab
+    setActiveTab,
+    t
   } = useApp();
 
-  const [operator, setOperator] = useState<OperatorCode>('moncash');
-  const [serviceType, setServiceType] = useState<ServiceType>('cash_out');
-  const [amountDOP, setAmountDOP] = useState<string>('5000');
+  const [operator, setOperator] = useState<OperatorCode | null>(null);
+  const [serviceType, setServiceType] = useState<ServiceType | null>(null);
+  const [amountDOP, setAmountDOP] = useState<string>('');
   
   const [senderName, setSenderName] = useState('');
   const [senderPhone, setSenderPhone] = useState('');
@@ -151,8 +152,8 @@ export const OperationsGuichetView: React.FC = () => {
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
 
   // Check Kill Switch status for chosen operator
-  const ksStatus = killSwitchList.find(k => k.operator === operator);
-  const isOperatorLocked = ksStatus && !ksStatus.enabled;
+  const ksStatus = operator ? killSwitchList.find(k => k.operator === operator) : null;
+  const isOperatorLocked = Boolean(ksStatus && !ksStatus.enabled);
 
   const numAmountDOP = parseFloat(amountDOP) || 0;
   const computedHTG = Math.round(numAmountDOP * dopToHtgRate);
@@ -177,6 +178,12 @@ export const OperationsGuichetView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!operator) {
+      setFeedback({ type: 'error', message: 'Veuillez sélectionner un opérateur (MonCash, Natcash, Digicel, Natcom, Claro, Altice, Zelle Pay) avant de continuer.' });
+      return;
+    }
+
     const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(operator);
 
     if (!receiverPhone.trim()) {
@@ -200,13 +207,15 @@ export const OperationsGuichetView: React.FC = () => {
       ? (receiverName.trim() || `Recharge ${operator.toUpperCase()}`)
       : receiverName.trim();
 
+    const finalServiceType: ServiceType = serviceType || (isTelecom ? 'topup_mobile' : 'cash_out');
+
     const result = createTransaction({
       senderName: finalSenderName,
       senderPhone: finalSenderPhone,
       receiverName: finalReceiverName,
       receiverPhone: receiverPhone.trim(),
       operator,
-      serviceType,
+      serviceType: finalServiceType,
       amountDOP: numAmountDOP,
       feeDOP,
       commissionDOP,
@@ -217,12 +226,14 @@ export const OperationsGuichetView: React.FC = () => {
       if (result.transaction) {
         setLastCreatedTx(result.transaction);
       }
-      // Reset form fields for rapid next customer entry
+      // Reset form fields for next customer entry (no preselection)
+      setOperator(null);
+      setServiceType(null);
       setSenderName('');
       setSenderPhone('');
       setReceiverName('');
       setReceiverPhone('');
-      setAmountDOP('5000');
+      setAmountDOP('');
     } else {
       setFeedback({ type: 'error', message: result.message });
     }
@@ -245,7 +256,7 @@ export const OperationsGuichetView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              {isAgentRD ? "Guichet de Saisie Rapide (Comptoir R.D.)" : "Saisie d'Opération & Guichet Global"}
+              {t('counter_rd_title')}
             </h2>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
@@ -256,7 +267,7 @@ export const OperationsGuichetView: React.FC = () => {
         {/* Live Exchange Rate Display / Controller */}
         <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 self-start md:self-auto">
           <div className="text-right">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Taux Officiel du Jour</span>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t('rate_label')}</span>
             <span className="text-sm font-black text-slate-900 font-mono">
               100 DOP = {Math.round(dopToHtgRate * 100)} HTG
             </span>
@@ -436,7 +447,6 @@ export const OperationsGuichetView: React.FC = () => {
 
                       {/* Country Flag & Locked indicator */}
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs">{conf.country}</span>
                         {isForbiddenZelleNonAdmin ? (
                           <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-900 font-extrabold text-[9px]" title="Réservé Administrateur">
                             Admin Only
@@ -469,7 +479,7 @@ export const OperationsGuichetView: React.FC = () => {
               })}
             </div>
 
-            {isOperatorLocked && (
+            {isOperatorLocked && operator && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-semibold text-rose-700">
                 <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                 <span>ATTENTION : Le service <strong>{operator.toUpperCase()}</strong> est actuellement VERROUILLÉ d'urgence par la direction. Saisie impossible.</span>
@@ -479,12 +489,13 @@ export const OperationsGuichetView: React.FC = () => {
 
           {/* Client Details Card */}
           {(() => {
-            const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(operator);
+            const isTelecom = operator ? ['natcom', 'claro', 'digicel', 'altice'].includes(operator) : false;
+            const opLabel = operator ? operator.toUpperCase() : '';
             return (
               <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                    2. Informations Récepteur ({isTelecom ? operator.toUpperCase() : 'Haïti 🇭🇹'})
+                    2. Informations Récepteur {opLabel ? `(${opLabel})` : ''}
                   </label>
                   <span className="text-[11px] font-bold text-slate-400">
                     {isTelecom ? 'Entrez uniquement le numéro de téléphone à recharger' : 'Saisissez les informations du compte récepteur (MonCash / Natcash)'}
@@ -493,7 +504,7 @@ export const OperationsGuichetView: React.FC = () => {
 
                 <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-4">
                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
-                    {isTelecom ? `Recharge Directe (${operator.toUpperCase()})` : 'Bénéficiaire Récepteur (Haïti 🇭🇹)'}
+                    {isTelecom ? `Recharge Directe (${opLabel})` : 'Bénéficiaire Récepteur (Haïti 🇭🇹)'}
                   </span>
 
                   <div className={`grid grid-cols-1 ${isTelecom ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-4`}>
@@ -517,7 +528,7 @@ export const OperationsGuichetView: React.FC = () => {
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                         <Phone className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{isTelecom ? `Numéro de Téléphone à Recharger (${operator.toUpperCase()})` : 'Numéro Portefeuille / Compte (Haïti)'}</span>
+                        <span>{isTelecom ? `Numéro de Téléphone à Recharger (${opLabel})` : 'Numéro Portefeuille / Compte (Haïti)'}</span>
                       </label>
                       <input
                         type="text"

@@ -1,81 +1,93 @@
 import React, { useState } from 'react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, Cell } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Cell, YAxis } from 'recharts';
 import { Layers } from 'lucide-react';
 import { DateRange } from '../DateRangePicker';
 import { useApp } from '../../context/AppContext';
-
-const baseData = [
-  { day: 'Dim', volume: 270 },
-  { day: 'Lun', volume: 410 },
-  { day: 'Mar', volume: 584 },
-  { day: 'Mer', volume: 310 },
-  { day: 'Jeu', volume: 490 },
-  { day: 'Ven', volume: 450 },
-  { day: 'Sam', volume: 530 },
-];
 
 interface TicketTrendChartProps {
   dateRange?: DateRange;
 }
 
-export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange }) => {
-  const { transactions } = useApp();
-  const [activeIndex, setActiveIndex] = useState<number>(2); // Default to Mar (index 2)
-  const [hoverYPx, setHoverYPx] = useState<number>(65);
+const dayLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
-  // Dynamic volume calculation based on date range
+export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange }) => {
+  const { transactions, t } = useApp();
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [hoverYPx, setHoverYPx] = useState<number | null>(null);
+
+  // Filtrer les transactions selon la plage de dates
   const filteredTx = transactions.filter(tx => {
     if (!dateRange || !dateRange.startDate || !dateRange.endDate) return true;
-    const d = new Date(tx.createdAt);
-    const start = new Date(dateRange.startDate);
-    start.setHours(0,0,0,0);
-    const end = new Date(dateRange.endDate);
-    end.setHours(23,59,59,999);
-    return d >= start && d <= end;
+    try {
+      const d = new Date(tx.createdAt);
+      const start = new Date(dateRange.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(dateRange.endDate);
+      end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    } catch (e) {
+      return true;
+    }
   });
 
-  const rangeTotalVolume = filteredTx.length > 0
-    ? filteredTx.reduce((sum, tx) => sum + tx.amountDOP, 0)
-    : 0;
+  const rangeTotalVolume = filteredTx.reduce((sum, tx) => sum + (tx.amountDOP || 0), 0);
 
-  const data = filteredTx.length > 0
-    ? baseData.map(item => ({
-        ...item,
-        volume: dateRange?.preset === 'today' ? Math.round(item.volume * 0.3) : item.volume
-      }))
-    : baseData.map(item => ({ ...item, volume: 0 }));
+  // Calcul du volume réel par jour
+  const getChartData = () => {
+    const dailyMap: Record<string, number> = {
+      Dim: 0, Lun: 0, Mar: 0, Mer: 0, Jeu: 0, Ven: 0, Sam: 0
+    };
 
-  const activeItem = data[activeIndex] || data[2];
+    filteredTx.forEach(tx => {
+      try {
+        const d = new Date(tx.createdAt);
+        const dayName = dayLabels[d.getDay()];
+        if (dayName) {
+          dailyMap[dayName] = (dailyMap[dayName] || 0) + (tx.amountDOP || 0);
+        }
+      } catch (e) {}
+    });
 
-  // Calculate horizontal percentage for tooltip placement over each bar
-  const getTagLeftPercent = (idx: number) => {
-    const percentages = [10.5, 23.5, 36.5, 50.0, 63.5, 76.5, 89.5];
-    return percentages[idx] !== undefined ? percentages[idx] : 36.5;
+    return dayLabels.map(day => ({
+      day,
+      volume: dailyMap[day] || 0
+    }));
   };
 
-  const activeXPercent = getTagLeftPercent(activeIndex);
+  const data = getChartData();
+  const hasData = rangeTotalVolume > 0 || data.some(d => d.volume > 0);
+
+  // Calcul du pourcentage horizontal pour l'alignement du tooltip
+  const getTagLeftPercent = (idx: number) => {
+    const percentages = [10.5, 23.5, 36.5, 50.0, 63.5, 76.5, 89.5];
+    return percentages[idx] !== undefined ? percentages[idx] : 50.0;
+  };
+
+  const selectedIdx = activeIndex !== null ? activeIndex : (hasData ? 2 : null);
+  const activeItem = selectedIdx !== null ? data[selectedIdx] : null;
+  const activeXPercent = selectedIdx !== null ? getTagLeftPercent(selectedIdx) : 50;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-[22px] border border-slate-200/80 dark:border-slate-800 p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between space-y-4">
       
-      {/* Header inside card */}
+      {/* En-tête de la carte */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
             <Layers className="w-3.5 h-3.5 rotate-45" />
           </div>
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-            Tendance du Volume de Transactions ({dateRange?.label || 'Last week'})
+            Tendance du Volume de Transactions ({dateRange?.label || '7 derniers jours'})
           </span>
         </div>
       </div>
 
-      {/* Main Metric */}
+      {/* Métrique principale (Sans font-mono pour éviter le zéro barré 0̸) */}
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-mono">
+        <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
           {rangeTotalVolume.toLocaleString()} DOP
         </span>
-        {filteredTx.length > 0 ? (
+        {hasData ? (
           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
             +8% <span className="text-slate-400 dark:text-slate-500 font-normal">vs période précédente</span>
           </span>
@@ -86,49 +98,47 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
         )}
       </div>
 
-      {/* Chart Canvas Area */}
+      {/* Zone du graphique */}
       <div 
         className="w-full relative pt-8 pb-1"
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const relativeX = e.clientX - rect.left;
-          const index = Math.min(
-            data.length - 1,
-            Math.max(0, Math.floor((relativeX / rect.width) * data.length))
-          );
-          setActiveIndex(index);
+        onMouseLeave={() => {
+          setActiveIndex(null);
+          setHoverYPx(null);
         }}
       >
         
-        {/* Floating Dark Pill Tooltip Badge over Active Bar */}
-        <div 
-          className="absolute z-20 top-[-2px] -translate-x-1/2 flex flex-col items-center pointer-events-none transition-all duration-200"
-          style={{ left: `${activeXPercent}%` }}
-        >
-          <div className="bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 border border-slate-700">
-            <span>{activeItem.day}:</span>
-            <span className="font-extrabold text-white">{activeItem.volume}</span>
+        {/* Tooltip flottant (uniquement lorsqu'un jour est survolé ou qu'il y a des données réelles) */}
+        {activeItem && hasData && (
+          <div 
+            className="absolute z-20 top-[-2px] -translate-x-1/2 flex flex-col items-center pointer-events-none transition-all duration-200"
+            style={{ left: `${activeXPercent}%` }}
+          >
+            <div className="bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 border border-slate-700">
+              <span>{activeItem.day}:</span>
+              <span className="font-extrabold text-white">{activeItem.volume.toLocaleString()} DOP</span>
+            </div>
+            <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-[#0A192F]" />
           </div>
-          {/* Downward triangle indicator */}
-          <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-[#0A192F]" />
-        </div>
+        )}
 
-        {/* Horizontal Dotted Line from Tooltip to Chart Right Edge */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-          <line
-            x1={`${activeXPercent}%`}
-            y1={hoverYPx || 65}
-            x2="95%"
-            y2={hoverYPx || 65}
-            stroke="#94A3B8"
-            strokeWidth="1.5"
-            strokeDasharray="3 3"
-            className="transition-all duration-150 opacity-60"
-          />
-        </svg>
+        {/* Ligne pointillée horizontale (Affichée uniquement en survol actif avec données) */}
+        {hasData && hoverYPx !== null && activeIndex !== null && (
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+            <line
+              x1={`${activeXPercent}%`}
+              y1={hoverYPx}
+              x2="95%"
+              y2={hoverYPx}
+              stroke="#94A3B8"
+              strokeWidth="1.5"
+              strokeDasharray="3 3"
+              className="transition-all duration-150 opacity-60"
+            />
+          </svg>
+        )}
 
-        {/* Recharts Rounded Bar Chart */}
-        <div className="h-48 w-full">
+        {/* Recharts BarChart */}
+        <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={data} 
@@ -142,7 +152,7 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
                 }
               }}
             >
-              {/* X-Axis Days */}
+              <YAxis domain={[0, (dataMax: number) => Math.max(dataMax, 100)]} hide />
               <XAxis 
                 dataKey="day" 
                 axisLine={false} 
@@ -151,12 +161,11 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
                 dy={8}
               />
               
-              {/* Rounded Vertical Bars matching screenshot */}
               <Bar dataKey="volume" radius={[8, 8, 8, 8]} barSize={38}>
                 {data.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
-                    fill={index === activeIndex ? '#0A192F' : '#E2E8F0'} 
+                    fill={index === activeIndex ? '#0F172A' : (hasData && entry.volume > 0 ? '#CBD5E1' : '#F1F5F9')} 
                     className="transition-colors duration-150 cursor-pointer hover:fill-slate-900"
                     onMouseEnter={() => setActiveIndex(index)}
                   />

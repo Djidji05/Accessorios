@@ -40,7 +40,8 @@ export const Sidebar: React.FC = () => {
     isMobileSidebarOpen,
     setIsMobileSidebarOpen,
     logout,
-    transactions
+    transactions,
+    t
   } = useApp();
 
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
@@ -110,14 +111,14 @@ export const Sidebar: React.FC = () => {
           <>
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-slate-900/10 flex-shrink-0">
-                D
+                A
               </div>
               <div className="truncate">
                 <span className="font-extrabold text-slate-900 text-xs tracking-tight block leading-tight">
-                  D'Alexis
+                  Alexis
                 </span>
                 <span className="text-[10px] font-semibold text-emerald-600 tracking-tight block">
-                  Transferencia y accesorio
+                  Transferencia
                 </span>
               </div>
             </div>
@@ -462,10 +463,10 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Tableau de bord"
+              title={t('nav_dashboard')}
             >
               <LayoutDashboard className={`w-4 h-4 flex-shrink-0 ${activeTab === 'overview' ? 'text-white' : 'text-slate-400'}`} />
-              {!isSidebarCollapsed && <span>Tableau de bord</span>}
+              {!isSidebarCollapsed && <span>{t('nav_dashboard')}</span>}
             </button>
 
             {/* ⚡ Flux en Temps Réel (Tâches & Routage) */}
@@ -476,11 +477,11 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Flux en Temps Réel"
+              title={t('nav_tasks')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <Zap className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-amber-400' : 'text-amber-500'}`} />
-                {!isSidebarCollapsed && <span>Flux en Temps Réel</span>}
+                {!isSidebarCollapsed && <span>{t('nav_tasks')}</span>}
               </div>
               {unreadTasksCount > 0 && (
                 isSidebarCollapsed ? (
@@ -504,10 +505,10 @@ export const Sidebar: React.FC = () => {
                     ? 'bg-slate-900 text-white font-bold shadow-xs' 
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
                 }`}
-                title="Trésorerie & Soldes"
+                title={t('nav_treasury')}
               >
                 <Wallet className={`w-4 h-4 flex-shrink-0 ${activeTab === 'treasury' ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                {!isSidebarCollapsed && <span>Trésorerie & Soldes</span>}
+                {!isSidebarCollapsed && <span>{t('nav_treasury')}</span>}
               </button>
             )}
 
@@ -519,11 +520,11 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title={isAgentRD ? "Mes Transactions Guichet" : "Historique & Pièces"}
+              title={t('nav_history')}
             >
               <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-400'}`} />
               {!isSidebarCollapsed && (
-                <span>{isAgentRD ? "Mes Transactions" : "Historique & Pièces"}</span>
+                <span>{t('nav_history')}</span>
               )}
             </button>
 
@@ -535,11 +536,11 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Versements & Liquidations"
+              title={t('nav_settlements')}
             >
               <Landmark className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settlements' ? 'text-white' : 'text-emerald-600'}`} />
               {!isSidebarCollapsed && (
-                <span>Versements & Liquidations</span>
+                <span>{t('nav_settlements')}</span>
               )}
             </button>
           </nav>
@@ -601,7 +602,7 @@ export const Sidebar: React.FC = () => {
                         ? 'bg-slate-900 text-white font-bold shadow-xs'
                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
-                    title="Gestion des Utilisateurs"
+                    title={t('nav_users')}
                   >
                     <Users className={`w-4 h-4 flex-shrink-0 ${isUserMgmtActive ? 'text-white' : 'text-blue-600'}`} />
                   </button>
@@ -617,7 +618,7 @@ export const Sidebar: React.FC = () => {
                     >
                       <div className="flex items-center gap-2.5">
                         <Users className="w-4 h-4 text-blue-600" />
-                        <span>Gestion des Utilisateurs</span>
+                        <span>{t('nav_users')}</span>
                       </div>
                       <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isUserMgmtOpen ? 'rotate-180' : ''}`} />
                     </button>
@@ -633,40 +634,12 @@ export const Sidebar: React.FC = () => {
                           }`}
                         >
                           <UserCheck className="w-3.5 h-3.5 text-blue-500" />
-                          <span>📋 Liste des Utilisateurs</span>
-                        </button>
-
-                        <button 
-                          onClick={() => setActiveTab('create_user')}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2 ${
-                            activeTab === 'create_user' 
-                              ? 'text-blue-900 font-bold bg-blue-50/80 border border-blue-100' 
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
-                          }`}
-                        >
-                          <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>➕ Créer un Utilisateur</span>
+                          <span>📋 {t('nav_users')}</span>
                         </button>
                       </div>
                     )}
                   </div>
                 )
-              )}
-
-              {/* 🎛️ Matrice de Modélisation (Permissions) - Uniquement Admin */}
-              {canSeePermissions && (
-                <button
-                  onClick={() => setActiveTab('permissions_matrix')}
-                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2'} rounded-xl text-xs transition-all ${
-                    activeTab === 'permissions_matrix' 
-                      ? 'bg-slate-900 text-white font-bold shadow-xs' 
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
-                  }`}
-                  title="Matrice de Modélisation"
-                >
-                  <SlidersHorizontal className={`w-4 h-4 flex-shrink-0 ${activeTab === 'permissions_matrix' ? 'text-cyan-400' : 'text-cyan-600'}`} />
-                  {!isSidebarCollapsed && <span>Matrice de Modélisation</span>}
-                </button>
               )}
 
               {/* 🔌 Sécurité Services (Interrupteurs d'urgence) - Admin & Gestionnaire */}
@@ -678,11 +651,11 @@ export const Sidebar: React.FC = () => {
                       ? 'bg-rose-900 text-white font-bold shadow-xs' 
                       : 'text-slate-600 hover:bg-rose-50 hover:text-rose-950 font-semibold'
                   }`}
-                  title="Sécurité & Interrupteurs de Services"
+                  title={t('nav_kill_switch')}
                 >
                   <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                     <Power className={`w-4 h-4 flex-shrink-0 ${activeTab === 'kill_switch' ? 'text-rose-300' : 'text-rose-600'}`} />
-                    {!isSidebarCollapsed && <span>Sécurité Services</span>}
+                    {!isSidebarCollapsed && <span>{t('nav_kill_switch')}</span>}
                   </div>
                   {activeKillCount > 0 && (
                     isSidebarCollapsed ? (
@@ -705,10 +678,10 @@ export const Sidebar: React.FC = () => {
                       ? 'bg-slate-900 text-white font-bold shadow-xs' 
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
                   }`}
-                  title="Journaux d'Audit & Logs"
+                  title={t('nav_audit_logs')}
                 >
                   <Scroll className={`w-4 h-4 flex-shrink-0 ${activeTab === 'audit_logs' ? 'text-white' : 'text-slate-400'}`} />
-                  {!isSidebarCollapsed && <span>Journaux d'Audit & Logs</span>}
+                  {!isSidebarCollapsed && <span>{t('nav_audit_logs')}</span>}
                 </button>
               )}
             </nav>
@@ -724,10 +697,10 @@ export const Sidebar: React.FC = () => {
                 ? 'bg-slate-900 text-white font-bold shadow-xs' 
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
             }`}
-            title="Paramètres Généraux"
+            title={t('nav_settings')}
           >
             <Settings className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settings' ? 'text-white' : 'text-slate-400'}`} />
-            {!isSidebarCollapsed && <span>{isAgentHaiti ? "Mes Paramètres" : "Paramètres Généraux"}</span>}
+            {!isSidebarCollapsed && <span>{t('nav_settings')}</span>}
           </button>
         </div>
 

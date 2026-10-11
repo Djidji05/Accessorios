@@ -73,7 +73,7 @@ export const SettingsView: React.FC = () => {
     setRateInput((dopToHtgRate <= 10 ? Math.round(dopToHtgRate * 100) : Math.round(dopToHtgRate)).toString());
   }, [dopToHtgRate]);
 
-  const [companyHeader, setCompanyHeader] = useState("D'Alexis Transferencia y accesorio");
+  const [companyHeader, setCompanyHeader] = useState("Alexis Transferencia");
   const [defaultCurrency, setDefaultCurrency] = useState<'DOP' | 'HTG' | 'USD'>('DOP');
   const [autoRouting, setAutoRouting] = useState(true);
 
@@ -195,7 +195,7 @@ export const SettingsView: React.FC = () => {
   // =========================================================================
   if (isAgentRD) {
     return (
-      <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto font-sans animate-in fade-in pb-36 md:pb-6">
+      <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1600px] mx-auto font-sans animate-in fade-in pb-36 md:pb-6">
         
 
 
@@ -380,7 +380,7 @@ export const SettingsView: React.FC = () => {
   // =========================================================================
   if (isAgentHaiti) {
     return (
-      <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto font-sans animate-in fade-in pb-36 md:pb-6">
+      <div className="p-4 sm:p-6 space-y-6 w-full max-w-[1600px] mx-auto font-sans animate-in fade-in pb-36 md:pb-6">
 
         {/* Success Toast */}
         {saveSuccess && (
@@ -581,7 +581,7 @@ export const SettingsView: React.FC = () => {
   // VUE PARAMÈTRES : ADMINISTRATEUR & GESTIONNAIRE
   // =========================================================================
   return (
-    <div className="p-3 sm:p-6 space-y-6 max-w-4xl font-sans animate-in fade-in pb-6">
+    <div className="p-3 sm:p-6 space-y-6 w-full max-w-[1600px] mx-auto font-sans animate-in fade-in pb-6">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

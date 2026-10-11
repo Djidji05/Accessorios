@@ -9,189 +9,194 @@ interface KPICardsProps {
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
-  const { currentUser, transactions, accountBalances, killSwitchList, dopToHtgRate, adminCommissionRate, serviceCommissionRates } = useApp();
-  const preset = dateRange?.preset || 'last_7_days';
+  const { currentUser, transactions, dopToHtgRate, usdToHtgRate, adminCommissionRate, serviceCommissionRates, t } = useApp();
+
+  // Taux dynamique USD -> DOP (1 USD = 60 DOP approx. basé sur USD/HTG vs DOP/HTG)
+  const usdToDopRate = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+
+  // Helper pour calculer la commission d'une transaction en DOP
+  const getTxCommissionDOP = (tx: typeof transactions[0]) => {
+    const commRate = serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0;
+    if (tx.operator === 'zelle' || tx.amountUSD) {
+      const amtUSD = tx.amountUSD || (tx.amountDOP ? tx.amountDOP / usdToDopRate : 0);
+      const commUSD = amtUSD * (commRate / 100);
+      return Math.round(commUSD * usdToDopRate);
+    }
+    return tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
+  };
+
+  // Helper pour générer 7 points de données temporels réels basés sur les transactions du système
+  const getDailyMetrics = (txList: typeof transactions) => {
+    const now = new Date();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (6 - i));
+      return d.toISOString().split('T')[0];
+    });
+
+    const txCounts = last7Days.map(dateStr => {
+      return txList.filter(tx => {
+        try {
+          const txDateStr = new Date(tx.createdAt).toISOString().split('T')[0];
+          return txDateStr === dateStr;
+        } catch (e) {
+          return false;
+        }
+      }).length;
+    });
+
+    const txVolumes = last7Days.map(dateStr => {
+      return txList.filter(tx => {
+        try {
+          const txDateStr = new Date(tx.createdAt).toISOString().split('T')[0];
+          return txDateStr === dateStr;
+        } catch (e) {
+          return false;
+        }
+      }).reduce((acc, tx) => acc + (tx.amountDOP || 0), 0);
+    });
+
+    const txCommissions = last7Days.map(dateStr => {
+      return txList.filter(tx => {
+        try {
+          const txDateStr = new Date(tx.createdAt).toISOString().split('T')[0];
+          return txDateStr === dateStr;
+        } catch (e) {
+          return false;
+        }
+      }).reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
+    });
+
+    return { txCounts, txVolumes, txCommissions };
+  };
 
   // Dynamic KPI numbers based on selected period & role
   const getCardsData = () => {
     // 1. Spécifique Agent RD
     if (currentUser.role === 'agent_rd') {
-      const myTxs = transactions.filter(t => t.createdByName === currentUser.name || t.createdByRole === 'agent_rd');
-      const myVolDOP = myTxs.reduce((acc, t) => acc + t.amountDOP, 0);
-      const myCompleted = myTxs.filter(t => t.status === 'completed').length;
+      const myTxs = transactions.filter(tx => tx.createdByName === currentUser.name || tx.createdByRole === 'agent_rd');
+      const myVolDOP = myTxs.reduce((acc, tx) => acc + tx.amountDOP, 0);
+      const myCompleted = myTxs.filter(tx => tx.status === 'completed').length;
+      const { txCounts, txVolumes } = getDailyMetrics(myTxs);
+
       return [
         {
-          title: 'Transactions Guichet RD',
+          title: t('global_transactions'),
           value: myTxs.length.toString(),
-          percentage: `+${myCompleted} soldées`,
+          percentage: `+${myCompleted} ${t('settled')}`,
           comparison: 'au guichet',
           isPositive: true,
           sparklineColor: '#10B981',
           gradientId: 'gradCard1',
-          sparklineData: [5, 8, 12, 14, 18, 22, 25, Math.max(30, myTxs.length * 2)],
+          sparklineData: txCounts,
         },
         {
-          title: 'Volume Encaissé (DOP)',
+          title: t('global_volume'),
           value: `${myVolDOP.toLocaleString()} DOP`,
-          percentage: '100% collecté',
-          comparison: 'en caisse agence',
+          percentage: '100%',
+          comparison: t('in_cash'),
           isPositive: true,
           sparklineColor: '#14B8A6',
           gradientId: 'gradCard2',
-          sparklineData: [10, 15, 20, 35, 40, 50, 55],
+          sparklineData: txVolumes,
         },
         {
-          title: 'Taux Officiel du Jour',
+          title: t('rate_label'),
           value: `100 DOP = ${Math.round(dopToHtgRate * 100)} HTG`,
-          percentage: 'Fixé Direction',
-          comparison: 'cours certifié',
+          percentage: t('node_connected'),
+          comparison: '',
           isPositive: true,
           sparklineColor: '#3B82F6',
           gradientId: 'gradCard3',
-          sparklineData: [2.30, 2.30, 2.32, 2.33, 2.35, 2.35, 2.35, 2.35],
+          sparklineData: [dopToHtgRate, dopToHtgRate, dopToHtgRate, dopToHtgRate, dopToHtgRate, dopToHtgRate, dopToHtgRate],
         },
       ];
     }
 
     // 2. Spécifique Agent Haïti
     if (currentUser.role === 'agent_haiti') {
-      const htTxs = transactions.filter(t => t.channel === 'haiti_cash' || t.assignedToRole === 'agent_haiti' || t.operator === 'moncash' || t.operator === 'natcash' || t.operator === 'natcom');
-      const htVolHTG = htTxs.filter(t => t.status === 'completed').reduce((acc, t) => acc + t.amountHTG, 0);
-      const htPending = htTxs.filter(t => t.status === 'in_progress').length;
+      const htTxs = transactions.filter(tx => tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash' || tx.operator === 'natcom');
+      const htVolHTG = htTxs.filter(tx => tx.status === 'completed').reduce((acc, tx) => acc + tx.amountHTG, 0);
+      const htPending = htTxs.filter(tx => tx.status === 'in_progress').length;
+      const { txCounts, txVolumes } = getDailyMetrics(htTxs);
+
       return [
         {
-          title: 'Transferts Distribués (HTG)',
+          title: t('global_volume'),
           value: `${htVolHTG.toLocaleString()} HTG`,
           percentage: 'Fonds versés',
           comparison: 'en Haïti',
           isPositive: true,
           sparklineColor: '#10B981',
           gradientId: 'gradCard1',
-          sparklineData: [20, 30, 45, 60, 75, 90, 110, 120],
+          sparklineData: txVolumes,
         },
         {
-          title: 'Dossiers Traités',
-          value: htTxs.filter(t => t.status === 'completed').length.toString(),
-          percentage: 'Validés SMS',
-          comparison: 'avec preuve',
+          title: t('global_transactions'),
+          value: htTxs.filter(tx => tx.status === 'completed').length.toString(),
+          percentage: t('settled'),
+          comparison: '',
           isPositive: true,
           sparklineColor: '#14B8A6',
           gradientId: 'gradCard2',
-          sparklineData: [10, 12, 15, 18, 22, 26, 28, 32],
+          sparklineData: txCounts,
         },
         {
-          title: 'En Attente de Preuve',
+          title: t('pending'),
           value: htPending.toString(),
-          percentage: htPending > 0 ? 'À décaisser' : 'À jour',
-          comparison: 'file active',
+          percentage: htPending > 0 ? t('in_progress_count') : t('node_connected'),
+          comparison: '',
           isPositive: htPending === 0,
           sparklineColor: htPending > 0 ? '#F59E0B' : '#10B981',
           gradientId: 'gradCard3',
-          sparklineData: [4, 3, 5, 2, 4, 3, 2, Math.max(1, htPending)],
+          sparklineData: txCounts,
         },
       ];
     }
 
-    // 3. Spécifique Gestionnaire
-    if (currentUser.role === 'gestionnaire') {
-      const htgFloat = accountBalances.filter(b => b.currency === 'HTG').reduce((acc, b) => acc + b.balance, 0);
-      const dopFloat = accountBalances.filter(b => b.currency === 'DOP').reduce((acc, b) => acc + b.balance, 0);
-
-      const totalCommissionDOP = transactions.reduce((acc, t) => {
-        const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
-        return acc + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
-      }, 0);
-
-      const completedCommissionDOP = transactions
-        .filter(t => t.status === 'completed')
-        .reduce((acc, t) => {
-          const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
-          return acc + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
-        }, 0);
-
-      return [
-        {
-          title: 'Liquidités Flottes HTG',
-          value: `${htgFloat.toLocaleString()} HTG`,
-          percentage: 'MonCash & Natcash',
-          comparison: 'disponible',
-          isPositive: true,
-          sparklineColor: '#10B981',
-          gradientId: 'gradCard1',
-          sparklineData: [40, 42, 45, 48, 52, 50, 53, 55],
-        },
-        {
-          title: 'Liquidités Banques (DOP)',
-          value: `${dopFloat.toLocaleString()} DOP`,
-          percentage: 'Comptes Banreservas',
-          comparison: 'disponible',
-          isPositive: true,
-          sparklineColor: '#14B8A6',
-          gradientId: 'gradCard2',
-          sparklineData: [20, 22, 25, 27, 28, 30, 32, 35],
-        },
-        {
-          title: 'Commissions Admin Encaissées',
-          value: `${totalCommissionDOP.toLocaleString()} DOP`,
-          percentage: `+${completedCommissionDOP.toLocaleString()} DOP`,
-          comparison: 'soldées',
-          isPositive: true,
-          sparklineColor: '#3B82F6',
-          gradientId: 'gradCard3',
-          sparklineData: [10, 25, 45, 70, 95, 125, 160, Math.max(180, totalCommissionDOP)],
-        },
-      ];
-    }
-
-    // 4. Admin (Global System Metrics calculated from live state)
+    // 3. Admin / Gestionnaire
     const totalCount = transactions.length;
-    const completedCount = transactions.filter(t => t.status === 'completed').length;
-    const pendingCount = transactions.filter(t => t.status === 'in_progress').length;
-    const totalVolumeDOP = transactions.reduce((acc, t) => acc + t.amountDOP, 0);
+    const completedCount = transactions.filter(tx => tx.status === 'completed').length;
+    const pendingCount = transactions.filter(tx => tx.status === 'in_progress').length;
+    const totalVolumeDOP = transactions.reduce((acc, tx) => acc + tx.amountDOP, 0);
 
-    // Calcul de la commission Admin selon le pourcentage configuré pour chaque service/opérateur
-    const totalCommissionDOP = transactions.reduce((acc, t) => {
-      const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
-      return acc + Math.round(t.amountDOP * (commRate / 100));
-    }, 0);
-
+    const totalCommissionDOP = transactions.reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
     const completedCommissionDOP = transactions
-      .filter(t => t.status === 'completed')
-      .reduce((acc, t) => {
-        const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
-        return acc + Math.round(t.amountDOP * (commRate / 100));
-      }, 0);
+      .filter(tx => tx.status === 'completed')
+      .reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
+
+    const { txCounts, txVolumes, txCommissions } = getDailyMetrics(transactions);
 
     return [
       {
-        title: 'Transactions Globales',
+        title: t('global_transactions'),
         value: totalCount.toString(),
-        percentage: `${completedCount} soldée(s)`,
-        comparison: `• ${pendingCount} en cours`,
+        percentage: `${completedCount} ${t('settled')}`,
+        comparison: `• ${pendingCount} ${t('in_progress_count')}`,
         isPositive: true,
         sparklineColor: '#10B981',
         gradientId: 'gradCard1',
-        sparklineData: [10, 15, 22, 30, 42, 50, 60, Math.max(70, totalCount * 5)],
+        sparklineData: txCounts,
       },
       {
-        title: 'Volume Global (DOP)',
+        title: t('global_volume'),
         value: `${totalVolumeDOP.toLocaleString()} DOP`,
-        percentage: '100% en caisse',
-        comparison: 'sur le réseau',
+        percentage: '100%',
+        comparison: t('in_cash'),
         isPositive: true,
         sparklineColor: '#14B8A6',
         gradientId: 'gradCard2',
-        sparklineData: [20, 35, 50, 80, 120, 150, 180, 220],
+        sparklineData: txVolumes,
       },
       {
-        title: 'Commissions Admin (DOP)',
+        title: t('admin_commissions'),
         value: `${totalCommissionDOP.toLocaleString()} DOP`,
         percentage: `+${completedCommissionDOP.toLocaleString()} DOP`,
-        comparison: 'soldées',
+        comparison: t('settled'),
         isPositive: true,
         sparklineColor: '#3B82F6',
         gradientId: 'gradCard3',
-        sparklineData: [10, 25, 45, 70, 95, 125, 160, Math.max(180, totalCommissionDOP)],
+        sparklineData: txCommissions,
       },
     ];
   };
@@ -242,4 +247,3 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     </div>
   );
 };
-

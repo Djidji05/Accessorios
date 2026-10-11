@@ -18,6 +18,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { LoginView } from './views/LoginView';
 import { BottomNavBar } from './components/BottomNavBar';
 import { GlobalToast } from './components/GlobalToast';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 const AppContent: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, isAuthenticated } = useApp();
@@ -106,6 +107,9 @@ const AppContent: React.FC = () => {
 
       {/* Global Confirmation Toast Notification System */}
       <GlobalToast />
+
+      {/* PWA Install Banner */}
+      <PWAInstallPrompt />
     </div>
   );
 };

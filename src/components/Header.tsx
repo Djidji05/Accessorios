@@ -43,9 +43,11 @@ export const Header: React.FC = () => {
     logout,
     transactions,
     setSelectedReceiptTx,
-    selectedService
+    selectedService,
+    currentLang,
+    setLanguage,
+    t
   } = useApp();
-  const [currentLang, setCurrentLang] = useState<'FR' | 'ES' | 'HT' | 'EN'>('FR');
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
@@ -123,7 +125,7 @@ export const Header: React.FC = () => {
 
     list.push({
       id: 'rate_info',
-      title: 'Taux de Change',
+      title: t('rate_label'),
       message: `100 Pesos = ${Math.round(dopToHtgRate * 100)} HTG`,
       time: 'Aujourd\'hui',
       icon: DollarSign,
@@ -131,13 +133,12 @@ export const Header: React.FC = () => {
     });
 
     return list;
-  }, [transactions, currentUser, dopToHtgRate, activeKillCount, isAgentRD, isAgentHaiti]);
+  }, [transactions, currentUser, dopToHtgRate, activeKillCount, isAgentRD, isAgentHaiti, t]);
 
-  const languages = [
+  const languages: Array<{ code: 'FR' | 'HT' | 'ES'; label: string }> = [
     { code: 'FR', label: 'Français 🇫🇷' },
-    { code: 'ES', label: 'Español 🇩🇴' },
     { code: 'HT', label: 'Kreyòl 🇭🇹' },
-    { code: 'EN', label: 'English 🇺🇸' },
+    { code: 'ES', label: 'Español 🇩🇴' },
   ];
 
   return (
@@ -173,7 +174,7 @@ export const Header: React.FC = () => {
         <span className="text-slate-500 dark:text-slate-400 font-medium hidden md:inline">Overview</span>
         <span className="text-slate-300 dark:text-slate-600 hidden md:inline">/</span>
         <span className="font-bold text-slate-900 dark:text-slate-100 capitalize truncate hidden md:inline">
-          {activeTab === 'overview' ? 'Dashboard' : activeTab === 'guichet' ? 'Nouvelle Transaction' : activeTab.replace('_', ' ')}
+          {activeTab === 'overview' ? t('nav_dashboard') : activeTab === 'guichet' ? t('nav_guichet') : activeTab.replace('_', ' ')}
         </span>
       </div>
 
@@ -186,7 +187,7 @@ export const Header: React.FC = () => {
         >
           <div className="flex items-center gap-2 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 flex-shrink-0 transition-colors" />
-            <span className="text-slate-400 dark:text-slate-400 font-medium truncate">Rechercher une opération...</span>
+            <span className="text-slate-400 dark:text-slate-400 font-medium truncate">{t('search_placeholder')}</span>
           </div>
           <kbd className="ml-2 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-500 dark:text-slate-400 shadow-2xs flex-shrink-0">
             ⌘K
@@ -328,7 +329,7 @@ export const Header: React.FC = () => {
                   <button
                     key={lang.code}
                     onClick={() => {
-                      setCurrentLang(lang.code as any);
+                      setLanguage(lang.code);
                       setIsLangOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
@@ -343,19 +344,6 @@ export const Header: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Dark Mode Moon/Sun Button */}
-        <button 
-          onClick={toggleDarkMode}
-          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-          title={isDarkMode ? "Passer en mode clair" : "Passer en mode sombre"}
-        >
-          {isDarkMode ? (
-            <Sun className="w-4 h-4 text-amber-500" />
-          ) : (
-            <Moon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          )}
-        </button>
 
         {/* Settings Gear Button (Hidden on mobile) */}
         <button 

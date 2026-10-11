@@ -27,8 +27,11 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   const token = authHeader.split(' ')[1];
 
-  // 1. Support des sessions locales / tokens de secours (demo_token_...)
+  // 1. Support des sessions locales / tokens de secours (demo_token_...) uniquement hors production
   if (token && token.startsWith('demo_token_')) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(401).json({ error: 'Accès non autorisé : Mode démo désactivé en production.' });
+    }
     const userId = token.replace('demo_token_', '');
     req.user = {
       id: userId || 'cmtyvnlg40000d2uvmaf3szds',

@@ -4,7 +4,7 @@ export const OPERATOR_LOGOS: Record<string, string> = {
   moncash: '/images/mon cash.jpg',
   natcash: '/images/natcash.jpg',
   natcom: '/images/natcom.jpg',
-  digicel: '/images/mon cash.jpg', // Digicel / Moncash family
+  digicel: '/images/digicel.jpg',
   claro: '/images/claro.jpg',
   altice: '/images/altice.png',
   zelle: '/images/Zelle.png',

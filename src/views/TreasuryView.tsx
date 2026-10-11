@@ -33,6 +33,8 @@ import {
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { getOperatorLogo } from '../utils/operatorLogos';
 
+import { exportTreasuryReportToCSV, exportTreasuryReportToPDF } from '../utils/exportUtils';
+
 // Mock recent treasury operations log
 const initialTreasuryLogs = [
   { id: 'TR-9081', type: 'recharge_float', operator: 'moncash', account: 'Flotte Principal MonCash', amount: 250000, currency: 'HTG', status: 'completed', date: 'Aujourd\'hui 11:42', author: 'Admin' },
@@ -42,13 +44,61 @@ const initialTreasuryLogs = [
 ];
 
 export const TreasuryView: React.FC = () => {
-  const { accountBalances, currentUser, rechargeAccount, transactions } = useApp();
+  const { 
+    accountBalances, 
+    currentUser, 
+    rechargeAccount, 
+    transactions,
+    dopToHtgRate,
+    usdToHtgRate,
+    serviceCommissionRates,
+    adminCommissionRate
+  } = useApp();
   const [logs, setLogs] = useState(initialTreasuryLogs);
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('moncash');
   const [rechargeAmount, setRechargeAmount] = useState<number>(100000);
   const [rechargeNote, setRechargeNote] = useState<string>('');
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Taux de conversion USD -> DOP (1 USD ≈ 60 DOP, dérivé de USD/HTG vs DOP/HTG)
+  const usdToDopRate = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+  const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
+
+  // Transactions Zelle & Calculs dédiés en USD
+  const zelleTxs = transactions.filter(t => t.operator === 'zelle');
+  const liveZelleUSD = zelleTxs.reduce((sum, t) => sum + (t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0)), 0);
+  const totalZelleVolumeUSD = liveZelleUSD > 0 ? liveZelleUSD : 5300; // Baseline $5,300 USD
+  const totalZelleCommissionUSD = Math.round(totalZelleVolumeUSD * (zelleCommRate / 100) * 100) / 100;
+  const totalZelleCommissionDOP = Math.round(totalZelleCommissionUSD * usdToDopRate);
+  const totalZelleVolumeDOP = Math.round(totalZelleVolumeUSD * usdToDopRate);
+  const totalZelleVolumeHTG = Math.round(totalZelleVolumeUSD * (usdToHtgRate || 140.5));
+
+  // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME (COMMISSIONS + FRAIS + AUTRES) ---
+  const liveFeesDOP = transactions.reduce((sum, t) => {
+    if (t.operator === 'zelle' || t.amountUSD) {
+      const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
+      const feeUSD = amtUSD * 0.035;
+      return sum + Math.round(feeUSD * usdToDopRate);
+    }
+    return sum + (t.feeDOP || Math.round(t.amountDOP * 0.03));
+  }, 0);
+  const totalFeesDOP = liveFeesDOP > 0 ? liveFeesDOP : 48500; // Baseline démo
+
+  const liveAdminCommissionsDOP = transactions.reduce((sum, t) => {
+    const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
+    if (t.operator === 'zelle' || t.amountUSD) {
+      const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
+      const commUSD = amtUSD * (commRate / 100);
+      return sum + Math.round(commUSD * usdToDopRate);
+    }
+    return sum + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
+  }, 0);
+  const totalAdminCommissionsDOP = liveAdminCommissionsDOP > 0 ? liveAdminCommissionsDOP : 24800; // Baseline démo
+
+  const totalPlatformRevenueDOP = totalFeesDOP + totalAdminCommissionsDOP;
+  const totalPlatformRevenueHTG = Math.round(totalPlatformRevenueDOP * dopToHtgRate);
+  const totalPlatformRevenueUSD = Math.round((totalPlatformRevenueDOP / usdToDopRate) * 100) / 100;
 
   // Calendar Date Range Filter
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({
@@ -166,8 +216,8 @@ export const TreasuryView: React.FC = () => {
     .filter(b => b.currency === 'USD')
     .reduce((acc, curr) => acc + curr.balance, 0);
 
-  // Identify float warning (< 200,000 HTG)
-  const lowFloatAccounts = accountBalances.filter(b => b.currency === 'HTG' && b.balance < 200000);
+  // Identify float warning (< 10,000)
+  const lowFloatAccounts = accountBalances.filter(b => b.balance < 10000);
 
   const handleRechargeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,13 +277,39 @@ export const TreasuryView: React.FC = () => {
           )}
 
           <button
-            onClick={() => alert(`Génération du rapport de trésorerie pour la période : ${selectedDateRange.label}...`)}
-            className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded text-xs font-bold transition-colors flex items-center gap-2 border border-slate-300"
-            title="Exporter Rapport"
+            onClick={() => exportTreasuryReportToCSV(accountBalances, transactions, undefined, logs)}
+            className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-300 cursor-pointer"
+            title="Exporter Rapport CSV Financier avec Journal des Opérations"
           >
             <Download className="w-4 h-4 text-slate-500" />
-            <span>Exporter</span>
+            <span>CSV</span>
           </button>
+
+          <button
+            onClick={() => exportTreasuryReportToPDF(accountBalances, transactions, undefined, logs)}
+            className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-900 cursor-pointer"
+            title="Générer & Télécharger le Rapport PDF Financier avec Journal des Opérations"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {/* GUIDE DE LECTURE EN UN COUP D'ŒIL (POUR UTILISATEURS LAMBDA) */}
+      <div className="bg-emerald-50/70 dark:bg-slate-900/60 border border-emerald-200/80 dark:border-emerald-800/40 p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+            💡
+          </div>
+          <div>
+            <p className="font-bold text-slate-900 dark:text-emerald-300">Comment lire cette page facilement ?</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+              <strong className="text-slate-900 dark:text-white">1. Soldes Réels :</strong> L'argent disponible pour payer les clients. &nbsp;•&nbsp; 
+              <strong className="text-slate-900 dark:text-white">2. Badges Vert/Jaune/Rouge :</strong> Indiquent si le portefeuille est plein ou doit être rechargé. &nbsp;•&nbsp; 
+              <strong className="text-slate-900 dark:text-white">3. Devises :</strong> DOP = Pesos Dominicains, HTG = Gourdes Haïtiennes, USD = Dollars US.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -258,7 +334,7 @@ export const TreasuryView: React.FC = () => {
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-slate-900">Alerte Sécurité Liquidité</p>
               <p className="text-xs text-slate-600 mt-0.5">
-                Comptes sous le seuil critique (200 000 HTG) :{' '}
+                Comptes sous le seuil critique (10 000) :{' '}
                 <span className="font-bold underline">{lowFloatAccounts.map(a => a.name).join(', ')}</span>.
               </p>
             </div>
@@ -276,6 +352,92 @@ export const TreasuryView: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* 1b. REVENU TOTAL & PERFORMANCE FINANCIÈRE DE LA PLATEFORME */}
+      <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-md space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-lg">
+              <DollarSign className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                <span>Revenu Total & Performance Financière de la Plateforme</span>
+              </h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                Vue consolidée des revenus d'agence : Frais de Service Guichet (3%), Commissions Administrateur et Virements Zelle (USD).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-xs font-mono font-extrabold px-3 py-1.5 rounded-xl bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+              ● Performance {selectedDateRange.label}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Revenu Brut Total */}
+          <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 flex flex-col justify-between">
+            <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-wider">
+              <span>Revenu Brut Total Agence</span>
+              <span className="text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">Global</span>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-white font-mono tracking-tight">
+                {totalPlatformRevenueDOP.toLocaleString()} <span className="text-xs font-bold text-slate-400">DOP</span>
+              </p>
+              <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mt-1">
+                <span>≈ {totalPlatformRevenueHTG.toLocaleString()} HTG</span>
+                <span>•</span>
+                <span className="text-emerald-400">${totalPlatformRevenueUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium pt-2 border-t border-slate-800">
+              Frais de Service (3%) + Commissions Admin cumulées
+            </p>
+          </div>
+
+          {/* Card 2: Commissions Admin */}
+          <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 flex flex-col justify-between">
+            <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-wider">
+              <span>Commissions Admin Encaissées</span>
+              <span className="text-blue-400 text-[10px] bg-blue-950 px-2 py-0.5 rounded border border-blue-800">Net Direc.</span>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-blue-400 font-mono tracking-tight">
+                {totalAdminCommissionsDOP.toLocaleString()} <span className="text-xs font-bold text-slate-400">DOP</span>
+              </p>
+              <p className="text-xs font-mono text-purple-300 mt-1">
+                Inclus ${totalZelleCommissionUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD via Zelle Pay
+              </p>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium pt-2 border-t border-slate-800">
+              Commissions prélevées sur MonCash, Natcash, Télécom & Zelle
+            </p>
+          </div>
+
+          {/* Card 3: Frais de Service Collectés */}
+          <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 flex flex-col justify-between">
+            <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-wider">
+              <span>Frais de Service Guichet (3%)</span>
+              <span className="text-amber-400 text-[10px] bg-amber-950 px-2 py-0.5 rounded border border-amber-800">Comptoir</span>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-amber-400 font-mono tracking-tight">
+                {totalFeesDOP.toLocaleString()} <span className="text-xs font-bold text-slate-400">DOP</span>
+              </p>
+              <p className="text-xs font-mono text-slate-400 mt-1">
+                Collecté lors de l'encaissement en agences
+              </p>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium pt-2 border-t border-slate-800">
+              Couvre les coûts d'exploitation et frais opérationnels
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* 2. TOP 3 MASTER RESERVE CARDS (CLEAN CORPORATE STYLE) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -340,6 +502,84 @@ export const TreasuryView: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* 2b. ESPACE SPÉCIAL : ZELLE PAY (USD) & CONVERSION DE COMMISSIONS EN PESOS (DOP) */}
+      <div className="bg-purple-900 text-white rounded border border-purple-800 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-800 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded bg-white p-1 flex items-center justify-center border border-purple-200 shrink-0">
+              <img src="/images/Zelle.png" alt="Zelle Pay" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-white text-sm tracking-tight flex items-center gap-2">
+                <span>Espace Spécial Zelle Pay (USD) & Commissions Converties</span>
+              </h3>
+              <p className="text-[11px] text-purple-200 font-medium">
+                Suivi indépendant du volume circulé en Dollars USD et conversion certifiée en Pesos (DOP) pour les commissions globales.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono font-bold bg-purple-950 text-purple-200 px-3 py-1 rounded border border-purple-700">
+              1 USD = {usdToDopRate.toFixed(1)} DOP (Taux Pesos)
+            </span>
+            <span className="text-[11px] font-mono font-bold bg-purple-950 text-purple-200 px-3 py-1 rounded border border-purple-700">
+              1 USD = {usdToHtgRate || 140.5} HTG (Taux Gourdes)
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+          {/* Box 1: Total Volume USD */}
+          <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded space-y-1">
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Volume Circulé Zelle</span>
+            <p className="text-2xl font-black font-mono text-white">
+              ${totalZelleVolumeUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-purple-300">USD</span>
+            </p>
+            <p className="text-[10px] text-purple-300 font-medium">
+              ≈ {totalZelleVolumeDOP.toLocaleString()} DOP au cours bancaire
+            </p>
+          </div>
+
+          {/* Box 2: Commission Zelle USD */}
+          <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded space-y-1">
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Commission Agence (USD)</span>
+            <p className="text-2xl font-black font-mono text-emerald-400">
+              ${totalZelleCommissionUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-purple-300">USD</span>
+            </p>
+            <p className="text-[10px] text-purple-300 font-medium">
+              Taux appliqué : {zelleCommRate}% du volume Zelle
+            </p>
+          </div>
+
+          {/* Box 3: Commission Convertie en DOP */}
+          <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded space-y-1">
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Ajout aux Commissions (DOP)</span>
+            <p className="text-2xl font-black font-mono text-blue-300">
+              +{totalZelleCommissionDOP.toLocaleString()} <span className="text-xs font-bold text-purple-300">DOP</span>
+            </p>
+            <p className="text-[10px] text-purple-300 font-medium">
+              Converti à 1 USD = {usdToDopRate.toFixed(1)} DOP
+            </p>
+          </div>
+
+          {/* Box 4: Équivalence HTG */}
+          <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded space-y-1">
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Volume Équivalent Haïti</span>
+            <p className="text-2xl font-black font-mono text-white">
+              {totalZelleVolumeHTG.toLocaleString()} <span className="text-xs font-bold text-purple-300">HTG</span>
+            </p>
+            <p className="text-[10px] text-purple-300 font-medium">
+              Calculé au taux USD de {usdToHtgRate || 140.5} HTG
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-2 text-[11px] text-purple-200 border-t border-purple-800/80 flex items-center justify-between flex-wrap gap-2">
+          <span>💡 <strong>Note de conversion :</strong> Les commissions Zelle en Dollars sont automatiquement converties en Pesos (DOP) au taux du Dollar Pesos (`1 USD = ${usdToDopRate.toFixed(1)} DOP`) et s'ajoutent directement à la carte des commissions globales de la plateforme.</span>
+        </div>
       </div>
 
       {/* 2b. VOLUME TRANSITÉ PAR CANAL OPÉRATEUR */}
@@ -432,7 +672,7 @@ export const TreasuryView: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {accountBalances.map((bal) => {
-              const isLow = bal.currency === 'HTG' && bal.balance < 200000;
+              const isLow = bal.balance < 10000;
               const maxTarget = bal.currency === 'HTG' ? 1000000 : 2000000;
               const percent = Math.min(100, Math.round((bal.balance / maxTarget) * 100));
 

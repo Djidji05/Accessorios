@@ -22,6 +22,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { AuditLog } from '../types';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
+import { exportAuditLogsToCSV, exportAuditLogsToPDF } from '../utils/exportUtils';
 
 export const AuditLogsView: React.FC = () => {
   const { auditLogs } = useApp();
@@ -228,11 +229,21 @@ export const AuditLogsView: React.FC = () => {
           <DateRangePicker value={selectedRange} onChange={setSelectedRange} />
 
           <button
-            onClick={() => alert("Exportation des journaux d'audit au format JSON/CSV...")}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-200/80"
+            onClick={() => exportAuditLogsToCSV(filteredLogs)}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-200/80 cursor-pointer"
+            title="Exporter Journaux CSV"
           >
             <Download className="w-4 h-4 text-slate-500" />
-            <span>Exporter Logs</span>
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={() => exportAuditLogsToPDF(filteredLogs)}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-900 cursor-pointer"
+            title="Exporter Journaux PDF"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Export PDF</span>
           </button>
         </div>
       </div>

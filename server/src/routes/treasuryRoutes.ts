@@ -16,47 +16,65 @@ router.get('/balances', authMiddleware, async (_req, res) => {
   }
 });
 
+import { z } from 'zod';
+
+const rechargeSchema = z.object({
+  accountId: z.string().min(1, 'Identifiant du compte requis'),
+  amount: z.number().gt(0, 'Le montant doit être supérieur à 0'),
+  note: z.string().optional(),
+  actorName: z.string().optional(),
+});
+
 // 2. Réapprovisionnement d'un compte flotte (Admin & Gestionnaire)
 router.post('/recharge', authMiddleware, requireRole('admin', 'gestionnaire'), async (req, res) => {
   try {
-    const { accountId, amount, note, actorName } = req.body;
-    if (!accountId || !amount) {
-      return res.status(400).json({ error: 'Identifiant de compte et montant requis.' });
+    const parseResult = rechargeSchema.safeParse({
+      ...req.body,
+      amount: req.body.amount ? Number(req.body.amount) : undefined,
+    });
+
+    if (!parseResult.success) {
+      return res.status(400).json({ error: parseResult.error.errors.map(e => e.message).join(', ') });
     }
 
-    const numAmount = Number(amount);
+    const { accountId, amount, note, actorName } = parseResult.data;
+
     const acc = await prisma.accountBalance.findUnique({ where: { id: accountId } });
     if (!acc) {
       return res.status(404).json({ error: 'Compte flotte introuvable.' });
     }
 
-    const newBalance = acc.balance + numAmount;
-    const updated = await prisma.accountBalance.update({
-      where: { id: accountId },
-      data: {
-        balance: newBalance,
-        lastUpdated: new Date(),
-        status: newBalance >= 200000 ? 'optimal' : 'low',
-      }
-    });
+    const newBalance = acc.balance + amount;
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        nodeId: 'node-admin-01',
-        actorName: actorName || 'Alexis D\'Alexis (Admin)',
-        actorRole: 'admin',
-        action: 'RECHARGE_FLOTTE',
-        targetType: 'treasury',
-        details: `Injection de liquidités : +${numAmount.toLocaleString()} ${acc.currency} sur le compte ${acc.name}. Note : ${note || 'Réapprovisionnement'}.`,
-        nodeStatus: 'ACK',
-        priority: 'Medium',
-      }
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedBalance = await tx.accountBalance.update({
+        where: { id: accountId },
+        data: {
+          balance: newBalance,
+          lastUpdated: new Date(),
+          status: newBalance >= 10000 ? 'optimal' : 'low',
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          nodeId: 'node-admin-01',
+          actorName: actorName || 'Alexis D\'Alexis (Admin)',
+          actorRole: 'admin',
+          action: 'RECHARGE_FLOTTE',
+          targetType: 'treasury',
+          details: `Injection de liquidités : +${amount.toLocaleString()} ${acc.currency} sur le compte ${acc.name}. Note : ${note || 'Réapprovisionnement'}.`,
+          nodeStatus: 'ACK',
+          priority: 'Medium',
+        }
+      });
+
+      return updatedBalance;
     });
 
     return res.json({
       success: true,
-      message: `Flotte ${acc.name} réapprovisionnée (+${numAmount.toLocaleString()} ${acc.currency}).`,
+      message: `Flotte ${acc.name} réapprovisionnée (+${amount.toLocaleString()} ${acc.currency}).`,
       account: updated,
     });
   } catch (error) {

@@ -8,7 +8,7 @@ import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { MobileGestionnaireHome } from '../components/MobileGestionnaireHome';
 
 export const DashboardView: React.FC = () => {
-  const { currentUser } = useApp();
+  const { currentUser, t } = useApp();
   const isDesktopNavRole = currentUser.role === 'admin' || currentUser.role === 'gestionnaire';
   const [selectedRange, setSelectedRange] = useState<DateRange>({
     preset: 'last_7_days',
@@ -32,10 +32,10 @@ export const DashboardView: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              Bonjour, {currentUser.name} <span className="text-xl">👋</span>
+              {t('hello')}, {currentUser.name} <span className="text-xl">👋</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Portail Opérationnel • <span className="font-semibold text-slate-700 dark:text-slate-300 capitalize">{currentUser.role.replace('_', ' ')}</span> • {currentUser.location}
+              {t('operational_portal')} • <span className="font-semibold text-slate-700 dark:text-slate-300 capitalize">{currentUser.role.replace('_', ' ')}</span> • {currentUser.location}
             </p>
           </div>
 

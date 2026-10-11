@@ -138,8 +138,8 @@ export const MobileAgentHome: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
 
   // Form states for transfer entry page
-  const [serviceType, setServiceType] = useState<ServiceType>('cash_out');
-  const [amountDOP, setAmountDOP] = useState<string>('5000');
+  const [serviceType, setServiceType] = useState<ServiceType | null>(null);
+  const [amountDOP, setAmountDOP] = useState<string>('');
   const [senderName, setSenderName] = useState('');
   const [senderPhone, setSenderPhone] = useState('');
   const [receiverName, setReceiverName] = useState('');
@@ -292,7 +292,7 @@ export const MobileAgentHome: React.FC = () => {
       receiverName: receiverName || 'Bénéficiaire Mobile',
       receiverPhone,
       operator: selectedService,
-      serviceType,
+      serviceType: serviceType || 'cash_out',
       amountDOP: numAmountDOP,
       feeDOP,
       commissionDOP,
@@ -310,7 +310,8 @@ export const MobileAgentHome: React.FC = () => {
       setSenderPhone('');
       setReceiverName('');
       setReceiverPhone('');
-      setAmountDOP('5000');
+      setAmountDOP('');
+      setServiceType(null);
     } else {
       setFeedback({ type: 'error', message: result.message });
     }

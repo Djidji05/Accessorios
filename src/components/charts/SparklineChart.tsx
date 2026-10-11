@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, YAxis } from 'recharts';
 
 interface SparklineChartProps {
   data: number[];
@@ -24,6 +24,7 @@ export const SparklineChart: React.FC<SparklineChartProps> = ({
               <stop offset="95%" stopColor={color} stopOpacity={0.0} />
             </linearGradient>
           </defs>
+          <YAxis domain={[0, (dataMax: number) => Math.max(dataMax, 1)]} hide />
           <Area
             type="monotone"
             dataKey="val"
