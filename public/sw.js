@@ -1,4 +1,4 @@
-const CACHE_NAME = 'accessorio-pwa-v1';
+const CACHE_NAME = 'accessorio-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -19,7 +19,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 2. Activate Event: Clean up Old Caches
+// 2. Activate Event: Clean up Old Caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -35,27 +35,20 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch Event: Network First with Cache Fallback for API, Cache First for Static Assets
+// 3. Fetch Event: Only cache GET static assets, NEVER intercept /api or loopback
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
 
-  // If API request, use Network First, fallback to Cache
-  if (requestUrl.pathname.startsWith('/api')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response.status === 200) {
-            const resClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
+  // Laisser toutes les requêtes API et requêtes non-GET passer directement au réseau
+  if (
+    requestUrl.pathname.startsWith('/api') || 
+    event.request.method !== 'GET' ||
+    !event.request.url.startsWith('http')
+  ) {
     return;
   }
 
-  // Static Assets: Cache First, fallback to Network
+  // Assets Statiques: Cache First avec Network Fallback
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -69,6 +62,12 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
+      }).catch(() => {
+        // En cas d'échec total réseau, fallback sur la page d'accueil si navigation
+        if (event.request.mode === 'navigate') {
+          return caches.match('/');
+        }
+        return new Response('Réseau indisponible', { status: 503, statusText: 'Service Unavailable' });
       });
     })
   );
