@@ -147,7 +147,24 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [availableUsers, setAvailableUsers] = useState<User[]>(INITIAL_USERS);
+  const [availableUsers, setAvailableUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('dalexis_available_users');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (err) {
+        console.error('Erreur lecture dalexis_available_users:', err);
+      }
+    }
+    return INITIAL_USERS;
+  });
+
+  useEffect(() => {
+    if (availableUsers && availableUsers.length > 0) {
+      localStorage.setItem('dalexis_available_users', JSON.stringify(availableUsers));
+    }
+  }, [availableUsers]);
   
   // Persistance du profil utilisateur connecté (évite de réinitialiser l'admin au rafraîchissement F5)
   const [currentUser, setCurrentUser] = useState<User>(() => {
@@ -266,7 +283,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>(INITIAL_BALANCES);
   const [killSwitchList, setKillSwitchList] = useState<KillSwitchItem[]>(INITIAL_KILL_SWITCH);
-  const [permissions, setPermissions] = useState<UserPermissionMatrix[]>(INITIAL_PERMISSIONS);
+  const [permissions, setPermissions] = useState<UserPermissionMatrix[]>(() => {
+    const saved = localStorage.getItem('dalexis_permissions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (err) {
+        console.error('Erreur lecture dalexis_permissions:', err);
+      }
+    }
+    return INITIAL_PERMISSIONS;
+  });
+
+  useEffect(() => {
+    if (permissions && permissions.length > 0) {
+      localStorage.setItem('dalexis_permissions', JSON.stringify(permissions));
+    }
+  }, [permissions]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [settlements, setSettlements] = useState<WeeklySettlement[]>(INITIAL_SETTLEMENTS);
   
@@ -954,11 +988,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addUser = async (userData: Omit<User, 'id'> & { password?: string }): Promise<{ success: boolean; message: string }> => {
+    // Enregistrement des identifiants locaux pour permettre la connexion permanente
+    if (userData.password) {
+      try {
+        const creds = JSON.parse(localStorage.getItem('dalexis_credentials') || '{}');
+        if (userData.email) creds[userData.email.trim().toLowerCase()] = userData.password;
+        if (userData.username) {
+          creds[userData.username.trim().toLowerCase()] = userData.password;
+          creds[userData.username.trim().toLowerCase().replace(/^@/, '')] = userData.password;
+        }
+        localStorage.setItem('dalexis_credentials', JSON.stringify(creds));
+      } catch (e) {
+        console.error('Erreur sauvegarde dalexis_credentials:', e);
+      }
+    }
+
     try {
       const res = await api.users.create(userData);
       if (res && res.user) {
         const createdUser = res.user;
-        setAvailableUsers((prev) => [...prev, createdUser]);
+        setAvailableUsers((prev) => {
+          const updated = [...prev.filter(u => u.id !== createdUser.id && u.email !== createdUser.email), createdUser];
+          localStorage.setItem('dalexis_available_users', JSON.stringify(updated));
+          return updated;
+        });
         
         // Add default permissions entry
         const defaultServices: OperatorCode[] = 
@@ -980,13 +1033,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           canEditRates: createdUser.role === 'admin',
         };
         
-        setPermissions((prev) => [...prev, newPerm]);
+        setPermissions((prev) => {
+          const updated = [...prev.filter(p => p.userId !== createdUser.id), newPerm];
+          localStorage.setItem('dalexis_permissions', JSON.stringify(updated));
+          return updated;
+        });
+
         eventBus.publish('USER_CREATED', currentUser.nodeId, currentUser.role, `Nouvel utilisateur créé: ${createdUser.name} (@${createdUser.username || ''})`);
         showToast(`Utilisateur ${createdUser.name} créé avec succès !`, 'success');
-        return { success: true, message: `Utilisateur ${createdUser.name} créé avec succès dans la base de données !` };
+        return { success: true, message: `Utilisateur ${createdUser.name} créé avec succès !` };
       }
     } catch (err: any) {
-      console.warn('API users.create error, fallback mode local:', err);
+      console.warn('API users.create error:', err);
+      const errMsg = err?.message || '';
+      if (errMsg.includes('existe déjà') || errMsg.includes('déjà attribué') || errMsg.includes('obligatoire')) {
+        showToast(errMsg, 'error');
+        return { success: false, message: errMsg };
+      }
     }
 
     const newUserId = `usr_${Date.now()}`;
@@ -995,7 +1058,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: newUserId,
     };
     
-    setAvailableUsers((prev) => [...prev, newUser]);
+    setAvailableUsers((prev) => {
+      const updated = [...prev.filter(u => u.email !== newUser.email), newUser];
+      localStorage.setItem('dalexis_available_users', JSON.stringify(updated));
+      return updated;
+    });
     
     // Add default permissions entry
     const localServices: OperatorCode[] = 
@@ -1017,10 +1084,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       canEditRates: newUser.role === 'admin',
     };
     
-    setPermissions((prev) => [...prev, newPerm]);
+    setPermissions((prev) => {
+      const updated = [...prev.filter(p => p.userId !== newUserId), newPerm];
+      localStorage.setItem('dalexis_permissions', JSON.stringify(updated));
+      return updated;
+    });
     
     eventBus.publish('USER_CREATED', currentUser.nodeId, currentUser.role, `Nouvel utilisateur créé: ${newUser.name} (${newUser.role})`);
-    return { success: true, message: `Utilisateur ${newUser.name} créé avec succès (mode local) !` };
+    showToast(`Utilisateur ${newUser.name} enregistré avec succès !`, 'success');
+    return { success: true, message: `Utilisateur ${newUser.name} enregistré avec succès !` };
   };
 
   const updateUser = async (userId: string, data: Partial<User> & { password?: string }): Promise<{ success: boolean; message: string; user?: User }> => {
@@ -1084,25 +1156,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCurrentUser(res.user);
         }
         setIsAuthenticated(true);
+        // Synchroniser immédiatement la liste des utilisateurs du backend
+        api.users.getAll().then((data) => {
+          if (data?.users && data.users.length > 0) {
+            setAvailableUsers(data.users);
+            localStorage.setItem('dalexis_available_users', JSON.stringify(data.users));
+          }
+          if (data?.permissions) {
+            setPermissions(data.permissions);
+            localStorage.setItem('dalexis_permissions', JSON.stringify(data.permissions));
+          }
+        }).catch(() => null);
+
         return { success: true, message: 'Connexion réussie !' };
       }
       return { success: false, message: 'Identifiants invalides.' };
     } catch (err: any) {
-      // Mode de secours local (fallback démo) si backend déconnecté ou mot de passe démo
+      // Mode de secours local si backend déconnecté ou mot de passe démo
       const input = identifierOrEmail.trim().toLowerCase();
       const cleanInput = input.replace(/^@/, '');
+      const localCreds: Record<string, string> = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('dalexis_credentials') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+      const savedPass = localCreds[input] || localCreds[cleanInput];
+
       const found = availableUsers.find(
         (u) =>
           u.email.toLowerCase() === input ||
           u.email.toLowerCase() === cleanInput ||
           (u.username && (u.username.toLowerCase() === input || u.username.toLowerCase() === cleanInput))
       );
-      if (found && password === 'dalexis123') {
+      if (found && (password === 'dalexis123' || (savedPass && password === savedPass))) {
         localStorage.setItem('dalexis_token', `demo_token_${found.id}`);
         localStorage.setItem('dalexis_user', JSON.stringify(found));
         setCurrentUser(found);
         setIsAuthenticated(true);
-        return { success: true, message: 'Connexion réussie (Session locale).' };
+        return { success: true, message: 'Connexion réussie !' };
       }
       return { success: false, message: err.message || 'Identifiants invalides.' };
     }

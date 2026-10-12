@@ -49,7 +49,10 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Ressource demandée introuvable sur le serveur.' });
 });
 
+import { bootstrapDatabase } from './bootstrap';
+
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Serveur Backend Accessorio opérationnel sur http://localhost:${PORT}`);
+  await bootstrapDatabase();
 });

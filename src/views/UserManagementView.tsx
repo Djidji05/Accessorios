@@ -260,20 +260,24 @@ export const UserManagementView: React.FC = () => {
     setIsSubmitting(true);
     try {
       const res = await addUser(formData);
-      setFormMsg({ type: 'success', text: res.message });
-      setFormData({
-        name: '',
-        username: '',
-        email: '',
-        password: '',
-        role: 'agent_rd',
-        location: 'Agence Santo Domingo',
-        nodeId: `node-agent-${Math.floor(100 + Math.random() * 900)}`,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-        status: 'online',
-        commissionRate: 1.0
-      });
-      setShowPassword(false);
+      if (res.success) {
+        setFormMsg({ type: 'success', text: res.message });
+        setFormData({
+          name: '',
+          username: '',
+          email: '',
+          password: '',
+          role: 'agent_rd',
+          location: 'Agence Santo Domingo',
+          nodeId: `node-agent-${Math.floor(100 + Math.random() * 900)}`,
+          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          status: 'online',
+          commissionRate: 1.0
+        });
+        setShowPassword(false);
+      } else {
+        setFormMsg({ type: 'error', text: res.message });
+      }
     } catch (err: any) {
       setFormMsg({ type: 'error', text: err?.message || 'Erreur lors de la création de l\'utilisateur.' });
     } finally {
