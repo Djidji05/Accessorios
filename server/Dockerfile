@@ -2,6 +2,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Installation d'OpenSSL requis par le moteur Prisma sous Alpine Linux
+RUN apk add --no-cache openssl libc6-compat
+
 # Copie des fichiers de dépendances
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -25,6 +28,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
+
+# Installation d'OpenSSL requis pour l'exécution de Prisma sous Alpine
+RUN apk add --no-cache openssl libc6-compat
 
 COPY package*.json ./
 COPY prisma ./prisma/
