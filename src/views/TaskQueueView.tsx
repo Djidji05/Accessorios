@@ -42,6 +42,7 @@ import { useApp } from '../context/AppContext';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction, ChannelType, OperatorCode, ServiceType } from '../types';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
+import { compressImage } from '../utils/imageCompressor';
 
 export const TaskQueueView: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<DateRange>({
@@ -92,18 +93,11 @@ export const TaskQueueView: React.FC = () => {
   const [proofImage, setProofImage] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleDetailProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDetailProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert("Le fichier sélectionné dépasse 10 Mo.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProofImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file);
+      setProofImage(compressed);
     }
   };
 
@@ -139,18 +133,11 @@ export const TaskQueueView: React.FC = () => {
   const [newTxProofImage, setNewTxProofImage] = useState<string | null>(null);
   const [newTxProofNotes, setNewTxProofNotes] = useState('');
 
-  const handleNewTxProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewTxProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert("Le fichier sélectionné dépasse 10 Mo.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setNewTxProofImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file);
+      setNewTxProofImage(compressed);
     }
   };
 
@@ -404,18 +391,11 @@ export const TaskQueueView: React.FC = () => {
     setHaitiNotes('');
   };
 
-  const handleProofFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProofFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert("Le fichier sélectionné dépasse 10 Mo.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setHaitiProofImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file);
+      setHaitiProofImage(compressed);
     }
   };
 

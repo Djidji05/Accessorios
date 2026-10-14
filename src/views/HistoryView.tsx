@@ -18,6 +18,7 @@ import { useApp } from '../context/AppContext';
 import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/exportUtils';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction } from '../types';
+import { compressImage } from '../utils/imageCompressor';
 
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
@@ -320,12 +321,11 @@ export const HistoryView: React.FC = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onload = () => setProofImage(reader.result as string);
-                          reader.readAsDataURL(file);
+                          const compressed = await compressImage(file);
+                          setProofImage(compressed);
                         }
                       }}
                       className="hidden"
@@ -806,12 +806,11 @@ export const HistoryView: React.FC = () => {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onload = () => setProofImage(reader.result as string);
-                        reader.readAsDataURL(file);
+                        const compressed = await compressImage(file);
+                        setProofImage(compressed);
                       }
                     }}
                     className="hidden"

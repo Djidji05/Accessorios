@@ -41,6 +41,7 @@ import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
 import { OperatorBadge } from './OperatorBadge';
 import { getOperatorLogo } from '../utils/operatorLogos';
+import { compressImage } from '../utils/imageCompressor';
 
 const OPERATORS_LIST: { 
   id: OperatorCode; 
@@ -133,36 +134,22 @@ export const MobileGestionnaireHome: React.FC = () => {
   ).length;
 
   // Handle proof upload image for existing pending tx
-  const handleProofImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProofImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setProofError('Le fichier dépasse 10 Mo. Choisissez une image plus petite.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProofImage(reader.result as string);
-        setProofError(null);
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file);
+      setProofImage(compressed);
+      setProofError(null);
     }
   };
 
   // Handle proof upload image for direct creation
-  const handleDirectProofImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDirectProofImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setDirectFormError('Le fichier dépasse 10 Mo.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setDirectProofImage(reader.result as string);
-        setDirectFormError(null);
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file);
+      setDirectProofImage(compressed);
+      setDirectFormError(null);
     }
   };
 

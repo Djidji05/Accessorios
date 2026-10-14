@@ -50,8 +50,8 @@ model Transaction {
   assignedToRole      String   @default("agent_haiti")
   assignedToName      String   @default("Agent Haïti")
 
-  proofNotes          String?  @db.Text
-  proofUrl            String?  @db.Text
+  proofNotes          String?  @db.LongText
+  proofUrl            String?  @db.LongText
   status              String   @default("pending_routing") // pending_routing | in_progress | completed | cancelled
   createdAt           DateTime @default(now())
   completedAt         DateTime?
