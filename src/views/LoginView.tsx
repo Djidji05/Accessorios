@@ -15,8 +15,8 @@ import { useApp } from '../context/AppContext';
 export const LoginView: React.FC = () => {
   const { login } = useApp();
 
-  const [identifier, setIdentifier] = useState('alexis');
-  const [password, setPassword] = useState('dalexis123');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export const LoginView: React.FC = () => {
     try {
       const result = await login(identifier.trim(), password);
       if (!result.success) {
-        setErrorMessage(result.message || 'Identifiants invalides. Mot de passe par défaut : dalexis123');
+        setErrorMessage(result.message || 'Identifiants invalides. Veuillez vérifier vos accès.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Impossible de se connecter au serveur backend.');
