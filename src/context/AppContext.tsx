@@ -29,6 +29,7 @@ import {
 import { eventBus } from '../core/eventBus';
 import { api } from '../services/api';
 import { Language, Translations, translations } from '../i18n/translations';
+import { soundPlayer } from '../utils/audioNotification';
 
 export const DEFAULT_SERVICE_COMMISSION_RATES: Record<string, number> = {
   moncash: 1.0,
@@ -138,6 +139,10 @@ interface AppContextType {
   selectedService: OperatorCode | null;
   setSelectedService: (service: OperatorCode | null) => void;
 
+  // Transaction Detail View State (To hide bottom navbar when viewing details)
+  isTransactionDetailOpen: boolean;
+  setIsTransactionDetailOpen: (open: boolean) => void;
+
   // i18n Internationalization State
   currentLang: Language;
   setLanguage: (lang: Language) => void;
@@ -201,11 +206,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastNotification({ text, type });
+    if (type === 'success') {
+      soundPlayer.playSuccessChime();
+    } else {
+      soundPlayer.playAlertSound();
+    }
   };
 
   const hideToast = () => {
     setToastNotification(null);
   };
+
+  // Transaction Detail View State (To hide bottom navbar when viewing details)
+  const [isTransactionDetailOpen, setIsTransactionDetailOpen] = useState<boolean>(false);
 
   // Global Search Palette (⌘K)
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -1269,6 +1282,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toastNotification,
         showToast,
         hideToast,
+        isTransactionDetailOpen,
+        setIsTransactionDetailOpen,
         currentLang,
         setLanguage,
         t,

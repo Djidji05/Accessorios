@@ -1,10 +1,14 @@
-import React from 'react';
-import { X, Printer, ShieldCheck, QrCode, CheckCircle2, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Printer, ShieldCheck, CheckCircle2, Clock, Download, Share2, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
+import { downloadReceiptImage, shareReceipt } from '../utils/receiptGenerator';
 
 export const ReceiptModal: React.FC = () => {
-  const { selectedReceiptTx, setSelectedReceiptTx } = useApp();
+  const { selectedReceiptTx, setSelectedReceiptTx, showToast } = useApp();
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
 
   if (!selectedReceiptTx) return null;
 
@@ -147,28 +151,78 @@ export const ReceiptModal: React.FC = () => {
             </div>
           </div>
 
-          {/* QR Code & Signature */}
-          <div className="pt-2 flex items-center justify-between">
-            <div className="p-2 bg-white rounded-xl border border-slate-200">
-              <QrCode className="w-12 h-12 text-slate-900" />
+          {/* Signature & Certificate Section (QR Code removed / in standby) */}
+          <div className="pt-2 flex items-center justify-between bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center font-black text-xs">
+                DA
+              </div>
+              <div className="text-left text-[11px] leading-tight">
+                <span className="font-extrabold text-slate-800 block">D'Alexis Certifié</span>
+                <span className="text-[10px] text-slate-400 font-mono">Node: {tx.createdByNode || 'node-01'}</span>
+              </div>
             </div>
             <div className="text-right text-[10px] text-slate-400 font-mono">
-              <p className="font-bold text-slate-700">Agent: {tx.createdByName}</p>
-              <p>Node: {tx.createdByNode}</p>
-              <p className="text-blue-600 font-bold mt-1">✔ TRANSACTION SÉCURISÉE</p>
+              <p className="font-bold text-slate-700">Agent: {tx.createdByName || 'Agence RD'}</p>
+              <p className="text-blue-600 font-black mt-0.5">✔ OFFICIEL & AUDITÉ</p>
             </div>
           </div>
 
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons: Télécharger & Partager */}
         <div className="pt-3 border-t border-slate-100 flex items-center gap-2 shrink-0">
           <button
+            type="button"
+            onClick={async () => {
+              setIsDownloading(true);
+              try {
+                await downloadReceiptImage(tx);
+                showToast('Reçu téléchargé en image HD !', 'success');
+              } catch {
+                showToast('Erreur lors du téléchargement du reçu.', 'error');
+              } finally {
+                setIsDownloading(false);
+              }
+            }}
+            disabled={isDownloading}
+            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+            title="Télécharger l'image officielle du reçu"
+          >
+            <Download className="w-4 h-4" />
+            <span>{isDownloading ? 'Génération...' : 'Télécharger Reçu'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              setIsSharing(true);
+              try {
+                await shareReceipt(tx);
+                setCopiedShare(true);
+                setTimeout(() => setCopiedShare(false), 2500);
+                showToast('Partage du reçu activé !', 'success');
+              } catch {
+                showToast('Partage annulé ou indisponible.', 'info');
+              } finally {
+                setIsSharing(false);
+              }
+            }}
+            disabled={isSharing}
+            className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+            title="Partager par WhatsApp, SMS ou message"
+          >
+            {copiedShare ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+            <span>{copiedShare ? 'Partagé !' : 'Partager'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handlePrint}
-            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2"
+            className="p-3 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 rounded-2xl transition-all flex items-center justify-center cursor-pointer shrink-0"
+            title="Imprimer directement"
           >
             <Printer className="w-4 h-4" />
-            <span>Imprimer le Reçu</span>
           </button>
         </div>
 

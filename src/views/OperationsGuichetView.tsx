@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Send, 
   AlertTriangle, 
@@ -150,6 +150,16 @@ export const OperationsGuichetView: React.FC = () => {
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
+
+  // Auto-dismiss in-page notifications after 4.5 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => {
+        setFeedback(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   // Check Kill Switch status for chosen operator
   const ksStatus = operator ? killSwitchList.find(k => k.operator === operator) : null;

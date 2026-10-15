@@ -3,10 +3,11 @@ import { LayoutDashboard, History, Landmark, Settings, Zap, Bell, Users } from '
 import { useApp } from '../context/AppContext';
 
 export const BottomNavBar: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, selectedService, selectedReceiptTx } = useApp();
+  const { activeTab, setActiveTab, currentUser, selectedService, selectedReceiptTx, isTransactionDetailOpen } = useApp();
 
-  // Hide bottom navbar when inspecting receipts, filling transfer forms, or on administrative pages
+  // Hide bottom navbar when inspecting receipts, filling transfer forms, viewing details, or on administrative pages
   if (
+    isTransactionDetailOpen ||
     selectedReceiptTx ||
     selectedService ||
     (activeTab as string) === 'notifications' ||

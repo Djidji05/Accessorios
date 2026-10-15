@@ -23,13 +23,19 @@ import { compressImage } from '../utils/imageCompressor';
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
 export const HistoryView: React.FC = () => {
-  const { transactions, currentUser, setSelectedReceiptTx, completeTask } = useApp();
+  const { transactions, currentUser, setSelectedReceiptTx, completeTask, setIsTransactionDetailOpen } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>('all');
   const [operatorFilter, setOperatorFilter] = useState<string>('all');
   
   // Full-page inspection state
   const [inspectedTx, setInspectedTx] = useState<Transaction | null>(null);
+
+  // Masquer la barre de navigation quand on inspecte les détails d'une transaction
+  React.useEffect(() => {
+    setIsTransactionDetailOpen(!!inspectedTx);
+    return () => setIsTransactionDetailOpen(false);
+  }, [inspectedTx, setIsTransactionDetailOpen]);
 
   // Proof Modal state inside HistoryView
   const [proofModalTx, setProofModalTx] = useState<Transaction | null>(null);

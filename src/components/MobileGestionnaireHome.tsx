@@ -375,7 +375,7 @@ export const MobileGestionnaireHome: React.FC = () => {
         {/* SECTION BOUTONS D'ACTION RAPIDE (SAISIE DIRECTE CLIENT AU GESTIONNAIRE) */}
         <section className="space-y-3">
           {/* Grid of Action Buttons for direct client creation */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {OPERATORS_LIST.map((op) => {
               const IconComp = op.icon;
               return (
@@ -829,7 +829,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   1. Informations Expéditeur (Client en RD)
                 </span>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
                     placeholder="Nom complet expéditeur (Optionnel)"
@@ -852,7 +852,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   2. Informations Destinataire (Reçoit en Haïti)
                 </span>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
                     placeholder="Nom complet destinataire"
