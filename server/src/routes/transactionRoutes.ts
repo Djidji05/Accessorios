@@ -7,7 +7,7 @@ const router = Router();
 // 1. Liste des transactions (Authentifié)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { status, operator, search } = req.query;
+    const { status, operator, search, limit } = req.query;
 
     const where: any = {};
     if (status && status !== 'all') {
@@ -27,9 +27,13 @@ router.get('/', authMiddleware, async (req, res) => {
       ];
     }
 
+    // Default take of 250 items to keep response time under 100ms
+    const take = limit ? Math.min(Math.max(1, parseInt(String(limit), 10)), 1000) : 250;
+
     const transactions = await prisma.transaction.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take,
     });
 
     return res.json(transactions);

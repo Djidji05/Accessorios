@@ -58,11 +58,12 @@ export const api = {
 
   // 3. Transactions & Guichet
   transactions: {
-    getAll: (params?: { status?: string; operator?: string; search?: string }) => {
+    getAll: (params?: { status?: string; operator?: string; search?: string; limit?: number }) => {
       const query = new URLSearchParams();
       if (params?.status) query.append('status', params.status);
       if (params?.operator) query.append('operator', params.operator);
       if (params?.search) query.append('search', params.search);
+      if (params?.limit) query.append('limit', String(params.limit));
       const qs = query.toString();
       return request<Transaction[]>(`/transactions${qs ? `?${qs}` : ''}`);
     },

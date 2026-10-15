@@ -21,6 +21,10 @@ model User {
   status    String   @default("offline") // online | busy | offline
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Transaction {
@@ -57,6 +61,15 @@ model Transaction {
   completedAt         DateTime?
   cancelledAt         DateTime?
   cancellationReason  String?
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([operator, createdAt])
+  @@index([assignedToRole, status])
+  @@index([createdByRole, createdAt])
+  @@index([receiverPhone])
+  @@index([senderPhone])
+  @@index([channel, status])
 }
 
 model AccountBalance {
@@ -68,6 +81,10 @@ model AccountBalance {
   accountNumber String?
   lastUpdated   DateTime @default(now())
   status        String   @default("optimal") // optimal | low | critical
+
+  @@index([operator])
+  @@index([currency])
+  @@index([status])
 }
 
 model KillSwitch {
@@ -111,4 +128,8 @@ model AuditLog {
   details    String   @db.Text
   nodeStatus String   @default("ACK") // ACK | SYNCED | DISPATCHED
   priority   String?  @default("Medium")
+
+  @@index([timestamp])
+  @@index([targetType, timestamp])
+  @@index([actorRole, timestamp])
 }
