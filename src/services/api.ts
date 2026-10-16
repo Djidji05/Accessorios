@@ -23,22 +23,36 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  // Timeout de 12 secondes avec AbortController pour éviter les connexions bloquées HTTP/2
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-  const data = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
+    clearTimeout(timeoutId);
 
-  if (!response.ok) {
-    if (response.status === 401 && !endpoint.includes('/auth/login')) {
-      localStorage.removeItem('dalexis_token');
-      window.dispatchEvent(new CustomEvent('dalexis_auth_unauthorized'));
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 401 && !endpoint.includes('/auth/login')) {
+        localStorage.removeItem('dalexis_token');
+        window.dispatchEvent(new CustomEvent('dalexis_auth_unauthorized'));
+      }
+      throw new Error(data.error || `Erreur requête HTTP (${response.status})`);
     }
-    throw new Error(data.error || `Erreur requête HTTP (${response.status})`);
-  }
 
-  return data as T;
+    return data as T;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err?.name === 'AbortError') {
+      throw new Error('Délai d\'attente dépassé (timeout 12s)');
+    }
+    throw err;
+  }
 }
 
 export const api = {

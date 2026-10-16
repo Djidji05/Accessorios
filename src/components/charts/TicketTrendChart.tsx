@@ -138,8 +138,8 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
         )}
 
         {/* Recharts BarChart */}
-        <div className="h-44 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-44 w-full min-w-0 min-h-[176px]">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={176}>
             <BarChart 
               data={data} 
               margin={{ top: 15, right: 10, left: 10, bottom: 0 }}

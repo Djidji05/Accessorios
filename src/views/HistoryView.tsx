@@ -49,7 +49,14 @@ export const HistoryView: React.FC = () => {
   // Périmètre strict selon le rôle : l'agent voit uniquement son propre historique
   const roleScopedTransactions = transactions.filter((tx) => {
     if (isAgentHaiti) {
-      return tx.operator === 'natcash' || tx.operator === 'natcom';
+      return (
+        tx.operator === 'natcash' ||
+        tx.operator === 'natcom' ||
+        tx.operator === 'moncash' ||
+        tx.operator === 'digicel' ||
+        tx.channel === 'haiti_cash' ||
+        tx.assignedToRole === 'agent_haiti'
+      );
     }
     if (isAgentRD) {
       return (

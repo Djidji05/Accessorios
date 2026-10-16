@@ -293,8 +293,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
   
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [accountBalances, setAccountBalances] = useState<AccountBalance[]>(INITIAL_BALANCES);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const saved = localStorage.getItem('dalexis_transactions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (err) {
+        console.error('Erreur lecture dalexis_transactions:', err);
+      }
+    }
+    return INITIAL_TRANSACTIONS;
+  });
+
+  useEffect(() => {
+    if (transactions && transactions.length > 0) {
+      localStorage.setItem('dalexis_transactions', JSON.stringify(transactions));
+    }
+  }, [transactions]);
+
+  const [accountBalances, setAccountBalances] = useState<AccountBalance[]>(() => {
+    const saved = localStorage.getItem('dalexis_balances');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (err) {
+        console.error('Erreur lecture dalexis_balances:', err);
+      }
+    }
+    return INITIAL_BALANCES;
+  });
+
+  useEffect(() => {
+    if (accountBalances && accountBalances.length > 0) {
+      localStorage.setItem('dalexis_balances', JSON.stringify(accountBalances));
+    }
+  }, [accountBalances]);
+
   const [killSwitchList, setKillSwitchList] = useState<KillSwitchItem[]>(INITIAL_KILL_SWITCH);
   const [permissions, setPermissions] = useState<UserPermissionMatrix[]>(() => {
     const saved = localStorage.getItem('dalexis_permissions');
@@ -459,8 +495,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Synchronisation avec l'API Backend Express / SQLite
   useEffect(() => {
     let isMounted = true;
+    let isSyncing = false;
 
     const syncWithBackend = async () => {
+      if (isSyncing) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      isSyncing = true;
       try {
         setNodeConnectionStatus('syncing');
 
@@ -489,13 +529,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!isMounted) return;
 
-        if (txs && txs.length > 0) {
+        if (Array.isArray(txs) && txs.length > 0) {
           setTransactions(txs as Transaction[]);
         }
-        if (bals && bals.length > 0) {
+        if (Array.isArray(bals) && bals.length > 0) {
           setAccountBalances(bals as AccountBalance[]);
         }
-        if (ks && ks.length > 0) {
+        if (Array.isArray(ks) && ks.length > 0) {
           setKillSwitchList(ks as KillSwitchItem[]);
         }
         if (rateData?.rate) {
@@ -508,7 +548,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setPermissions(usersData.permissions);
           }
         }
-        if (logsData && logsData.length > 0) {
+        if (Array.isArray(logsData) && logsData.length > 0) {
           setAuditLogs(logsData.map((l: any) => ({
             ...l,
             timestamp: typeof l.timestamp === 'string' ? l.timestamp : new Date(l.timestamp).toISOString(),
@@ -519,21 +559,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err) {
         console.warn('Backend API non joignable, maintien du mode local/mémoire:', err);
         if (isMounted) setNodeConnectionStatus('offline');
+      } finally {
+        isSyncing = false;
       }
     };
 
     syncWithBackend();
 
-    // Synchronisation périodique en arrière-plan (toutes les 8 secondes)
+    // Synchronisation périodique raisonnable (20 secondes)
     const intervalId = setInterval(() => {
-      if (isAuthenticated) {
+      if (isAuthenticated && typeof document !== 'undefined' && !document.hidden) {
         syncWithBackend();
       }
-    }, 8000);
+    }, 20000);
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden && isAuthenticated) {
+        syncWithBackend();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated]);
 

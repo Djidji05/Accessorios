@@ -81,7 +81,7 @@ export const TaskQueueView: React.FC = () => {
   const [haitiProofImage, setHaitiProofImage] = useState<string | null>(null);
   const [haitiSmsCode, setHaitiSmsCode] = useState<string>('');
   const [haitiNotes, setHaitiNotes] = useState<string>('');
-  const [haitiOperatorFilter, setHaitiOperatorFilter] = useState<'all' | 'natcash' | 'natcom'>('all');
+  const [haitiOperatorFilter, setHaitiOperatorFilter] = useState<'all' | 'natcash' | 'natcom' | 'moncash' | 'digicel'>('all');
   const [haitiStatusFilter, setHaitiStatusFilter] = useState<'in_progress' | 'completed' | 'all'>('in_progress');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [showHaitiBalance, setShowHaitiBalance] = useState<boolean>(true);
@@ -447,9 +447,17 @@ export const TaskQueueView: React.FC = () => {
     setTimeout(() => setCopiedPhoneId(null), 2000);
   };
 
-  // VUE PARTICULIÈRE & ÉPURÉE : AGENT HAÏTI (Strictement Natcash & Natcom)
+  // VUE PARTICULIÈRE & ÉPURÉE : AGENT HAÏTI (Natcash, Natcom, MonCash & Décaissements Haïti)
   if (isAgentHaiti) {
-    const haitiScopedTasks = transactions.filter((tx) => tx.operator === 'natcash' || tx.operator === 'natcom');
+    const haitiScopedTasks = transactions.filter(
+      (tx) =>
+        tx.operator === 'natcash' ||
+        tx.operator === 'natcom' ||
+        tx.operator === 'moncash' ||
+        tx.operator === 'digicel' ||
+        tx.channel === 'haiti_cash' ||
+        tx.assignedToRole === 'agent_haiti'
+    );
 
     const haitiFilteredTasks = haitiScopedTasks.filter((tx) => {
       // 1. Filtre par opérateur Natcash / Natcom
@@ -758,6 +766,17 @@ export const TaskQueueView: React.FC = () => {
               }`}
             >
               Natcom
+            </button>
+
+            <button
+              onClick={() => setHaitiOperatorFilter(haitiOperatorFilter === 'moncash' ? 'all' : 'moncash')}
+              className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
+                haitiOperatorFilter === 'moncash'
+                  ? 'bg-rose-600 text-white border-rose-600 font-extrabold'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              MonCash
             </button>
           </div>
 
