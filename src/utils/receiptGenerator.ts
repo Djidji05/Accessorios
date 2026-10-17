@@ -1,4 +1,5 @@
 import { Transaction } from '../types';
+import { jsPDF } from 'jspdf';
 
 /**
  * Génère le texte récapitulatif du reçu pour le partage SMS / WhatsApp / Presse-papier
@@ -37,8 +38,9 @@ Transfert & Services RD ➔ Haïti
  */
 export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
+  const hasProof = !!tx.proofUrl;
   canvas.width = 650;
-  canvas.height = 920;
+  canvas.height = hasProof ? 1160 : 920;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Impossible d\'initialiser le contexte canvas 2D');
 
@@ -224,7 +226,45 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.fillText(`${tx.amountHTG.toLocaleString()} HTG`, 585, finY);
 
   // Bas de page : Agent & Signature
-  currentY += 200;
+  currentY += 185;
+
+  if (hasProof) {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = tx.proofUrl!;
+      });
+      if (img.width > 0 && img.height > 0) {
+        ctx.fillStyle = '#EFF6FF';
+        ctx.beginPath();
+        ctx.roundRect(40, currentY, 570, 210, 16);
+        ctx.fill();
+        ctx.strokeStyle = '#BFDBFE';
+        ctx.stroke();
+
+        ctx.fillStyle = '#1E40AF';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('📷 PREUVE PHOTOGRAPHIQUE DU DÉCAISSEMENT / REÇU :', 60, currentY + 24);
+
+        const maxW = 530;
+        const maxH = 160;
+        const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const drawX = 40 + (570 - drawW) / 2;
+        const drawY = currentY + 35 + (maxH - drawH) / 2;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        currentY += 230;
+      }
+    } catch {}
+  }
+
+  currentY += 20;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#64748B';
   ctx.font = '600 13px sans-serif';
@@ -243,33 +283,48 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
 }
 
 /**
- * Télécharge le reçu au format image PNG haute résolution
+ * Génère un document PDF officiel haute définition à partir du canvas
  */
-export async function downloadReceiptImage(tx: Transaction): Promise<void> {
+export async function generateReceiptPDF(tx: Transaction): Promise<jsPDF> {
   const canvas = await generateReceiptCanvas(tx);
-  const dataUrl = canvas.toDataURL('image/png');
-  const link = document.createElement('a');
-  link.download = `Recu-${tx.referenceNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.png`;
-  link.href = dataUrl;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+  // Format ticket thermique / A6 vertical (100mm de large)
+  const pdfWidth = 100;
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [pdfWidth, pdfHeight],
+  });
+
+  doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+  return doc;
 }
 
 /**
- * Partage le reçu via l'API Web Share native (WhatsApp, SMS, etc.) ou fallback presse-papier / WhatsApp
+ * Télécharge le reçu au format PDF
  */
-export async function shareReceipt(tx: Transaction): Promise<boolean> {
+export async function downloadReceiptPDF(tx: Transaction): Promise<void> {
+  const doc = await generateReceiptPDF(tx);
+  const cleanRef = tx.referenceNumber.replace(/[^a-zA-Z0-9-]/g, '_');
+  doc.save(`Recu_${cleanRef}.pdf`);
+}
+
+/**
+ * Partage le reçu PDF via l'API Web Share native (WhatsApp, SMS, Email, etc.) ou fallback WhatsApp
+ */
+export async function shareReceiptPDF(tx: Transaction): Promise<boolean> {
   const shareText = getReceiptShareText(tx);
   const cleanRef = tx.referenceNumber.replace(/[^a-zA-Z0-9-]/g, '_');
 
-  // Tentative de partage avec fichier image (sur mobile Android/iOS)
   try {
-    const canvas = await generateReceiptCanvas(tx);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    const doc = await generateReceiptPDF(tx);
+    const pdfBlob = doc.output('blob');
 
-    if (blob && navigator.canShare) {
-      const file = new File([blob], `Recu-${cleanRef}.png`, { type: 'image/png' });
+    if (pdfBlob && typeof navigator !== 'undefined' && navigator.canShare) {
+      const file = new File([pdfBlob], `Recu_${cleanRef}.pdf`, { type: 'application/pdf' });
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `Reçu ${tx.referenceNumber} - D'Alexis`,
@@ -288,17 +343,32 @@ export async function shareReceipt(tx: Transaction): Promise<boolean> {
       return true;
     }
   } catch (err: any) {
-    // Si l'utilisateur annule le menu de partage, on ne fait rien
     if (err?.name === 'AbortError') return true;
   }
 
-  // Fallback : Ouverture directe WhatsApp ou copie dans le presse-papier
+  // Fallback : ouverture WhatsApp avec texte récapitulatif + téléchargement direct du PDF
   try {
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
     window.open(whatsappUrl, '_blank');
+    await downloadReceiptPDF(tx);
     return true;
   } catch {
     navigator.clipboard.writeText(shareText);
+    await downloadReceiptPDF(tx);
     return false;
   }
+}
+
+/**
+ * Télécharge le reçu au format image PNG (pour compatibilité)
+ */
+export async function downloadReceiptImage(tx: Transaction): Promise<void> {
+  return downloadReceiptPDF(tx);
+}
+
+/**
+ * Partage le reçu (pour compatibilité)
+ */
+export async function shareReceipt(tx: Transaction): Promise<boolean> {
+  return shareReceiptPDF(tx);
 }

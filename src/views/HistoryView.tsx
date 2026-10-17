@@ -262,8 +262,8 @@ export const HistoryView: React.FC = () => {
             onClick={() => setSelectedReceiptTx(inspectedTx)}
             className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-blue-400" />
-            <span>Imprimer le Reçu</span>
+            <FileText className="w-4 h-4 text-blue-400" />
+            <span>Reçu Officiel (PDF / Partager)</span>
           </button>
 
           <button
@@ -619,10 +619,10 @@ export const HistoryView: React.FC = () => {
                             type="button"
                             onClick={() => setSelectedReceiptTx(tx)}
                             className="px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
-                            title="Imprimer le reçu client"
+                            title="Télécharger ou partager le reçu PDF"
                           >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Reçu</span>
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Reçu PDF</span>
                           </button>
                         </div>
                       </td>
@@ -710,9 +710,10 @@ export const HistoryView: React.FC = () => {
                       type="button"
                       onClick={() => setSelectedReceiptTx(tx)}
                       className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 text-white text-[11px] font-bold hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Télécharger ou partager le reçu PDF"
                     >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>Reçu</span>
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Reçu PDF</span>
                     </button>
                   </div>
                 </div>

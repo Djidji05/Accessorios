@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Printer, ShieldCheck, CheckCircle2, Clock, Download, Share2, Check } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, Clock, Share2, Check, FileText } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
-import { downloadReceiptImage, shareReceipt } from '../utils/receiptGenerator';
+import { downloadReceiptPDF, shareReceiptPDF } from '../utils/receiptGenerator';
 
 export const ReceiptModal: React.FC = () => {
   const { selectedReceiptTx, setSelectedReceiptTx, showToast } = useApp();
@@ -14,11 +14,6 @@ export const ReceiptModal: React.FC = () => {
 
   const tx = selectedReceiptTx;
   const isCompleted = tx.status === 'completed';
-
-  const handlePrint = () => {
-    window.print();
-  };
-
   const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(tx.operator);
 
   return (
@@ -170,27 +165,27 @@ export const ReceiptModal: React.FC = () => {
 
         </div>
 
-        {/* Action Buttons: Télécharger & Partager */}
-        <div className="pt-3 border-t border-slate-100 flex items-center gap-2 shrink-0">
+        {/* Action Buttons: Télécharger en PDF & Partager en PDF */}
+        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch gap-2.5 shrink-0">
           <button
             type="button"
             onClick={async () => {
               setIsDownloading(true);
               try {
-                await downloadReceiptImage(tx);
-                showToast('Reçu téléchargé en image HD !', 'success');
+                await downloadReceiptPDF(tx);
+                showToast('Reçu PDF officiel téléchargé avec succès !', 'success');
               } catch {
-                showToast('Erreur lors du téléchargement du reçu.', 'error');
+                showToast('Erreur lors du téléchargement du PDF.', 'error');
               } finally {
                 setIsDownloading(false);
               }
             }}
             disabled={isDownloading}
-            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
-            title="Télécharger l'image officielle du reçu"
+            className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            title="Télécharger le reçu officiel au format PDF"
           >
-            <Download className="w-4 h-4" />
-            <span>{isDownloading ? 'Génération...' : 'Télécharger Reçu'}</span>
+            <FileText className="w-4 h-4" />
+            <span>{isDownloading ? 'Génération PDF...' : 'Télécharger en PDF'}</span>
           </button>
 
           <button
@@ -198,10 +193,10 @@ export const ReceiptModal: React.FC = () => {
             onClick={async () => {
               setIsSharing(true);
               try {
-                await shareReceipt(tx);
+                await shareReceiptPDF(tx);
                 setCopiedShare(true);
                 setTimeout(() => setCopiedShare(false), 2500);
-                showToast('Partage du reçu activé !', 'success');
+                showToast('Partage du reçu PDF activé !', 'success');
               } catch {
                 showToast('Partage annulé ou indisponible.', 'info');
               } finally {
@@ -209,20 +204,11 @@ export const ReceiptModal: React.FC = () => {
               }
             }}
             disabled={isSharing}
-            className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
-            title="Partager par WhatsApp, SMS ou message"
+            className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            title="Partager le reçu PDF via WhatsApp, Email ou messagerie"
           >
             {copiedShare ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-            <span>{copiedShare ? 'Partagé !' : 'Partager'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="p-3 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 rounded-2xl transition-all flex items-center justify-center cursor-pointer shrink-0"
-            title="Imprimer directement"
-          >
-            <Printer className="w-4 h-4" />
+            <span>{copiedShare ? 'PDF Partagé !' : 'Partager le Reçu (PDF)'}</span>
           </button>
         </div>
 

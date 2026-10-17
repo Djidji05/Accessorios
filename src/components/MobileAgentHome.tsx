@@ -14,6 +14,7 @@ import {
   ChevronRight, 
   CheckCircle2, 
   Printer, 
+  FileText,
   ArrowLeft, 
   User, 
   Phone, 
@@ -421,8 +422,8 @@ export const MobileAgentHome: React.FC = () => {
                 onClick={() => setSelectedReceiptTx(lastCreatedTx)}
                 className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Printer className="w-4 h-4 text-emerald-400" />
-                <span>Imprimer Reçu</span>
+                <FileText className="w-4 h-4 text-emerald-400" />
+                <span>Reçu (PDF / Partager)</span>
               </button>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1122,9 +1123,9 @@ export const MobileAgentHome: React.FC = () => {
                     <button
                       onClick={() => setSelectedReceiptTx(tx)}
                       className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                      title="Imprimer le reçu"
+                      title="Télécharger ou partager le reçu PDF"
                     >
-                      <Printer className="w-3.5 h-3.5" />
+                      <FileText className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

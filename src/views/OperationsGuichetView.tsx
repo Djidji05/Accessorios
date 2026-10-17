@@ -9,6 +9,7 @@ import {
   ArrowRight, 
   Lock, 
   Printer, 
+  FileText, 
   Sparkles, 
   User, 
   Phone, 
@@ -364,8 +365,8 @@ export const OperationsGuichetView: React.FC = () => {
                 onClick={() => setSelectedReceiptTx(lastCreatedTx)}
                 className="px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-2 cursor-pointer"
               >
-                <Printer className="w-4 h-4 text-blue-100" />
-                <span>Imprimer le Reçu Guichet</span>
+                <FileText className="w-4 h-4 text-blue-100" />
+                <span>Reçu Guichet (PDF / Partager)</span>
               </button>
 
               <button
@@ -765,10 +766,10 @@ export const OperationsGuichetView: React.FC = () => {
                             ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                         }`}
-                        title={isCompleted ? "Imprimer le reçu officiel validé" : "Imprimer le reçu provisoire"}
+                        title="Télécharger ou partager le reçu PDF"
                       >
-                        <Printer className="w-3.5 h-3.5" />
-                        <span>{isCompleted ? "Reçu Officiel" : "Reçu"}</span>
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>{isCompleted ? "Reçu (PDF)" : "Bordereau"}</span>
                       </button>
                     </td>
                   </tr>

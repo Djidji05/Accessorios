@@ -612,8 +612,8 @@ export const MobileGestionnaireHome: React.FC = () => {
                           onClick={() => setSelectedReceiptTx(tx)}
                           className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all border border-slate-700/60"
                         >
-                          <Printer className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Voir / Imprimer le Reçu Officiel</span>
+                          <FileText className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Reçu Officiel (PDF / Partager)</span>
                         </button>
                       )}
                     </div>

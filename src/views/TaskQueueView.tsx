@@ -1914,10 +1914,10 @@ export const TaskQueueView: React.FC = () => {
                                   ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20'
                                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                               }`}
-                              title={isCompleted ? "Imprimer le reçu officiel client (Décaissement certifié)" : "Imprimer le bordereau de dépôt provisoire"}
+                              title={isCompleted ? "Télécharger ou partager le reçu PDF" : "Bordereau provisoire (PDF)"}
                             >
-                              <Printer className="w-3.5 h-3.5" />
-                              <span>{isCompleted ? "Imprimer le reçu" : "Bordereau"}</span>
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>{isCompleted ? "Reçu (PDF)" : "Bordereau"}</span>
                             </button>
 
                             <button
@@ -2007,8 +2007,8 @@ export const TaskQueueView: React.FC = () => {
                       }}
                       className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer hover:bg-slate-800"
                     >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>Imprimer le reçu</span>
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Reçu (PDF / Partager)</span>
                     </button>
                   </div>
                 );
@@ -2105,8 +2105,8 @@ export const TaskQueueView: React.FC = () => {
                   }}
                   className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
                 >
-                  <Printer className="w-4 h-4" />
-                  <span>Imprimer le Reçu Officiel</span>
+                  <FileText className="w-4 h-4" />
+                  <span>Reçu Officiel (PDF / Partager)</span>
                 </button>
               </div>
 

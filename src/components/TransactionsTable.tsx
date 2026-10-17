@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Clock, CheckCircle2, Printer, AlertTriangle } from 'lucide-react';
+import { Search, Clock, CheckCircle2, FileText, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
 import { DateRange } from './DateRangePicker';
@@ -182,10 +182,10 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                     <button
                       onClick={() => setSelectedReceiptTx(tx)}
                       className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer font-bold text-xs"
-                      title="Générer & Imprimer le Reçu PDF"
+                      title="Télécharger ou partager le Reçu PDF"
                     >
-                      <Printer className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Reçu</span>
+                      <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Reçu PDF</span>
                     </button>
                   </td>
                 </tr>
