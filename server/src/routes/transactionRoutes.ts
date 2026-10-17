@@ -36,10 +36,58 @@ router.get('/', authMiddleware, async (req, res) => {
       take,
     });
 
-    return res.json(transactions);
+    // Allègement drastique du payload JSON : les chaînes base64 massives sont transformées
+    // en URLs dédiées /api/transactions/:id/proof pour préserver la mémoire et éliminer
+    // définitivement les erreurs HTTP/2 PROTOCOL_ERROR et CONNECTION_RESET.
+    const lightweightTxs = transactions.map((t) => ({
+      ...t,
+      proofUrl: t.proofUrl
+        ? t.proofUrl.startsWith('data:')
+          ? `/api/transactions/${t.id}/proof`
+          : t.proofUrl
+        : null,
+    }));
+
+    return res.json(lightweightTxs);
   } catch (error) {
     console.error('Erreur get transactions:', error);
     return res.status(500).json({ error: 'Erreur lors de la récupération des transactions.' });
+  }
+});
+
+// 1.1 Récupération de l'image de preuve (Servie directement en binaire optimisé avec cache)
+router.get('/:id/proof', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tx = await prisma.transaction.findUnique({
+      where: { id },
+      select: { proofUrl: true, referenceNumber: true },
+    });
+
+    if (!tx || !tx.proofUrl) {
+      return res.status(404).send('Preuve introuvable pour cette transaction.');
+    }
+
+    if (tx.proofUrl.startsWith('data:image/')) {
+      const commaIndex = tx.proofUrl.indexOf(',');
+      if (commaIndex > -1) {
+        const meta = tx.proofUrl.substring(0, commaIndex);
+        const base64Data = tx.proofUrl.substring(commaIndex + 1);
+        const contentType = meta.replace('data:', '').replace(';base64', '') || 'image/jpeg';
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Length', imgBuffer.length);
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable'); // Cache 7 jours
+        return res.end(imgBuffer);
+      }
+    }
+
+    // Si c'est déjà une URL externe (ex. S3 / CDN)
+    return res.redirect(tx.proofUrl);
+  } catch (error) {
+    console.error('Erreur get proof image:', error);
+    return res.status(500).send('Erreur lors du chargement de la preuve.');
   }
 });
 
@@ -225,7 +273,16 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
       return completedTx;
     });
 
-    return res.json({ success: true, message: 'Tâche clôturée avec succès.', transaction: updated });
+    const lightweightTx = {
+      ...updated,
+      proofUrl: updated.proofUrl
+        ? updated.proofUrl.startsWith('data:')
+          ? `/api/transactions/${updated.id}/proof`
+          : updated.proofUrl
+        : null,
+    };
+
+    return res.json({ success: true, message: 'Tâche clôturée avec succès.', transaction: lightweightTx });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors de la clôture de la tâche.' });
   }

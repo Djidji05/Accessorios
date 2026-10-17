@@ -2,7 +2,7 @@
  * Compresse et redimensionne une image côté client pour éviter l'erreur HTTP 413 (Payload Too Large)
  * et accélérer le transfert instantané sur mobile.
  */
-export async function compressImage(file: File, maxWidth = 1600, maxHeight = 1600, quality = 0.75): Promise<string> {
+export async function compressImage(file: File, maxWidth = 900, maxHeight = 900, quality = 0.55): Promise<string> {
   return new Promise((resolve) => {
     // Si ce n'est pas une image standard (ex. SVG, GIF), fallback FileReader natif
     if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
