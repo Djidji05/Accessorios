@@ -13,22 +13,23 @@ import {
   DollarSign, 
   FileText, 
   Check, 
-  X,
-  Building,
-  ArrowRight,
-  ShieldCheck,
-  History,
-  ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-  ChevronDown,
-  Sparkles
+  X, 
+  Building, 
+  ArrowRight, 
+  ShieldCheck, 
+  History, 
+  ChevronLeft, 
+  ChevronRight, 
+  CalendarDays, 
+  ChevronDown, 
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { WeeklySettlement } from '../types';
 
 export const WeeklySettlementsView: React.FC = () => {
-  const { settlements, currentUser, recordAgentDeposit } = useApp();
+  const { settlements, transactions, currentUser, recordAgentDeposit } = useApp();
 
   const isAdmin = currentUser.role === 'admin';
   const isGestionnaire = currentUser.role === 'gestionnaire';
@@ -82,14 +83,178 @@ export const WeeklySettlementsView: React.FC = () => {
     setModalAgentSearch('');
   };
 
+  const getWeekInfo = (dateStr: string) => {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+
+    const day = d.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    const weekNo = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+
+    const startStr = monday.toISOString().split('T')[0];
+    const endStr = sunday.toISOString().split('T')[0];
+    const fmt = (dt: Date) => dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+
+    return {
+      weekLabel: `Semaine ${weekNo} (${fmt(monday)} - ${fmt(sunday)}/${monday.getFullYear()})`,
+      startDate: startStr,
+      endDate: endStr,
+    };
+  };
+
+  // Merge recorded settlements with live transactions to ensure every week with activity is present
+  const allSettlementsWithLiveTx = React.useMemo(() => {
+    const list = [...settlements];
+
+    // Find all agent RD transactions
+    const relevantTx = transactions.filter((t) => {
+      if (t.status === 'cancelled') return false;
+      if (isAgentRD) {
+        return (
+          t.createdByRole === 'agent_rd' &&
+          (t.createdByName?.toLowerCase().includes(currentUser.name.toLowerCase()) ||
+            (currentUser.username && t.createdByName?.toLowerCase().includes(currentUser.username.toLowerCase())) ||
+            t.createdByNode === currentUser.nodeId)
+        );
+      }
+      return t.createdByRole === 'agent_rd';
+    });
+
+    // Group transactions by week label & agent
+    const weekGroups = new Map<string, { agentId: string; agentName: string; agentRole: any; weekLabel: string; startDate: string; endDate: string; totalCollected: number; totalCommission: number }>();
+
+    relevantTx.forEach((tx) => {
+      const wInfo = getWeekInfo(tx.createdAt);
+      if (!wInfo) return;
+      const key = `${tx.createdByName || 'agent'}_${wInfo.weekLabel}`;
+      const existing = weekGroups.get(key);
+      const comm = tx.commissionDOP || Math.round((tx.amountDOP || 0) * 0.01);
+      if (!existing) {
+        weekGroups.set(key, {
+          agentId: tx.createdByNode || 'agent_node',
+          agentName: tx.createdByName || 'Agent RD',
+          agentRole: 'agent_rd',
+          weekLabel: wInfo.weekLabel,
+          startDate: wInfo.startDate,
+          endDate: wInfo.endDate,
+          totalCollected: tx.amountDOP || 0,
+          totalCommission: comm,
+        });
+      } else {
+        existing.totalCollected += tx.amountDOP || 0;
+        existing.totalCommission += comm;
+      }
+    });
+
+    // Merge groups into list
+    weekGroups.forEach((grp, key) => {
+      const idx = list.findIndex(
+        (s) =>
+          s.weekLabel === grp.weekLabel &&
+          (s.agentName.toLowerCase() === grp.agentName.toLowerCase() ||
+            (s.agentId && s.agentId === grp.agentId))
+      );
+      if (idx >= 0) {
+        const existing = list[idx];
+        const newCollected = Math.max(existing.totalCollected, grp.totalCollected);
+        const newComm = Math.max(existing.totalCommission, grp.totalCommission);
+        const newNet = Math.max(0, newCollected - newComm);
+        const newRemaining = Math.max(0, newNet - existing.amountDeposited);
+        const newStatus = newRemaining === 0 ? 'paid' : (existing.amountDeposited > 0 ? 'partial' : 'pending');
+        list[idx] = {
+          ...existing,
+          totalCollected: newCollected,
+          totalCommission: newComm,
+          netAmountToPay: newNet,
+          remainingBalance: newRemaining,
+          status: newStatus,
+        };
+      } else {
+        const netToPay = Math.max(0, grp.totalCollected - grp.totalCommission);
+        list.push({
+          id: `stl_dyn_${key.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          agentId: grp.agentId,
+          agentName: grp.agentName,
+          agentRole: grp.agentRole,
+          weekLabel: grp.weekLabel,
+          startDate: grp.startDate,
+          endDate: grp.endDate,
+          currency: 'DOP',
+          totalCollected: grp.totalCollected,
+          totalCommission: grp.totalCommission,
+          netAmountToPay: netToPay,
+          amountDeposited: 0,
+          remainingBalance: netToPay,
+          status: 'pending',
+          deposits: [],
+        });
+      }
+    });
+
+    // Also ensure current week exists for agent even if 0 transactions
+    if (isAgentRD) {
+      const currentWeekInfo = getWeekInfo(new Date().toISOString());
+      if (currentWeekInfo) {
+        const hasCurrent = list.some(
+          (s) =>
+            s.weekLabel === currentWeekInfo.weekLabel &&
+            (s.agentId === currentUser.id || s.agentName.toLowerCase() === currentUser.name.toLowerCase())
+        );
+        if (!hasCurrent) {
+          list.push({
+            id: `stl_cur_${currentUser.id}`,
+            agentId: currentUser.id,
+            agentName: currentUser.name,
+            agentRole: 'agent_rd',
+            weekLabel: currentWeekInfo.weekLabel,
+            startDate: currentWeekInfo.startDate,
+            endDate: currentWeekInfo.endDate,
+            currency: 'DOP',
+            totalCollected: 0,
+            totalCommission: 0,
+            netAmountToPay: 0,
+            amountDeposited: 0,
+            remainingBalance: 0,
+            status: 'paid',
+            deposits: [],
+          });
+        }
+      }
+    }
+
+    return list;
+  }, [settlements, transactions, isAgentRD, currentUser]);
+
   // Filter settlements based on user role (Agent Haïti is excluded as Admin pays them directly outside the app)
-  const roleScopedSettlements = settlements.filter((s) => {
+  const roleScopedSettlements = allSettlementsWithLiveTx.filter((s) => {
     if (s.agentRole === 'agent_haiti') return false;
     if (isAgentRD) {
       return s.agentId === currentUser.id || s.agentName.toLowerCase() === currentUser.name.toLowerCase();
     }
     return true; // Admin and Gestionnaire see collecting agents (Agent RD)
   });
+
+  // Weekly Agent Summary Banner calculations (Filtered according to selected week or cumulative)
+  const agentTargetSettlements = selectedWeekLabel === 'all'
+    ? roleScopedSettlements
+    : roleScopedSettlements.filter((s) => s.weekLabel === selectedWeekLabel);
+
+  const agentBannerCommission = agentTargetSettlements.reduce((acc, s) => acc + s.totalCommission, 0);
+  const agentBannerDueToAdmin = agentTargetSettlements.reduce((acc, s) => acc + s.remainingBalance, 0);
+  const agentBannerDeposited = agentTargetSettlements.reduce((acc, s) => acc + s.amountDeposited, 0);
+  const agentBannerCollected = agentTargetSettlements.reduce((acc, s) => acc + s.totalCollected, 0);
 
   // Unique weeks list ordered chronologically descending
   const availableWeeks = Array.from(
@@ -293,6 +458,115 @@ export const WeeklySettlementsView: React.FC = () => {
           <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
+
+      {/* 🌟 BANNIÈRE STATISTIQUES AGENT : COMMISSIONS RÉCOLTÉES DANS LA SEMAINE & MONTANT DÛ À L'ADMIN */}
+      {isAgentRD && (
+        <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 text-white rounded-3xl p-5 shadow-lg border border-slate-700/60 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black border border-emerald-500/30">
+                <Percent className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                  Bilan Hebdomadaire Guichet & Versements ({selectedWeekLabel === 'all' ? 'Toutes les Semaines' : selectedWeekLabel})
+                </span>
+                <h3 className="text-base font-black text-white">
+                  Mes Commissions & Situation avec l'Administration
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className={`px-3.5 py-1.5 rounded-full text-xs font-black font-mono shadow-xs ${
+                agentBannerDueToAdmin > 0 
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+              }`}>
+                {agentBannerDueToAdmin > 0 ? `🔴 DÛ À L'ADMIN : ${agentBannerDueToAdmin.toLocaleString()} DOP` : '🟢 TOUT PAYÉ (0 DOP)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* 1. Commissions Récoltées dans la Semaine */}
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60 space-y-1">
+              <div className="flex items-center justify-between text-emerald-400">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Commissions Récoltées
+                </span>
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-xl font-black text-emerald-400 font-mono">
+                +{agentBannerCommission.toLocaleString()} DOP
+              </p>
+              <p className="text-[10px] text-emerald-300/80 font-medium">
+                Gains générés sur les transactions
+              </p>
+            </div>
+
+            {/* 2. Nombre d'Argent Dû à l'Admin */}
+            <div className={`p-4 rounded-2xl border space-y-1 ${
+              agentBannerDueToAdmin > 0
+                ? 'bg-rose-950/40 border-rose-700/50 text-rose-200'
+                : 'bg-slate-800/80 border-slate-700/60 text-slate-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className={`text-[10px] font-black uppercase tracking-wider ${
+                  agentBannerDueToAdmin > 0 ? 'text-rose-400' : 'text-slate-400'
+                }`}>
+                  Montant Dû à l'Admin
+                </span>
+                {agentBannerDueToAdmin > 0 ? (
+                  <AlertCircle className="w-4 h-4 text-rose-400" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                )}
+              </div>
+              <p className={`text-xl font-black font-mono ${
+                agentBannerDueToAdmin > 0 ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                {agentBannerDueToAdmin.toLocaleString()} DOP
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">
+                {agentBannerDueToAdmin > 0 ? 'Solde net restant à verser' : 'Aucun montant restant dû'}
+              </p>
+            </div>
+
+            {/* 3. Dépôts Versés à l'Admin */}
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60 space-y-1">
+              <div className="flex items-center justify-between text-blue-400">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Déposé à l'Admin
+                </span>
+                <Landmark className="w-4 h-4 text-blue-400" />
+              </div>
+              <p className="text-xl font-black text-blue-400 font-mono">
+                {agentBannerDeposited.toLocaleString()} DOP
+              </p>
+              <p className="text-[10px] text-blue-300/80 font-medium">
+                Versements enregistrés par l'admin
+              </p>
+            </div>
+
+            {/* 4. Total Encaissé au Guichet */}
+            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60 space-y-1">
+              <div className="flex items-center justify-between text-slate-300">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Total Encaissé
+                </span>
+                <DollarSign className="w-4 h-4 text-slate-400" />
+              </div>
+              <p className="text-xl font-black text-white font-mono">
+                {agentBannerCollected.toLocaleString()} DOP
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium">
+                Volume brut des opérations
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. Weekly Settlements: Card List view for Agent RD, Table View for Admin/Gestionnaire */}
       {isAgentRD ? (

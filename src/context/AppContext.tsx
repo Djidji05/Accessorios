@@ -351,7 +351,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [permissions]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
-  const [settlements, setSettlements] = useState<WeeklySettlement[]>(INITIAL_SETTLEMENTS);
+  const [settlements, setSettlements] = useState<WeeklySettlement[]>(() => {
+    const saved = localStorage.getItem('dalexis_settlements');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Erreur lecture dalexis_settlements:', e);
+      }
+    }
+    return INITIAL_SETTLEMENTS;
+  });
+
+  useEffect(() => {
+    if (settlements) {
+      localStorage.setItem('dalexis_settlements', JSON.stringify(settlements));
+    }
+  }, [settlements]);
   
   const [serviceCommissions, setServiceCommissions] = useState<ServiceCommissionConfig[]>(() => {
     const saved = localStorage.getItem('service_commissions');

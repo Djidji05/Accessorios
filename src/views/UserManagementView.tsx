@@ -30,8 +30,14 @@ import {
   Edit3,
   Copy,
   Save,
-  RotateCcw
+  RotateCcw,
+  FileDown,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, Role, User } from '../types';
 
@@ -62,6 +68,7 @@ export const UserManagementView: React.FC = () => {
   
   // Full-page User Inspection State (NO POPUP DIV MODAL)
   const [inspectedUser, setInspectedUser] = useState<User | null>(null);
+  const [inspectionPeriod, setInspectionPeriod] = useState<'week' | 'month' | 'year' | 'all'>('week');
 
   // Synchronize when activeTab changes
   React.useEffect(() => {
@@ -290,12 +297,356 @@ export const UserManagementView: React.FC = () => {
   /* -------------------------------------------------------------------------- */
   if (inspectedUser) {
     const userPerm = permissions.find(p => p.userId === inspectedUser.id);
-    const userTx = transactions.filter(t => t.assignedToName.includes(inspectedUser.name) || t.createdByName.includes(inspectedUser.name));
-    const userSettlements = settlements.filter(s => s.agentId === inspectedUser.id || s.agentName.toLowerCase() === inspectedUser.name.toLowerCase());
-    const userDebt = userSettlements.reduce((sum, s) => sum + s.remainingBalance, 0);
-    const userTotalCollected = userSettlements.reduce((sum, s) => sum + s.totalCollected, 0);
-    const userTotalDeposited = userSettlements.reduce((sum, s) => sum + s.amountDeposited, 0);
     const isOffline = inspectedUser.status === 'offline';
+
+    // Transactions matching this user
+    const userTx = transactions.filter(t => {
+      const nameMatch = (t.assignedToName && t.assignedToName.toLowerCase().includes(inspectedUser.name.toLowerCase())) ||
+                        (t.createdByName && t.createdByName.toLowerCase().includes(inspectedUser.name.toLowerCase()));
+      const nodeMatch = (t.createdByNode && t.createdByNode === inspectedUser.nodeId) ||
+                        (t.assignedToNode && t.assignedToNode === inspectedUser.nodeId);
+      const userMatch = inspectedUser.username && (
+        (t.createdByName && t.createdByName.toLowerCase().includes(inspectedUser.username.toLowerCase())) ||
+        (t.assignedToName && t.assignedToName.toLowerCase().includes(inspectedUser.username.toLowerCase()))
+      );
+      return nameMatch || nodeMatch || userMatch;
+    });
+
+    // Settlements matching this user
+    const userSettlements = settlements.filter(s => 
+      s.agentId === inspectedUser.id || 
+      s.agentName.toLowerCase() === inspectedUser.name.toLowerCase() ||
+      (inspectedUser.username && s.agentName.toLowerCase().includes(inspectedUser.username.toLowerCase()))
+    );
+
+    // Filter helper for date periods
+    const isDateInPeriod = (dateStr: string, period: 'week' | 'month' | 'year' | 'all') => {
+      if (period === 'all') return true;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return false;
+      const now = new Date();
+
+      if (period === 'week') {
+        const day = now.getDay();
+        const diffToMonday = (day === 0 ? -6 : 1) - day;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+        return d >= monday;
+      }
+
+      if (period === 'month') {
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }
+
+      if (period === 'year') {
+        return d.getFullYear() === now.getFullYear();
+      }
+
+      return true;
+    };
+
+    // Period-filtered transactions
+    const periodTx = userTx.filter(t => isDateInPeriod(t.createdAt, inspectionPeriod));
+    const periodVolumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+    const periodTxCount = periodTx.length;
+
+    // Commission agent on period
+    const periodCommissionDOP = periodTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
+      Math.round(periodVolumeDOP * ((inspectedUser.commissionRate !== undefined ? inspectedUser.commissionRate : 1.0) / 100));
+
+    // Service breakdown
+    const servicesList: { code: OperatorCode; name: string; brandColor: string; bgBadge: string }[] = [
+      { code: 'moncash', name: 'MonCash', brandColor: '#EF4444', bgBadge: 'bg-red-50 text-red-700 border-red-200' },
+      { code: 'natcash', name: 'Natcash', brandColor: '#2563EB', bgBadge: 'bg-blue-50 text-blue-700 border-blue-200' },
+      { code: 'digicel', name: 'Digicel Top-up', brandColor: '#DC2626', bgBadge: 'bg-rose-50 text-rose-700 border-rose-200' },
+      { code: 'claro', name: 'Claro RD', brandColor: '#D97706', bgBadge: 'bg-amber-50 text-amber-700 border-amber-200' },
+      { code: 'altice', name: 'Altice RD', brandColor: '#4F46E5', bgBadge: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      { code: 'natcom', name: 'Natcom Top-up', brandColor: '#0891B2', bgBadge: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+      { code: 'zelle', name: 'Zelle USA', brandColor: '#7C3AED', bgBadge: 'bg-purple-50 text-purple-700 border-purple-200' },
+    ];
+
+    const periodServiceBreakdown = servicesList.map(svc => {
+      const txs = periodTx.filter(t => t.operator === svc.code);
+      const count = txs.length;
+      const volumeDOP = txs.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+      const commDOP = txs.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
+        Math.round(volumeDOP * ((inspectedUser.commissionRate !== undefined ? inspectedUser.commissionRate : 1.0) / 100));
+      const percentage = periodVolumeDOP > 0 ? Math.round((volumeDOP / periodVolumeDOP) * 100) : 0;
+      return {
+        ...svc,
+        count,
+        volumeDOP,
+        commDOP,
+        percentage,
+      };
+    });
+
+    // Period deposits to Admin
+    const periodDepositsList: Array<{ amount: number; date: string; note: string; recordedBy: string }> = [];
+    userSettlements.forEach(s => {
+      if (s.deposits && s.deposits.length > 0) {
+        s.deposits.forEach(d => {
+          if (isDateInPeriod(d.date, inspectionPeriod)) {
+            periodDepositsList.push(d);
+          }
+        });
+      } else if (s.amountDeposited > 0 && isDateInPeriod(s.startDate, inspectionPeriod)) {
+        periodDepositsList.push({
+          amount: s.amountDeposited,
+          date: s.startDate,
+          note: 'Dépôt hebdomadaire enregistré',
+          recordedBy: 'Admin',
+        });
+      }
+    });
+
+    const periodDepositedToAdmin = periodDepositsList.reduce((sum, d) => sum + d.amount, 0);
+
+    // Net expected on period and debt due to admin
+    const periodNetExpected = Math.max(0, periodVolumeDOP - periodCommissionDOP);
+    const periodDueToAdmin = Math.max(0, periodNetExpected - periodDepositedToAdmin);
+
+    // Cumulative totals
+    const totalCollectedAllTime = userTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+    const totalDepositedAllTime = userSettlements.reduce((sum, s) => sum + s.amountDeposited, 0);
+    const totalCommissionsAllTime = userTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0);
+    const cumulativeDebtAllTime = userSettlements.length > 0 
+      ? userSettlements.reduce((sum, s) => sum + s.remainingBalance, 0)
+      : Math.max(0, (totalCollectedAllTime - totalCommissionsAllTime) - totalDepositedAllTime);
+
+    // PDF Download Generator Function
+    const handleDownloadPDF = () => {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const periodLabels = {
+        week: 'Cette Semaine',
+        month: 'Ce Mois',
+        year: 'Cette Année',
+        all: 'Tout l\'Historique',
+      };
+
+      const periodLabel = periodLabels[inspectionPeriod];
+
+      // Header Background Banner
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 34, 'F');
+
+      // Brand Name
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text("ALEXIS TRANSFERENCIA", 14, 13);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Plateforme de Gestion & Transferts Transfrontaliers (RD - Haïti)", 14, 19);
+      doc.text("Direction Financière & Contrôle des Opérations", 14, 24);
+
+      // Right Title Badge
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(52, 211, 153);
+      doc.text("FICHE AGENT & BILAN FINANCIER", 196, 13, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(226, 232, 240);
+      doc.text(`Période filtrée : ${periodLabel.toUpperCase()}`, 196, 19, { align: 'right' });
+      doc.text(`Date d'export : ${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`, 196, 24, { align: 'right' });
+
+      // 1. Profil Employé Card
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(14, 40, 182, 25, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`Employé : ${inspectedUser.name}`, 18, 47);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Identifiant : @${inspectedUser.username || inspectedUser.email.split('@')[0]}`, 18, 53);
+      doc.text(`Courriel : ${inspectedUser.email}`, 18, 59);
+
+      doc.text(`Code Guichet : ${inspectedUser.nodeId}`, 105, 47);
+      doc.text(`Rôle : ${inspectedUser.role.toUpperCase()}`, 105, 53);
+      doc.text(`Agence : ${inspectedUser.location}`, 105, 59);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(16, 185, 129);
+      doc.text(`Taux Commission : ${inspectedUser.commissionRate !== undefined ? inspectedUser.commissionRate : 1.0}%`, 160, 47);
+      doc.setTextColor(inspectedUser.status === 'offline' ? 225 : 16, inspectedUser.status === 'offline' ? 29 : 185, 72);
+      doc.text(`Statut : ${inspectedUser.status.toUpperCase()}`, 160, 53);
+
+      // 2. Synthèse Financière (4 Boxes)
+      const boxes = [
+        { title: "VOLUME TOTAL TRAITÉ", val: `${periodVolumeDOP.toLocaleString()} DOP`, sub: `${periodTxCount} transactions`, fill: [239, 246, 255], border: [147, 197, 253], textCol: [30, 58, 138] },
+        { title: "DÉPOSÉ À L'ADMIN", val: `${periodDepositedToAdmin.toLocaleString()} DOP`, sub: "Versements confirmés", fill: [236, 253, 245], border: [110, 231, 183], textCol: [6, 95, 70] },
+        { title: "MONTANT DÛ ADMIN", val: `${periodDueToAdmin.toLocaleString()} DOP`, sub: periodDueToAdmin > 0 ? "🔴 Reste à reverser" : "🟢 Tout Payé (0 DOP)", fill: [255, 241, 242], border: [254, 205, 211], textCol: [159, 18, 57] },
+        { title: "COMMISSIONS AGENT", val: `+${periodCommissionDOP.toLocaleString()} DOP`, sub: "Gains de l'employé", fill: [245, 243, 255], border: [216, 180, 254], textCol: [91, 33, 182] },
+      ];
+
+      boxes.forEach((b, i) => {
+        const x = 14 + (i * 46.5);
+        doc.setFillColor(b.fill[0], b.fill[1], b.fill[2]);
+        doc.setDrawColor(b.border[0], b.border[1], b.border[2]);
+        doc.roundedRect(x, 70, 43, 22, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(b.textCol[0], b.textCol[1], b.textCol[2]);
+        doc.text(b.title, x + 3, 76);
+
+        doc.setFontSize(10);
+        doc.text(b.val, x + 3, 83);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text(b.sub, x + 3, 88);
+      });
+
+      // 3. Répartition des Transactions Divisée par Service
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text("RÉPARTITION DES TRANSACTIONS PAR SERVICE / OPÉRATEUR", 14, 100);
+
+      // Table Header
+      doc.setFillColor(30, 41, 59);
+      doc.rect(14, 104, 182, 7, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text("SERVICE / OPÉRATEUR", 18, 108.5);
+      doc.text("NB TRANSACTIONS", 80, 108.5);
+      doc.text("VOLUME EFFECTUÉ (DOP)", 118, 108.5);
+      doc.text("COMMISSIONS (DOP)", 156, 108.5);
+      doc.text("PART %", 184, 108.5);
+
+      let curY = 111;
+      periodServiceBreakdown.forEach((svc, idx) => {
+        const isEven = idx % 2 === 0;
+        doc.setFillColor(isEven ? 255 : 248, isEven ? 255 : 250, isEven ? 255 : 252);
+        doc.rect(14, curY, 182, 6.5, 'F');
+        doc.setDrawColor(226, 232, 240);
+        doc.line(14, curY + 6.5, 196, curY + 6.5);
+
+        doc.setFont('helvetica', svc.count > 0 ? 'bold' : 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(15, 23, 42);
+        doc.text(svc.name, 18, curY + 4.5);
+        doc.text(String(svc.count), 85, curY + 4.5);
+        doc.text(`${svc.volumeDOP.toLocaleString()} DOP`, 122, curY + 4.5);
+        doc.text(`${svc.commDOP.toLocaleString()} DOP`, 160, curY + 4.5);
+        doc.text(`${svc.percentage}%`, 186, curY + 4.5);
+
+        curY += 6.5;
+      });
+
+      // Total Row
+      doc.setFillColor(241, 245, 249);
+      doc.rect(14, curY, 182, 7, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.text("TOTAL PÉRIODE", 18, curY + 4.5);
+      doc.text(String(periodTxCount), 85, curY + 4.5);
+      doc.text(`${periodVolumeDOP.toLocaleString()} DOP`, 122, curY + 4.5);
+      doc.text(`${periodCommissionDOP.toLocaleString()} DOP`, 160, curY + 4.5);
+      doc.text("100%", 186, curY + 4.5);
+
+      curY += 13;
+
+      // 4. Historique des Versements / Dépôts Versés à l'Admin
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text("DÉTAIL DES DÉPÔTS & VERSEMENTS EFFECTUÉS À L'ADMINISTRATION", 14, curY);
+
+      curY += 4;
+      doc.setFillColor(30, 41, 59);
+      doc.rect(14, curY, 182, 7, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text("DATE & HEURE", 18, curY + 4.5);
+      doc.text("MONTANT DÉPOSÉ (DOP)", 75, curY + 4.5);
+      doc.text("NOTE / RÉFÉRENCE", 120, curY + 4.5);
+      doc.text("ENREGISTRÉ PAR", 168, curY + 4.5);
+
+      curY += 7;
+
+      if (periodDepositsList.length === 0) {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(14, curY, 182, 8, 'F');
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text("Aucun dépôt enregistré pour cet agent sur la période sélectionnée.", 18, curY + 5.5);
+        curY += 8;
+      } else {
+        periodDepositsList.slice(0, 7).forEach((dep, idx) => {
+          const isEven = idx % 2 === 0;
+          doc.setFillColor(isEven ? 255 : 248, isEven ? 255 : 250, isEven ? 255 : 252);
+          doc.rect(14, curY, 182, 6.5, 'F');
+          doc.setDrawColor(226, 232, 240);
+          doc.line(14, curY + 6.5, 196, curY + 6.5);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(15, 23, 42);
+          doc.text(dep.date || '-', 18, curY + 4.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(37, 99, 235);
+          doc.text(`${dep.amount.toLocaleString()} DOP`, 75, curY + 4.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(dep.note || 'Versement guichet', 120, curY + 4.5);
+          doc.text(dep.recordedBy || 'Admin', 168, curY + 4.5);
+
+          curY += 6.5;
+        });
+      }
+
+      // 5. Signatures & Validation
+      const signY = 250;
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(14, signY, 85, 26, 2, 2);
+      doc.roundedRect(111, signY, 85, 26, 2, 2);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text("SIGNATURE & ACCORD DE L'AGENT", 18, signY + 6);
+      doc.text("VISA DIRECTION & VALIDATION ADMIN", 115, signY + 6);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Certifié exact par ${inspectedUser.name}`, 18, signY + 22);
+      doc.text("Tampon & Signature Direction Générale", 115, signY + 22);
+
+      // Footer
+      doc.setFontSize(6.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Alexis Transferencia - Document Officiel de Contrôle de Caisse et Supervision Bancaire - Tous droits réservés", 105, 288, { align: 'center' });
+
+      // Trigger download
+      const safeName = inspectedUser.name.replace(/[^a-zA-Z0-9]/g, '_');
+      doc.save(`Rapport_Agent_${safeName}_${inspectionPeriod}.pdf`);
+    };
 
     return (
       <div className="p-6 space-y-6 max-w-[1400px] mx-auto animate-in fade-in">
@@ -633,52 +984,286 @@ export const UserManagementView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Situation Financière & Dette du Client / Agent Card */}
-                <div className={`p-5 rounded-3xl border shadow-xs space-y-3 ${
-                  userDebt > 0 
-                    ? 'bg-rose-50/90 border-rose-200 text-rose-900' 
-                    : 'bg-emerald-50/90 border-emerald-200 text-emerald-900'
-                }`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-xs ${
-                        userDebt > 0 ? 'bg-rose-600' : 'bg-emerald-600'
-                      }`}>
-                        {userDebt > 0 ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider block opacity-75">
-                          Situation Financière & Dettes
-                        </span>
-                        <h4 className="font-black text-base tracking-tight">
-                          {userDebt > 0 ? `Solde Dû / Dette : ${userDebt.toLocaleString()} DOP` : '0 DOP — Aucune Dette en Cours'}
+                {/* BLOC STATISTIQUES, FILTRE TEMPOREL & RAPPORT PDF */}
+                <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-5">
+                  
+                  {/* Barre d'outils : Filtres Temporels (Semaine / Mois / Année / Tout) & Téléchargement PDF */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-blue-600" />
+                        <h4 className="font-black text-slate-900 text-sm tracking-tight">
+                          Statistiques d'Activité & Bilan Financier
                         </h4>
                       </div>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Filtrage en temps réel par semaine, mois ou année avec division par service.
+                      </p>
                     </div>
 
-                    <span className={`px-3.5 py-1.5 rounded-full text-xs font-black font-mono self-start sm:self-auto ${
-                      userDebt > 0 ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Sélecteur de Période (Pills) */}
+                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                        <button
+                          type="button"
+                          onClick={() => setInspectionPeriod('week')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            inspectionPeriod === 'week'
+                              ? 'bg-slate-900 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Semaine</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setInspectionPeriod('month')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            inspectionPeriod === 'month'
+                              ? 'bg-slate-900 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Mois</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setInspectionPeriod('year')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            inspectionPeriod === 'year'
+                              ? 'bg-slate-900 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Année</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setInspectionPeriod('all')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            inspectionPeriod === 'all'
+                              ? 'bg-slate-900 text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          <span>Tout</span>
+                        </button>
+                      </div>
+
+                      {/* Bouton Télécharger Rapport PDF */}
+                      <button
+                        type="button"
+                        onClick={handleDownloadPDF}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
+                        title="Télécharger le rapport complet au format PDF"
+                      >
+                        <FileDown className="w-4 h-4 text-blue-200" />
+                        <span>Télécharger PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4 Cartes KPIs Financiers sur la Période */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    
+                    {/* 1. Volume Total Traité (Argent Effectué) */}
+                    <div className="bg-blue-50/70 border border-blue-200/80 p-4 rounded-2xl space-y-1">
+                      <div className="flex items-center justify-between text-blue-700">
+                        <span className="text-[10px] font-black uppercase tracking-wider">Argent Effectué</span>
+                        <DollarSign className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <p className="text-xl font-black text-slate-900 font-mono">
+                        {periodVolumeDOP.toLocaleString()} DOP
+                      </p>
+                      <p className="text-[10px] text-blue-600 font-bold">
+                        {periodTxCount} transactions sur la période
+                      </p>
+                    </div>
+
+                    {/* 2. Dépôts Versés à l'Admin */}
+                    <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl space-y-1">
+                      <div className="flex items-center justify-between text-emerald-700">
+                        <span className="text-[10px] font-black uppercase tracking-wider">Déposé à l'Admin</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <p className="text-xl font-black text-emerald-700 font-mono">
+                        {periodDepositedToAdmin.toLocaleString()} DOP
+                      </p>
+                      <p className="text-[10px] text-emerald-600 font-bold">
+                        {periodDepositsList.length} versements enregistrés
+                      </p>
+                    </div>
+
+                    {/* 3. Montant Dû à l'Admin (Dette) */}
+                    <div className={`p-4 rounded-2xl border space-y-1 ${
+                      periodDueToAdmin > 0
+                        ? 'bg-rose-50/80 border-rose-200/80'
+                        : 'bg-emerald-50/60 border-emerald-200/70'
                     }`}>
-                      {userDebt > 0 ? `🔴 DOIT ${userDebt.toLocaleString()} DOP` : '🟢 TOUT PAYÉ'}
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${
+                          periodDueToAdmin > 0 ? 'text-rose-700' : 'text-emerald-700'
+                        }`}>
+                          Dû à l'Admin
+                        </span>
+                        {periodDueToAdmin > 0 ? (
+                          <AlertCircle className="w-4 h-4 text-rose-600" />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        )}
+                      </div>
+                      <p className={`text-xl font-black font-mono ${
+                        periodDueToAdmin > 0 ? 'text-rose-700' : 'text-emerald-700'
+                      }`}>
+                        {periodDueToAdmin.toLocaleString()} DOP
+                      </p>
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                        periodDueToAdmin > 0 ? 'bg-rose-200/70 text-rose-900' : 'bg-emerald-200/70 text-emerald-900'
+                      }`}>
+                        {periodDueToAdmin > 0 ? '🔴 Reste à reverser' : '🟢 Tout Réglé (0 DOP)'}
+                      </span>
+                    </div>
+
+                    {/* 4. Commissions Récoltées par l'Agent */}
+                    <div className="bg-purple-50/70 border border-purple-200/80 p-4 rounded-2xl space-y-1">
+                      <div className="flex items-center justify-between text-purple-700">
+                        <span className="text-[10px] font-black uppercase tracking-wider">Commission Agent</span>
+                        <TrendingUp className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <p className="text-xl font-black text-purple-700 font-mono">
+                        +{periodCommissionDOP.toLocaleString()} DOP
+                      </p>
+                      <p className="text-[10px] text-purple-600 font-bold">
+                        Taux appliqué : {inspectedUser.commissionRate !== undefined ? inspectedUser.commissionRate : 1.0}%
+                      </p>
+                    </div>
+
+                  </div>
+
+                  {/* Division des Transactions par Service / Opérateur */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-slate-500" />
+                        <span>Transactions Effectuées par Service ({periodTxCount})</span>
+                      </h5>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        Période : {inspectionPeriod === 'week' ? 'Semaine en cours' : inspectionPeriod === 'month' ? 'Ce mois' : inspectionPeriod === 'year' ? 'Cette année' : 'Tout l\'historique'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+                      {periodServiceBreakdown.map((svc) => (
+                        <div
+                          key={svc.code}
+                          className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 hover:bg-white hover:border-slate-300 transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase border ${svc.bgBadge}`}>
+                              {svc.name}
+                            </span>
+                            <span className="text-xs font-black font-mono text-slate-900">
+                              {svc.count} tx
+                            </span>
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-baseline text-xs font-mono">
+                              <span className="text-[10px] text-slate-400 font-medium">Volume :</span>
+                              <span className="font-extrabold text-slate-900">{svc.volumeDOP.toLocaleString()} DOP</span>
+                            </div>
+                            <div className="flex justify-between items-baseline text-xs font-mono">
+                              <span className="text-[10px] text-slate-400 font-medium">Commission :</span>
+                              <span className="font-bold text-emerald-600">+{svc.commDOP.toLocaleString()} DOP</span>
+                            </div>
+                          </div>
+
+                          {/* Barre de progression (%) */}
+                          <div className="space-y-0.5 pt-1">
+                            <div className="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${Math.max(svc.percentage, svc.count > 0 ? 5 : 0)}%`,
+                                  backgroundColor: svc.brandColor,
+                                }}
+                              />
+                            </div>
+                            <div className="text-right text-[9px] font-mono font-bold text-slate-400">
+                              {svc.percentage}% du volume
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Historique des Dépôts Versés à l'Admin */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Dépôts Remis à l'Admin ({periodDepositsList.length})</span>
+                      </h5>
+                      <span className="text-xs font-black font-mono text-emerald-600">
+                        Total : {periodDepositedToAdmin.toLocaleString()} DOP
+                      </span>
+                    </div>
+
+                    {periodDepositsList.length === 0 ? (
+                      <div className="p-3 bg-slate-50 rounded-xl text-center text-xs text-slate-400 font-medium">
+                        Aucun versement spécifique enregistré pour cet agent sur cette période.
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                        {periodDepositsList.map((dep, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-mono"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                              <span className="text-slate-500 font-semibold">{dep.date}</span>
+                              <span className="text-slate-400 text-[11px]">— {dep.note || 'Versement'}</span>
+                            </div>
+                            <span className="font-black text-emerald-700">
+                              +{dep.amount.toLocaleString()} DOP
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Situation Cumulée Globale (All-Time) */}
+                  <div className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-sans ${
+                    cumulativeDebtAllTime > 0
+                      ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                      : 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                  }`}>
+                    <div className="flex items-center gap-2 font-bold">
+                      {cumulativeDebtAllTime > 0 ? (
+                        <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      )}
+                      <span>
+                        Situation Globale Cumulée (Toutes périodes confondues) :
+                      </span>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-black font-mono self-start sm:self-auto ${
+                      cumulativeDebtAllTime > 0 ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+                    }`}>
+                      {cumulativeDebtAllTime > 0 ? `🔴 DETTE GLOBALE : ${cumulativeDebtAllTime.toLocaleString()} DOP` : '🟢 AUCUNE DETTE EN COURS'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono bg-white/80 p-3 rounded-2xl border border-slate-200/60">
-                    <div>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Total Encaissé</span>
-                      <span className="font-extrabold text-slate-900">{userTotalCollected.toLocaleString()} DOP</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Total Déposé à l'Admin</span>
-                      <span className="font-extrabold text-blue-600">{userTotalDeposited.toLocaleString()} DOP</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Reste à Payer (Dette)</span>
-                      <span className={`font-black ${userDebt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {userDebt.toLocaleString()} DOP
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Node Details Grid */}

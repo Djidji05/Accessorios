@@ -626,7 +626,10 @@ export const Sidebar: React.FC = () => {
                     {isUserMgmtOpen && (
                       <div className="ml-5 pl-2.5 border-l-2 border-slate-200 space-y-1 mt-1 my-1">
                         <button 
-                          onClick={() => setActiveTab('user_list')} 
+                          onClick={() => {
+                            setActiveTab('user_list');
+                            setIsMobileSidebarOpen(false);
+                          }} 
                           className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2 ${
                             activeTab === 'user_list' || activeTab === 'users'
                               ? 'text-blue-900 font-bold bg-blue-50/80 border border-blue-100' 
@@ -635,6 +638,20 @@ export const Sidebar: React.FC = () => {
                         >
                           <UserCheck className="w-3.5 h-3.5 text-blue-500" />
                           <span>📋 {t('nav_users')}</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setActiveTab('create_user');
+                            setIsMobileSidebarOpen(false);
+                          }} 
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-2 ${
+                            activeTab === 'create_user'
+                              ? 'text-blue-900 font-bold bg-blue-50/80 border border-blue-100' 
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                          }`}
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>➕ Créer Utilisateur</span>
                         </button>
                       </div>
                     )}
