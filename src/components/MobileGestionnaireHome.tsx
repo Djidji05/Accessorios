@@ -157,15 +157,13 @@ export const MobileGestionnaireHome: React.FC = () => {
   const handleConfirmValidationWithProof = () => {
     if (!selectedTxForProof) return;
 
-    // RÈGLE STRICTE : Une preuve (capture d'écran OU note/référence SMS) est OBLIGATOIRE !
-    if (!proofImage && !proofNotes.trim()) {
-      setProofError('⚠️ ACTION BLOQUÉE : Vous devez impérativement joindre une preuve (capture d\'écran ou code SMS/référence) pour valider la transaction.');
+    // RÈGLE STRICTE : Une preuve photo est OBLIGATOIRE !
+    if (!proofImage) {
+      setProofError('⚠️ ACTION BLOQUÉE : Vous devez impérativement joindre une capture d\'écran ou photo du reçu pour valider la transaction.');
       return;
     }
 
-    const proofSummary = proofNotes.trim() 
-      ? proofNotes.trim() 
-      : `Preuve visuelle fournie par ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+    const proofSummary = `Reçu certifié par ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
 
     const result = completeTask(selectedTxForProof.id, proofSummary, proofImage || undefined);
 
@@ -213,8 +211,8 @@ export const MobileGestionnaireHome: React.FC = () => {
     }
 
     // RÈGLE STRICTE : Preuve obligatoire pour la saisie du gestionnaire
-    if (!directProofImage && !directProofNotes.trim()) {
-      setDirectFormError('⚠️ PREUVE REQUISE : Comme vous saisissez directement l\'opération, vous devez impérativement fournir la preuve (photo/capture d\'écran ou référence SMS).');
+    if (!directProofImage) {
+      setDirectFormError('⚠️ PREUVE REQUISE : Veuillez impérativement fournir la photo ou capture d\'écran du reçu.');
       return;
     }
 
@@ -246,9 +244,7 @@ export const MobileGestionnaireHome: React.FC = () => {
         });
         setSelectedReceiptTx(createdTx);
       } else {
-        const proofSummary = directProofNotes.trim()
-          ? `[Saisie Directe Gestionnaire] ${directProofNotes.trim()}`
-          : `[Saisie Directe Gestionnaire] Preuve validée par ${currentUser.name}`;
+        const proofSummary = `[Saisie Directe Gestionnaire] Preuve validée par ${currentUser.name}`;
 
         completeTask(createdTx.id, proofSummary, directProofImage || undefined);
 
@@ -726,22 +722,7 @@ export const MobileGestionnaireHome: React.FC = () => {
               </div>
             </div>
 
-            {/* PROOF INPUT AREA 2: SMS Reference Code or Notes */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span>2. Code de Référence SMS / Reçu (Alternatif)</span>
-              </label>
-              <input 
-                type="text"
-                placeholder="Ex: MonCash Ref #948201 / SMS reçu à 14:32"
-                value={proofNotes}
-                onChange={(e) => {
-                  setProofNotes(e.target.value);
-                  setProofError(null);
-                }}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
+
 
             {/* Validation Action Button */}
             <div className="pt-2">
@@ -936,16 +917,6 @@ export const MobileGestionnaireHome: React.FC = () => {
                   )}
                 </div>
 
-                <input 
-                  type="text"
-                  placeholder="Ou entrez la référence SMS / Note de confirmation..."
-                  value={directProofNotes}
-                  onChange={(e) => {
-                    setDirectProofNotes(e.target.value);
-                    setDirectFormError(null);
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
-                />
               </div>
 
               {/* Submit Button */}

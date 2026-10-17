@@ -347,19 +347,7 @@ export const HistoryView: React.FC = () => {
                 )}
               </div>
 
-              {/* Note / Code SMS */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                  2. Code de Référence SMS / Note de confirmation
-                </label>
-                <textarea
-                  rows={2}
-                  value={proofNotes}
-                  onChange={(e) => setProofNotes(e.target.value)}
-                  placeholder="Ex: Réf MonCash #98421049 - Transfert exécuté avec succès..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+
 
               <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
@@ -832,19 +820,7 @@ export const HistoryView: React.FC = () => {
               )}
             </div>
 
-            {/* Note / Code SMS */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                2. Code de Référence SMS / Note de confirmation
-              </label>
-              <textarea
-                rows={2}
-                value={proofNotes}
-                onChange={(e) => setProofNotes(e.target.value)}
-                placeholder="Ex: Réf MonCash #98421049 - Transfert exécuté avec succès..."
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-              />
-            </div>
+
 
             <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button

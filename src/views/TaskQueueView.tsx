@@ -136,9 +136,7 @@ export const TaskQueueView: React.FC = () => {
   const [newTxReceiverPhone, setNewTxReceiverPhone] = useState('');
   const [newTxAmountDOP, setNewTxAmountDOP] = useState<string>('3000');
   const [newTxImmediateClose, setNewTxImmediateClose] = useState<boolean>(true);
-  const [newTxProofCode, setNewTxProofCode] = useState('');
   const [newTxProofImage, setNewTxProofImage] = useState<string | null>(null);
-  const [newTxProofNotes, setNewTxProofNotes] = useState('');
 
   const handleNewTxProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,6 +155,11 @@ export const TaskQueueView: React.FC = () => {
     }
     if (!newTxSenderName.trim() || !newTxReceiverName.trim() || !newTxReceiverPhone.trim()) {
       alert("Veuillez remplir les informations obligatoires (Expéditeur, Bénéficiaire et Téléphone).");
+      return;
+    }
+
+    if (newTxImmediateClose && !newTxProofImage) {
+      alert("Veuillez joindre la capture ou le reçu opérateur pour clôturer immédiatement.");
       return;
     }
 
@@ -179,11 +182,7 @@ export const TaskQueueView: React.FC = () => {
       const created = result.transaction;
       if (newTxImmediateClose) {
         const opUpper = newTxOperator.toUpperCase();
-        const cleanCode = newTxProofCode.trim();
-        const cleanNotes = newTxProofNotes.trim();
-        const fullProof = cleanCode
-          ? `Réf ${opUpper}: #${cleanCode}${cleanNotes ? ` - ${cleanNotes}` : ' - Exécuté et validé directement'}`
-          : cleanNotes || `Exécuté et certifié directement par ${currentUser.name}`;
+        const fullProof = `Reçu ${opUpper} certifié par ${currentUser.name} (${currentUser.location || 'Guichet'})`;
 
         completeTask(created.id, fullProof, newTxProofImage || undefined);
         setFeedback({
@@ -203,9 +202,7 @@ export const TaskQueueView: React.FC = () => {
       setNewTxReceiverName('');
       setNewTxReceiverPhone('');
       setNewTxAmountDOP('3000');
-      setNewTxProofCode('');
       setNewTxProofImage(null);
-      setNewTxProofNotes('');
       setIsAddTxModalOpen(false);
       setTimeout(() => setFeedback(null), 5000);
     } else {
@@ -343,19 +340,19 @@ export const TaskQueueView: React.FC = () => {
     e.preventDefault();
     if (!selectedTxForDetails) return;
 
-    const opUpper = selectedTxForDetails.operator.toUpperCase();
-    const cleanCode = proofCode.trim();
-    const cleanNotes = proofNotes.trim();
+    if (!proofImage) {
+      alert("⚠️ La preuve photographique (photo ou capture d'écran du reçu) est obligatoire pour valider et clôturer cette transaction.");
+      return;
+    }
 
-    const fullProofText = cleanCode 
-      ? `Réf ${opUpper}: #${cleanCode}${cleanNotes ? ` - ${cleanNotes}` : ' - Validé et clôturé'}`
-      : cleanNotes || `Exécuté et certifié par ${currentUser.name}`;
+    const opUpper = selectedTxForDetails.operator.toUpperCase();
+    const fullProofText = `Reçu ${opUpper} certifié par ${currentUser.name} (${currentUser.location || 'Guichet'})`;
 
     const res = completeTask(selectedTxForDetails.id, fullProofText, proofImage || undefined);
     if (res.success) {
       setFeedback({ 
         type: 'success', 
-        text: `Transaction ${selectedTxForDetails.referenceNumber} (${opUpper}) validée et clôturée avec succès ! Preuve de paiement associée.` 
+        text: `Transaction ${selectedTxForDetails.referenceNumber} (${opUpper}) validée et clôturée avec succès ! Reçu attaché.` 
       });
       const updated: Transaction = { 
         ...selectedTxForDetails, 
@@ -2463,32 +2460,6 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               ) : isInProgress ? (
                 <form onSubmit={handleValidateTask} className="space-y-4 pt-1">
                   
-                  {/* Operator-tailored Reference Code */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>Code de Référence / SMS {tx.operator.toUpperCase()} :</span>
-                      <span className="text-[10px] text-blue-600 font-semibold">Preuve de transmission</span>
-                    </label>
-                    <div className="relative">
-                      <Hash className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={proofCode}
-                        onChange={(e) => setProofCode(e.target.value)}
-                        placeholder={
-                          tx.operator === 'moncash' ? 'Ex: MC-9982410 (Code SMS MonCash)' :
-                          tx.operator === 'digicel' ? 'Ex: DIG-77401 (Réf Digicel TopUp)' :
-                          tx.operator === 'claro' ? 'Ex: CL-88231 (Numéro Autorisation Claro)' :
-                          tx.operator === 'altice' ? 'Ex: ALT-55109 (Code Transaction Altice)' :
-                          tx.operator === 'natcash' ? 'Ex: NC-44109 (Code Natcash)' :
-                          'Ex: REF-88902'
-                        }
-                        className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
                   {/* Preuve Visuelle : Photo / Capture de Quittance */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
@@ -2516,7 +2487,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         <button
                           type="button"
                           onClick={() => setProofImage(null)}
-                          className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors flex-shrink-0"
+                          className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors flex-shrink-0 cursor-pointer"
                           title="Supprimer la capture"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -2541,20 +2512,6 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         />
                       </label>
                     )}
-                  </div>
-
-                  {/* Notes ou confirmation de Guichet */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Observations / Note d'exécution :
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={proofNotes}
-                      onChange={(e) => setProofNotes(e.target.value)}
-                      placeholder={`Ex: Rechargement ${tx.operator.toUpperCase()} exécuté avec succès depuis l'interface opérateur.`}
-                      className="w-full bg-slate-50 border border-slate-200 text-xs p-3 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
                   </div>
 
                   <button
@@ -3092,27 +3049,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                 {newTxImmediateClose && (
                   <div className="space-y-3 pt-2 border-t border-emerald-100">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Code de Référence / Numéro SMS ({newTxOperator.toUpperCase()}) :
-                      </label>
-                      <div className="relative">
-                        <Hash className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="text"
-                          value={newTxProofCode}
-                          onChange={(e) => setNewTxProofCode(e.target.value)}
-                          placeholder={`Ex: ${newTxOperator === 'moncash' ? 'MC-9982410' : 'REF-88401'}`}
-                          className="w-full bg-white border border-slate-200 text-xs font-mono font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          required={newTxImmediateClose}
-                        />
-                      </div>
-                    </div>
-
                     {/* Image Upload */}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Capture d'écran / Photo du Reçu :
+                        Capture d'écran / Photo du Reçu (Requis) :
                       </label>
                       {newTxProofImage ? (
                         <div className="p-2.5 bg-white border border-emerald-300 rounded-xl flex items-center justify-between gap-3">
@@ -3148,19 +3088,6 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           />
                         </label>
                       )}
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Note / Observation :
-                      </label>
-                      <input
-                        type="text"
-                        value={newTxProofNotes}
-                        onChange={(e) => setNewTxProofNotes(e.target.value)}
-                        placeholder="Ex: Rechargement immédiat confirmé par l'opérateur."
-                        className="w-full bg-white border border-slate-200 text-xs px-3 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
                     </div>
                   </div>
                 )}
