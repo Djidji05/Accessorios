@@ -306,8 +306,27 @@ export const TaskQueueView: React.FC = () => {
       return tx.createdByRole === 'agent_rd' || tx.createdByName === currentUser.name || tx.assignedToRole === 'agent_rd';
     }
     if (isGestionnaire) {
-      // Gestionnaire : MonCash, Digicel, Claro, Altice, flux télécom et numériques
-      return tx.operator === 'moncash' || tx.operator === 'digicel' || tx.operator === 'claro' || tx.operator === 'altice' || tx.operator === 'natcom' || tx.channel === 'digital_telecom';
+      // Gestionnaire : uniquement les transactions qui lui sont appropriées (créées par lui ou assignées à son rôle/bureau)
+      const createdByName = tx.createdByName?.trim().toLowerCase() || '';
+      const assignedToName = tx.assignedToName?.trim().toLowerCase() || '';
+      const currentName = currentUser.name?.trim().toLowerCase() || '';
+      const currentUsername = currentUser.username?.trim().toLowerCase() || '';
+
+      const isCreatedByMe =
+        (currentName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
+        (tx.createdByRole === 'gestionnaire' && (!createdByName || createdByName === currentName || createdByName.includes('gestionnaire')));
+
+      const isAssignedToMe =
+        tx.assignedToRole === 'gestionnaire' ||
+        (currentName !== '' && (assignedToName === currentName || (currentUsername !== '' && assignedToName === currentUsername))) ||
+        (tx.channel === 'digital_telecom' && tx.assignedToRole !== 'agent_haiti' && tx.assignedToRole !== 'agent_rd');
+
+      // Exclure formellement les transactions assignées à l'agent Haïti ou à une autre agence RD si non créées par le gestionnaire
+      if ((tx.assignedToRole === 'agent_haiti' || tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_rd') && !isCreatedByMe) {
+        return false;
+      }
+
+      return isCreatedByMe || isAssignedToMe;
     }
     return true; // Admin voit l'ensemble
   });
@@ -2753,21 +2772,30 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
   };
 
   if (isGestionnaire) {
+    const currentName = currentUser.name?.trim().toLowerCase() || '';
+    const currentUsername = currentUser.username?.trim().toLowerCase() || '';
+
     const gestionnaireScopedTasks = transactions.filter((tx) => {
-      // Pour le gestionnaire : flux numériques, télécoms (MonCash, Natcash, Digicel, Claro, Altice, Natcom, Zelle)
-      // ou assignés/initiés par le gestionnaire
-      return (
-        tx.operator === 'moncash' ||
-        tx.operator === 'digicel' ||
-        tx.operator === 'claro' ||
-        tx.operator === 'altice' ||
-        tx.operator === 'natcom' ||
-        tx.operator === 'natcash' ||
-        tx.operator === 'zelle' ||
-        tx.channel === 'digital_telecom' ||
+      const createdByName = tx.createdByName?.trim().toLowerCase() || '';
+      const assignedToName = tx.assignedToName?.trim().toLowerCase() || '';
+
+      // 1. Transaction créée par ce gestionnaire
+      const isCreatedByMe =
+        (currentName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
+        (tx.createdByRole === 'gestionnaire' && (!createdByName || createdByName === currentName || createdByName.includes('gestionnaire')));
+
+      // 2. Transaction assignée au gestionnaire
+      const isAssignedToMe =
         tx.assignedToRole === 'gestionnaire' ||
-        tx.createdByRole === 'gestionnaire'
-      );
+        (currentName !== '' && (assignedToName === currentName || (currentUsername !== '' && assignedToName === currentUsername))) ||
+        (tx.channel === 'digital_telecom' && tx.assignedToRole !== 'agent_haiti' && tx.assignedToRole !== 'agent_rd');
+
+      // Exclure expressément les décaissements de l'agent Haïti ou les transferts d'autres agences RD non créés par ce gestionnaire
+      if ((tx.assignedToRole === 'agent_haiti' || tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_rd') && !isCreatedByMe) {
+        return false;
+      }
+
+      return isCreatedByMe || isAssignedToMe;
     });
 
     const gestionnaireFilteredTasks = gestionnaireScopedTasks.filter((tx) => {
