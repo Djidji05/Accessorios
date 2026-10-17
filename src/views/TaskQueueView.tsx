@@ -314,27 +314,8 @@ export const TaskQueueView: React.FC = () => {
       return tx.createdByRole === 'agent_rd' || tx.createdByName === currentUser.name || tx.assignedToRole === 'agent_rd';
     }
     if (isGestionnaire) {
-      // Gestionnaire : uniquement les transactions qui lui sont appropriées (créées par lui ou assignées à son rôle/bureau)
-      const createdByName = tx.createdByName?.trim().toLowerCase() || '';
-      const assignedToName = tx.assignedToName?.trim().toLowerCase() || '';
-      const currentName = currentUser.name?.trim().toLowerCase() || '';
-      const currentUsername = currentUser.username?.trim().toLowerCase() || '';
-
-      const isCreatedByMe =
-        (currentName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
-        (tx.createdByRole === 'gestionnaire' && (!createdByName || createdByName === currentName || createdByName.includes('gestionnaire')));
-
-      const isAssignedToMe =
-        tx.assignedToRole === 'gestionnaire' ||
-        (currentName !== '' && (assignedToName === currentName || (currentUsername !== '' && assignedToName === currentUsername))) ||
-        (tx.channel === 'digital_telecom' && tx.assignedToRole !== 'agent_haiti' && tx.assignedToRole !== 'agent_rd');
-
-      // Exclure formellement les transactions assignées à l'agent Haïti ou à une autre agence RD si non créées par le gestionnaire
-      if ((tx.assignedToRole === 'agent_haiti' || tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_rd') && !isCreatedByMe) {
-        return false;
-      }
-
-      return isCreatedByMe || isAssignedToMe;
+      // Pour le gestionnaire : toutes les transactions des autres services sont visibles dans le flux, SAUF Natcash
+      return tx.operator !== 'natcash';
     }
     return true; // Admin voit l'ensemble
   });
@@ -2700,41 +2681,76 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
             </div>
           )}
 
-          {/* Photo upload */}
-          <div className="space-y-1.5">
+          {/* Photo upload / Prise de Photo Directe */}
+          <div className="space-y-2">
             <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
               1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)
             </label>
 
             {gestionnaireProofImage ? (
-              <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
-                <img src={gestionnaireProofImage} alt="Preuve" className="max-h-48 object-contain" />
-                <button
-                  type="button"
-                  onClick={() => setGestionnaireProofImage(null)}
-                  className="absolute top-2 right-2 p-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-md cursor-pointer"
-                  title="Supprimer la photo"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div className="relative rounded-2xl overflow-hidden border border-emerald-500/50 max-h-56 bg-slate-950 flex flex-col items-center justify-center p-2 shadow-inner">
+                <img src={gestionnaireProofImage} alt="Preuve" className="max-h-48 w-auto object-contain rounded-xl" />
+                <div className="flex items-center justify-between w-full pt-2 px-1">
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    Photo enregistrée avec succès
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setGestionnaireProofImage(null)}
+                    className="px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold flex items-center gap-1 shadow-md cursor-pointer transition-colors"
+                    title="Supprimer la photo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Changer</span>
+                  </button>
+                </div>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-emerald-400/80 hover:border-emerald-500 dark:border-emerald-600/60 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-5 cursor-pointer transition-colors text-center">
-                <Camera className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-1" />
-                <span className="text-xs font-extrabold text-emerald-950 dark:text-emerald-300">
-                  Prendre une photo ou sélectionner une capture
-                </span>
-                <span className="text-[10px] text-slate-400 mt-0.5">
-                  Preuve requise pour clôturer la transaction
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleGestionnaireProofUpload}
-                  className="hidden"
-                />
-              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Option 1: Prendre une Photo en direct avec l'appareil photo */}
+                <label className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/50 cursor-pointer transition-all group text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-emerald-950 dark:text-emerald-300 block">
+                      Prendre une Photo 📷
+                    </span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold block mt-0.5">
+                      Ouvrir l'appareil photo
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleGestionnaireProofUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Option 2: Importer une Capture d'écran ou Fichier depuis la Galerie */}
+                <label className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/40 hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer transition-all group text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      Galerie / Fichier 📁
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mt-0.5">
+                      Choisir une capture du reçu
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleGestionnaireProofUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             )}
           </div>
 
@@ -2785,26 +2801,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
     const currentUsername = currentUser.username?.trim().toLowerCase() || '';
 
     const gestionnaireScopedTasks = transactions.filter((tx) => {
-      const createdByName = tx.createdByName?.trim().toLowerCase() || '';
-      const assignedToName = tx.assignedToName?.trim().toLowerCase() || '';
-
-      // 1. Transaction créée par ce gestionnaire
-      const isCreatedByMe =
-        (currentName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
-        (tx.createdByRole === 'gestionnaire' && (!createdByName || createdByName === currentName || createdByName.includes('gestionnaire')));
-
-      // 2. Transaction assignée au gestionnaire
-      const isAssignedToMe =
-        tx.assignedToRole === 'gestionnaire' ||
-        (currentName !== '' && (assignedToName === currentName || (currentUsername !== '' && assignedToName === currentUsername))) ||
-        (tx.channel === 'digital_telecom' && tx.assignedToRole !== 'agent_haiti' && tx.assignedToRole !== 'agent_rd');
-
-      // Exclure expressément les décaissements de l'agent Haïti ou les transferts d'autres agences RD non créés par ce gestionnaire
-      if ((tx.assignedToRole === 'agent_haiti' || tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_rd') && !isCreatedByMe) {
-        return false;
-      }
-
-      return isCreatedByMe || isAssignedToMe;
+      // Pour le gestionnaire : toutes les transactions des autres services sont visibles dans le flux, SAUF Natcash
+      return tx.operator !== 'natcash';
     });
 
     const gestionnaireFilteredTasks = gestionnaireScopedTasks.filter((tx) => {
@@ -3143,11 +3141,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               >
                 <option value="all">Tous les opérateurs</option>
                 <option value="moncash">MonCash</option>
-                <option value="natcash">Natcash</option>
                 <option value="digicel">Digicel</option>
-                <option value="natcom">Natcom</option>
                 <option value="claro">Claro</option>
                 <option value="altice">Altice</option>
+                <option value="natcom">Natcom</option>
                 <option value="zelle">Zelle</option>
               </select>
 

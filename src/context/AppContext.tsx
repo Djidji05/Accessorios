@@ -628,7 +628,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (tx.status === 'completed' || tx.status === 'cancelled') return false;
     if (currentUser.role === 'admin') return true;
     if (currentUser.role === 'agent_haiti' && tx.channel === 'haiti_cash') return true;
-    if (currentUser.role === 'gestionnaire' && (tx.channel === 'digital_telecom' || tx.operator === 'moncash' || tx.operator === 'digicel' || tx.operator === 'claro' || tx.operator === 'altice')) return true;
+    if (currentUser.role === 'gestionnaire' && tx.operator !== 'natcash') return true;
     return false;
   }).length;
 
