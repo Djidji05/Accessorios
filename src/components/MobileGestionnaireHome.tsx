@@ -205,8 +205,12 @@ export const MobileGestionnaireHome: React.FC = () => {
       return;
     }
 
-    if (!directSenderName.trim() || !directSenderPhone.trim() || !directReceiverName.trim() || !directReceiverPhone.trim()) {
-      setDirectFormError('Veuillez remplir toutes les informations client (expéditeur et destinataire).');
+    const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(directOperator);
+
+    if (!directSenderName.trim() || !directSenderPhone.trim() || (!isNoBeneficiaryOperator && !directReceiverName.trim()) || !directReceiverPhone.trim()) {
+      setDirectFormError(isNoBeneficiaryOperator 
+        ? 'Veuillez saisir le numéro de téléphone destinataire.' 
+        : 'Veuillez remplir toutes les informations client (expéditeur et destinataire).');
       return;
     }
 
@@ -221,13 +225,17 @@ export const MobileGestionnaireHome: React.FC = () => {
     const feeDOP = Math.round(numAmount * 0.015);
     const commDOP = Math.round(numAmount * 0.01);
 
+    const finalReceiverName = isNoBeneficiaryOperator
+      ? (directReceiverName.trim() || `Recharge ${directOperator.toUpperCase()}`)
+      : directReceiverName.trim();
+
     const res = createTransaction({
       senderName: directSenderName.trim(),
       senderPhone: directSenderPhone.trim(),
-      receiverName: directReceiverName.trim(),
+      receiverName: finalReceiverName,
       receiverPhone: directReceiverPhone.trim(),
       operator: directOperator,
-      serviceType: directServiceType,
+      serviceType: isNoBeneficiaryOperator ? 'topup_mobile' : directServiceType,
       amountDOP: numAmount,
       feeDOP,
       commissionDOP: commDOP,
@@ -828,23 +836,27 @@ export const MobileGestionnaireHome: React.FC = () => {
                 </div>
               </div>
 
-              {/* Client Destinataire (HT) */}
+              {/* Client Destinataire */}
               <div className="space-y-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                  2. Informations Destinataire (Reçoit en Haïti)
+                  {['digicel', 'claro', 'altice', 'natcom'].includes(directOperator)
+                    ? `2. Numéro à Recharger (${directOperator.toUpperCase()})`
+                    : '2. Informations Destinataire (Reçoit en Haïti)'}
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Nom complet destinataire"
-                    value={directReceiverName}
-                    onChange={(e) => setDirectReceiverName(e.target.value)}
-                    required
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-amber-500 focus:outline-none"
-                  />
+                <div className={`grid grid-cols-1 ${['digicel', 'claro', 'altice', 'natcom'].includes(directOperator) ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-2`}>
+                  {!['digicel', 'claro', 'altice', 'natcom'].includes(directOperator) && (
+                    <input
+                      type="text"
+                      placeholder="Nom complet destinataire"
+                      value={directReceiverName}
+                      onChange={(e) => setDirectReceiverName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-amber-500 focus:outline-none"
+                    />
+                  )}
                   <input
                     type="tel"
-                    placeholder="Téléphone HT (509...)"
+                    placeholder={['claro', 'altice'].includes(directOperator) ? "Téléphone RD (+1 809 / 829...)" : "Téléphone HT (509...)"}
                     value={directReceiverPhone}
                     onChange={(e) => setDirectReceiverPhone(e.target.value)}
                     required

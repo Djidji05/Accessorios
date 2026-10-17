@@ -169,8 +169,12 @@ export const TaskQueueView: React.FC = () => {
       alert("Veuillez saisir un montant supérieur à 0.");
       return;
     }
-    if (!newTxSenderName.trim() || !newTxReceiverName.trim() || !newTxReceiverPhone.trim()) {
-      alert("Veuillez remplir les informations obligatoires (Expéditeur, Bénéficiaire et Téléphone).");
+    const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(newTxOperator);
+
+    if (!newTxSenderName.trim() || (!isNoBeneficiaryOperator && !newTxReceiverName.trim()) || !newTxReceiverPhone.trim()) {
+      alert(isNoBeneficiaryOperator 
+        ? "Veuillez remplir les informations obligatoires (Expéditeur et Numéro Récepteur)." 
+        : "Veuillez remplir les informations obligatoires (Expéditeur, Bénéficiaire et Téléphone).");
       return;
     }
 
@@ -182,13 +186,17 @@ export const TaskQueueView: React.FC = () => {
     const feeDOP = Math.round(amountNum * 0.03);
     const commissionDOP = Math.round(amountNum * 0.01);
 
+    const finalReceiverName = isNoBeneficiaryOperator
+      ? (newTxReceiverName.trim() || `Recharge ${newTxOperator.toUpperCase()}`)
+      : newTxReceiverName.trim();
+
     const result = createTransaction({
       senderName: newTxSenderName.trim(),
       senderPhone: newTxSenderPhone.trim() || '+1 809 000 0000',
-      receiverName: newTxReceiverName.trim(),
+      receiverName: finalReceiverName,
       receiverPhone: newTxReceiverPhone.trim(),
       operator: newTxOperator,
-      serviceType: newTxServiceType,
+      serviceType: isNoBeneficiaryOperator ? 'topup_mobile' : newTxServiceType,
       amountDOP: amountNum,
       feeDOP,
       commissionDOP,
@@ -2311,16 +2319,17 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nom Bénéficiaire (Haïti)</label>
-                  <input
-                    type="text"
-                    value={editData.receiverName}
-                    onChange={(e) => setEditData({ ...editData, receiverName: e.target.value })}
-                    className="w-full bg-white border border-slate-300 text-xs text-slate-900 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    required
-                  />
-                </div>
+                {!(selectedTxForDetails && ['digicel', 'claro', 'altice', 'natcom'].includes(selectedTxForDetails.operator)) && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Nom Bénéficiaire (Haïti)</label>
+                    <input
+                      type="text"
+                      value={editData.receiverName}
+                      onChange={(e) => setEditData({ ...editData, receiverName: e.target.value })}
+                      className="w-full bg-white border border-slate-300 text-xs text-slate-900 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Téléphone Bénéficiaire (Portefeuille HT)</label>
@@ -3875,33 +3884,42 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                 </div>
 
                 {/* Bénéficiaire */}
-                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                    Bénéficiaire (Destinataire)
-                  </span>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Nom du Destinataire</label>
-                    <input
-                      type="text"
-                      value={newTxReceiverName}
-                      onChange={(e) => setNewTxReceiverName(e.target.value)}
-                      placeholder="Ex: Jean Baptiste"
-                      className="w-full bg-white border border-slate-200 text-xs px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Numéro Récepteur</label>
-                    <input
-                      type="text"
-                      value={newTxReceiverPhone}
-                      onChange={(e) => setNewTxReceiverPhone(e.target.value)}
-                      placeholder={newTxOperator === 'claro' || newTxOperator === 'altice' ? '+1 809 / 829 ...' : '+509 3...'}
-                      className="w-full bg-white border border-slate-200 text-xs font-mono font-bold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
-                      required
-                    />
-                  </div>
-                </div>
+                {(() => {
+                  const isNoBeneficiary = ['digicel', 'claro', 'altice', 'natcom'].includes(newTxOperator);
+                  return (
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                        {isNoBeneficiary ? `Numéro Destinataire (${newTxOperator.toUpperCase()})` : 'Bénéficiaire (Destinataire)'}
+                      </span>
+                      {!isNoBeneficiary && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">Nom du Destinataire</label>
+                          <input
+                            type="text"
+                            value={newTxReceiverName}
+                            onChange={(e) => setNewTxReceiverName(e.target.value)}
+                            placeholder="Ex: Jean Baptiste"
+                            className="w-full bg-white border border-slate-200 text-xs px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                            required
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          {isNoBeneficiary ? 'Numéro de Téléphone à Recharger' : 'Numéro Récepteur'}
+                        </label>
+                        <input
+                          type="text"
+                          value={newTxReceiverPhone}
+                          onChange={(e) => setNewTxReceiverPhone(e.target.value)}
+                          placeholder={newTxOperator === 'claro' || newTxOperator === 'altice' ? '+1 809 / 829 ...' : '+509 3...'}
+                          className="w-full bg-white border border-slate-200 text-xs font-mono font-bold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
+                          required
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 4. Montant & Conversion */}

@@ -15,6 +15,9 @@ export function getReceiptShareText(tx: Transaction): string {
     minute: '2-digit'
   });
 
+  const isTelecom = ['digicel', 'claro', 'altice', 'natcom'].includes(tx.operator);
+  const showReceiverName = !isTelecom && tx.receiverName && !tx.receiverName.startsWith('Recharge');
+
   return `🧾 *D'ALEXIS TRANSFERENCIA*
 Transfert & Services RD ➔ Haïti
 --------------------------------
@@ -23,8 +26,7 @@ Transfert & Services RD ➔ Haïti
 📶 *Service :* ${tx.operator.toUpperCase()}
 ⚡ *Statut :* ${statusLabel}
 --------------------------------
-👤 *Bénéficiaire :* ${tx.receiverName}
-📞 *Téléphone :* ${tx.receiverPhone}
+${showReceiverName ? `👤 *Bénéficiaire :* ${tx.receiverName}\n` : ''}📞 *${isTelecom ? 'Numéro Rechargé' : 'Téléphone'} :* ${tx.receiverPhone}
 💵 *Montant Reçu :* ${tx.amountHTG.toLocaleString()} HTG
 💰 *Montant Payé :* ${tx.amountDOP.toLocaleString()} DOP
 📊 *Taux :* 100 DOP = ${Math.round(tx.exchangeRate * 100)} HTG
@@ -149,23 +151,28 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.font = 'black 15px sans-serif';
   ctx.fillText(tx.operator.toUpperCase(), 230, currentY);
 
+  const isTelecomOp = ['digicel', 'claro', 'altice', 'natcom'].includes(tx.operator);
+  const showReceiverNameCanvas = !isTelecomOp && tx.receiverName && !tx.receiverName.startsWith('Recharge');
+
   currentY += 35;
   ctx.fillStyle = '#94A3B8';
   ctx.font = 'bold 12px sans-serif';
   ctx.fillText('EXPÉDITEUR (RD)', 45, currentY);
-  ctx.fillText('BÉNÉFICIAIRE (HAÏTI)', 345, currentY);
+  ctx.fillText(isTelecomOp ? 'NUMÉRO RECHARGÉ' : 'BÉNÉFICIAIRE (HAÏTI)', 345, currentY);
 
   currentY += 25;
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 16px sans-serif';
   ctx.fillText(tx.senderName || 'Client Comptoir', 45, currentY);
-  ctx.fillText(tx.receiverName || 'Bénéficiaire', 345, currentY);
+  ctx.fillText(showReceiverNameCanvas ? tx.receiverName : (tx.receiverPhone || '---'), 345, currentY);
 
   currentY += 22;
   ctx.fillStyle = '#64748B';
   ctx.font = 'bold 14px monospace';
   ctx.fillText(tx.senderPhone || '---', 45, currentY);
-  ctx.fillText(tx.receiverPhone || '---', 345, currentY);
+  if (showReceiverNameCanvas) {
+    ctx.fillText(tx.receiverPhone || '---', 345, currentY);
+  }
 
   // Ligne pointillée
   currentY += 30;
