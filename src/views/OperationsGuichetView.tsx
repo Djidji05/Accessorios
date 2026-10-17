@@ -171,10 +171,33 @@ export const OperationsGuichetView: React.FC = () => {
   const feeDOP = Math.round(numAmountDOP * 0.03); // 3% fee
   const commissionDOP = Math.round(numAmountDOP * 0.01); // 1% commission
 
-  // Filtrage des transactions récentes de l'agent au comptoir
+  // Filtrage des transactions récentes de l'opérateur au guichet
   const isAgentRD = currentUser.role === 'agent_rd';
+  const isGestionnaire = currentUser.role === 'gestionnaire';
+  const currentName = currentUser.name?.trim().toLowerCase() || '';
+  const currentUsername = currentUser.username?.trim().toLowerCase() || '';
+
   const recentCashierTx = transactions
-    .filter(t => currentUser.role === 'admin' || t.createdByName === currentUser.name || t.createdByRole === 'agent_rd')
+    .filter((t) => {
+      if (currentUser.role === 'admin') return true;
+      const createdByName = t.createdByName?.trim().toLowerCase() || '';
+
+      if (isGestionnaire) {
+        return (
+          (createdByName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
+          (t.createdByRole === 'gestionnaire' && (!createdByName || createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername) || currentName.includes('gestionnaire') || createdByName.includes('gestionnaire')))
+        );
+      }
+
+      if (isAgentRD) {
+        return (
+          (createdByName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
+          (t.createdByRole === 'agent_rd' && (!createdByName || createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername)))
+        );
+      }
+
+      return createdByName === currentName;
+    })
     .slice(0, 8);
 
   const handleUpdateRateSubmit = (e: React.FormEvent) => {
@@ -710,8 +733,15 @@ export const OperationsGuichetView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {recentCashierTx.map((tx) => {
-                const isCompleted = tx.status === 'completed';
+              {recentCashierTx.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium text-xs">
+                    Aucune transaction récente enregistrée à ce guichet pour votre compte.
+                  </td>
+                </tr>
+              ) : (
+                recentCashierTx.map((tx) => {
+                  const isCompleted = tx.status === 'completed';
                 return (
                   <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-3 font-mono">
@@ -774,7 +804,8 @@ export const OperationsGuichetView: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              })
+            )}
             </tbody>
           </table>
         </div>

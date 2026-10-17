@@ -149,12 +149,45 @@ export const MobileAgentHome: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
 
-  // Role Scoped Notifications (Strictly respects Agent RD & user rights)
+  // Role Scoped Notifications (Strictly respects Agent RD, Gestionnaire & user rights)
   const isAgentRD = currentUser.role === 'agent_rd';
   const isAgentHaiti = currentUser.role === 'agent_haiti';
   const isGestionnaire = currentUser.role === 'gestionnaire';
   const isAdmin = currentUser.role === 'admin';
   const isDesktopNavRole = isAdmin || isGestionnaire;
+
+  // Helper : Détermine si une transaction appartient à l'utilisateur connecté dans ce guichet
+  const isMyTransaction = React.useCallback((t: Transaction): boolean => {
+    if (isAdmin) return true;
+
+    const currentName = currentUser.name?.trim().toLowerCase() || '';
+    const currentUsername = currentUser.username?.trim().toLowerCase() || '';
+    const createdByName = t.createdByName?.trim().toLowerCase() || '';
+
+    if (isGestionnaire) {
+      // Pour le gestionnaire : uniquement les transactions qui lui appartiennent / créées par lui
+      const isCreatedByMe = (
+        (createdByName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
+        (t.createdByRole === 'gestionnaire' && (!createdByName || createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername) || currentName.includes('gestionnaire') || createdByName.includes('gestionnaire')))
+      );
+      return Boolean(isCreatedByMe);
+    }
+
+    if (isAgentRD) {
+      // Pour l'agent RD : uniquement les transactions créées par lui-même au comptoir
+      const isCreatedByMe = (
+        (createdByName !== '' && (createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername))) ||
+        (t.createdByRole === 'agent_rd' && (!createdByName || createdByName === currentName || (currentUsername !== '' && createdByName === currentUsername)))
+      );
+      return Boolean(isCreatedByMe);
+    }
+
+    if (isAgentHaiti) {
+      return t.operator === 'natcash' || t.operator === 'natcom' || t.channel === 'haiti_cash';
+    }
+
+    return createdByName === currentName;
+  }, [isAdmin, isGestionnaire, isAgentRD, isAgentHaiti, currentUser]);
 
   const notifications = React.useMemo(() => {
     const list: Array<{
@@ -168,17 +201,17 @@ export const MobileAgentHome: React.FC = () => {
     }> = [];
 
     const scopedTxs = transactions.filter((t) => {
+      if (isAdmin) return true;
+      if (isGestionnaire) {
+        return isMyTransaction(t) || ['digicel', 'claro', 'altice'].includes(t.operator);
+      }
       if (isAgentRD) {
-        return (
-          t.createdByName?.toLowerCase() === currentUser.name?.toLowerCase() ||
-          t.senderName?.toLowerCase() === currentUser.name?.toLowerCase() ||
-          t.createdByRole === 'agent_rd'
-        );
+        return isMyTransaction(t);
       }
       if (isAgentHaiti) {
         return t.operator === 'natcash' || t.operator === 'natcom' || t.channel === 'haiti_cash';
       }
-      return true;
+      return isMyTransaction(t);
     });
 
     scopedTxs.slice(0, 4).forEach((tx) => {
@@ -229,9 +262,9 @@ export const MobileAgentHome: React.FC = () => {
     }
 
     return list;
-  }, [transactions, currentUser, dopToHtgRate, killSwitchList, isAgentRD, isAgentHaiti]);
+  }, [transactions, currentUser, dopToHtgRate, killSwitchList, isAdmin, isGestionnaire, isAgentRD, isAgentHaiti, isMyTransaction]);
 
-  // Calculate transactions & amount realized during the current week for this agent
+  // Calculate transactions & amount realized during the current week for this user
   const now = new Date();
   const startOfWeek = new Date(now);
   const day = now.getDay();
@@ -239,21 +272,20 @@ export const MobileAgentHome: React.FC = () => {
   startOfWeek.setDate(diff);
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const myTxs = transactions.filter(t => 
-    currentUser.role === 'admin' || t.createdByName === currentUser.name || t.createdByRole === 'agent_rd'
-  );
+  const myTxs = transactions.filter(isMyTransaction);
 
-  const weeklyTxs = myTxs.filter(t => {
+  const weeklyTxs = myTxs.filter((t) => {
+    if (t.status === 'cancelled') return false;
     const tDate = new Date(t.createdAt);
-    return tDate >= startOfWeek || isNaN(tDate.getTime());
+    return !isNaN(tDate.getTime()) && tDate >= startOfWeek;
   });
 
-  const weeklyCount = weeklyTxs.length > 0 ? weeklyTxs.length : myTxs.length;
+  const weeklyCount = weeklyTxs.length;
   const weeklyTotalDOP = weeklyTxs.reduce((sum, t) => sum + t.amountDOP, 0);
-  const displayTotalDOP = weeklyTotalDOP > 0 ? weeklyTotalDOP : myTxs.reduce((sum, t) => sum + t.amountDOP, 0);
+  const displayTotalDOP = weeklyTotalDOP;
   const displayTotalHTG = Math.round(displayTotalDOP * dopToHtgRate);
 
-  const zelleTxs = myTxs.filter(t => t.operator === 'zelle');
+  const zelleTxs = myTxs.filter((t) => t.operator === 'zelle');
   const zelleTotalDOP = zelleTxs.reduce((sum, t) => sum + t.amountDOP, 0);
   const zelleTotalUSD = zelleTxs.reduce((sum, t) => sum + (t.amountUSD || Math.round((t.amountDOP / 60) * 100) / 100), 0);
 
@@ -967,6 +999,13 @@ export const MobileAgentHome: React.FC = () => {
             </h2>
           </div>
 
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-0.5">
+            <span>{weeklyCount} transfert{weeklyCount > 1 ? 's' : ''} réalisé{weeklyCount > 1 ? 's' : ''} cette semaine</span>
+            {weeklyCount > 0 && showBalance && (
+              <span className="text-emerald-400/90 font-mono">≈ {displayTotalHTG.toLocaleString('fr-FR')} HTG</span>
+            )}
+          </div>
+
           {/* Zelle Pay Stat Row (Admin / Zelle) */}
           {(isAdmin || zelleTotalDOP > 0) && (
             <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between">
@@ -1078,60 +1117,71 @@ export const MobileAgentHome: React.FC = () => {
 
         {/* List of Recent Transactions Cards */}
         <div className="space-y-2">
-          {recentTxs.map((tx) => {
-            const isCompleted = tx.status === 'completed';
+          {recentTxs.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-1">
+              <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                Aucune transaction récente
+              </p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Les transferts que vous effectuez apparaîtront ici.
+              </p>
+            </div>
+          ) : (
+            recentTxs.map((tx) => {
+              const isCompleted = tx.status === 'completed';
 
-            return (
-              <div
-                key={tx.id}
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
-              >
-                {/* Left: Operator Icon & Transaction Info */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <OperatorBadge operator={tx.operator} size="sm" />
+              return (
+                <div
+                  key={tx.id}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                >
+                  {/* Left: Operator Icon & Transaction Info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <OperatorBadge operator={tx.operator} size="sm" />
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
-                        {tx.receiverName}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                          {tx.receiverName}
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] text-slate-400 font-mono block">
+                        {tx.referenceNumber} • {tx.receiverPhone}
                       </span>
                     </div>
+                  </div>
 
-                    <span className="text-[10px] text-slate-400 font-mono block">
-                      {tx.referenceNumber} • {tx.receiverPhone}
+                  {/* Right: Amounts & Receipt Action */}
+                  <div className="text-right flex-shrink-0">
+                    <span className="font-mono font-black text-slate-900 dark:text-white text-xs block">
+                      {tx.amountDOP.toLocaleString()} DOP
                     </span>
+                    
+                    <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                      {isCompleted ? (
+                        <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
+                          Clôturé
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-1.5 py-0.5 rounded">
+                          En cours
+                        </span>
+                      )}
+
+                      <button
+                        onClick={() => setSelectedReceiptTx(tx)}
+                        className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                        title="Télécharger ou partager le reçu PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Right: Amounts & Receipt Action */}
-                <div className="text-right flex-shrink-0">
-                  <span className="font-mono font-black text-slate-900 dark:text-white text-xs block">
-                    {tx.amountDOP.toLocaleString()} DOP
-                  </span>
-                  
-                  <div className="flex items-center gap-1.5 justify-end mt-0.5">
-                    {isCompleted ? (
-                      <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
-                        Clôturé
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-1.5 py-0.5 rounded">
-                        En cours
-                      </span>
-                    )}
-
-                    <button
-                      onClick={() => setSelectedReceiptTx(tx)}
-                      className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                      title="Télécharger ou partager le reçu PDF"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
