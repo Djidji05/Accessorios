@@ -36,13 +36,16 @@ import {
   Filter,
   Landmark,
   Percent,
-  LogOut
+  LogOut,
+  FolderArchive,
+  Download
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction, ChannelType, OperatorCode, ServiceType } from '../types';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { compressImage } from '../utils/imageCompressor';
+import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/exportUtils';
 
 export const TaskQueueView: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<DateRange>({
@@ -73,11 +76,24 @@ export const TaskQueueView: React.FC = () => {
   const [haitiDetailTx, setHaitiDetailTx] = useState<Transaction | null>(null);
   const [haitiProofModalTx, setHaitiProofModalTx] = useState<Transaction | null>(null);
 
+  // Dedicated Gestionnaire States & Filters
+  const [gestionnaireDetailTx, setGestionnaireDetailTx] = useState<Transaction | null>(null);
+  const [gestionnaireProofModalTx, setGestionnaireProofModalTx] = useState<Transaction | null>(null);
+  const [gestionnaireProofImage, setGestionnaireProofImage] = useState<string | null>(null);
+  const [gestionnaireProofNotes, setGestionnaireProofNotes] = useState<string>('');
+  const [gestionnaireProofError, setGestionnaireProofError] = useState<string | null>(null);
+  const [gestionnaireTimeFilter, setGestionnaireTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
+  const [gestionnaireStatusFilter, setGestionnaireStatusFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
+  const [gestionnaireOperatorFilter, setGestionnaireOperatorFilter] = useState<string>('all');
+  const [gestionnaireSearchQuery, setGestionnaireSearchQuery] = useState('');
+
   // Masquer la barre de navigation quand un détail de transaction ou modal de validation est ouvert
   React.useEffect(() => {
-    setIsTransactionDetailOpen(!!(selectedTxForDetails || haitiDetailTx || haitiProofModalTx));
+    setIsTransactionDetailOpen(
+      !!(selectedTxForDetails || haitiDetailTx || haitiProofModalTx || gestionnaireDetailTx || gestionnaireProofModalTx)
+    );
     return () => setIsTransactionDetailOpen(false);
-  }, [selectedTxForDetails, haitiDetailTx, haitiProofModalTx, setIsTransactionDetailOpen]);
+  }, [selectedTxForDetails, haitiDetailTx, haitiProofModalTx, gestionnaireDetailTx, gestionnaireProofModalTx, setIsTransactionDetailOpen]);
   const [haitiProofImage, setHaitiProofImage] = useState<string | null>(null);
   const [haitiSmsCode, setHaitiSmsCode] = useState<string>('');
   const [haitiNotes, setHaitiNotes] = useState<string>('');
@@ -2561,6 +2577,868 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </div>
 
         </div>
+
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VUE PARTICULIÈRE & ÉPURÉE : GESTIONNAIRE ("Flux en Temps Réel" style Historique Mobile)
+  // =========================================================================
+  const handleGestionnaireProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const compressed = await compressImage(file);
+      setGestionnaireProofImage(compressed);
+    }
+  };
+
+  const handleGestionnaireConfirmClosure = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gestionnaireProofModalTx) return;
+
+    if (!gestionnaireProofImage) {
+      setGestionnaireProofError("⚠️ La preuve photographique (photo ou capture d'écran du reçu) est obligatoire pour valider et clôturer.");
+      return;
+    }
+
+    const opUpper = gestionnaireProofModalTx.operator.toUpperCase();
+    const noteClean = gestionnaireProofNotes.trim();
+    const fullProof = noteClean
+      ? `Réf/Note ${opUpper}: ${noteClean} - Clôturé par ${currentUser.name}`
+      : `Reçu ${opUpper} certifié par ${currentUser.name} (${currentUser.location || 'Gestionnaire'})`;
+
+    const res = completeTask(gestionnaireProofModalTx.id, fullProof, gestionnaireProofImage);
+    if (res.success) {
+      setFeedback({
+        type: 'success',
+        text: `Transaction ${gestionnaireProofModalTx.referenceNumber} clôturée avec succès !`
+      });
+      if (gestionnaireDetailTx && gestionnaireDetailTx.id === gestionnaireProofModalTx.id) {
+        setGestionnaireDetailTx({
+          ...gestionnaireDetailTx,
+          status: 'completed',
+          proofNotes: fullProof,
+          proofUrl: gestionnaireProofImage
+        });
+      }
+      setGestionnaireProofModalTx(null);
+      setGestionnaireProofImage(null);
+      setGestionnaireProofNotes('');
+      setGestionnaireProofError(null);
+      setTimeout(() => setFeedback(null), 5000);
+    }
+  };
+
+  const renderGestionnaireProofModal = () => {
+    if (!gestionnaireProofModalTx) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar p-5 space-y-4 shadow-2xl text-slate-900 dark:text-white my-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Valider la Transaction #{gestionnaireProofModalTx.referenceNumber}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Opérateur : <strong className="uppercase text-slate-700 dark:text-slate-200">{gestionnaireProofModalTx.operator}</strong> • {gestionnaireProofModalTx.receiverName} ({gestionnaireProofModalTx.receiverPhone})
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setGestionnaireProofModalTx(null);
+                setGestionnaireProofImage(null);
+                setGestionnaireProofNotes('');
+                setGestionnaireProofError(null);
+              }}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {gestionnaireProofError && (
+            <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span>{gestionnaireProofError}</span>
+            </div>
+          )}
+
+          {/* Photo upload */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+              1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)
+            </label>
+
+            {gestionnaireProofImage ? (
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
+                <img src={gestionnaireProofImage} alt="Preuve" className="max-h-48 object-contain" />
+                <button
+                  type="button"
+                  onClick={() => setGestionnaireProofImage(null)}
+                  className="absolute top-2 right-2 p-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-md cursor-pointer"
+                  title="Supprimer la photo"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-emerald-400/80 hover:border-emerald-500 dark:border-emerald-600/60 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-5 cursor-pointer transition-colors text-center">
+                <Camera className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-1" />
+                <span className="text-xs font-extrabold text-emerald-950 dark:text-emerald-300">
+                  Prendre une photo ou sélectionner une capture
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5">
+                  Preuve requise pour clôturer la transaction
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleGestionnaireProofUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Notes / SMS Code */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
+              2. Note ou Référence Opérateur (Optionnel)
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Confirmation SMS MonCash #483920..."
+              value={gestionnaireProofNotes}
+              onChange={(e) => setGestionnaireProofNotes(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setGestionnaireProofModalTx(null);
+                setGestionnaireProofImage(null);
+                setGestionnaireProofNotes('');
+                setGestionnaireProofError(null);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={handleGestionnaireConfirmClosure}
+              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Valider & Clôturer</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (isGestionnaire) {
+    const gestionnaireScopedTasks = transactions.filter((tx) => {
+      // Pour le gestionnaire : flux numériques, télécoms (MonCash, Natcash, Digicel, Claro, Altice, Natcom, Zelle)
+      // ou assignés/initiés par le gestionnaire
+      return (
+        tx.operator === 'moncash' ||
+        tx.operator === 'digicel' ||
+        tx.operator === 'claro' ||
+        tx.operator === 'altice' ||
+        tx.operator === 'natcom' ||
+        tx.operator === 'natcash' ||
+        tx.operator === 'zelle' ||
+        tx.channel === 'digital_telecom' ||
+        tx.assignedToRole === 'gestionnaire' ||
+        tx.createdByRole === 'gestionnaire'
+      );
+    });
+
+    const gestionnaireFilteredTasks = gestionnaireScopedTasks.filter((tx) => {
+      const txDateObj = new Date(tx.createdAt);
+      const now = new Date();
+
+      // 1. Filtre Temporel (Tous, Jour, Semaine, Mois, Année)
+      let matchesTime = true;
+      if (gestionnaireTimeFilter === 'today') {
+        matchesTime = txDateObj.toDateString() === now.toDateString();
+      } else if (gestionnaireTimeFilter === 'week') {
+        const startOfWeek = new Date(now);
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+        matchesTime = txDateObj >= startOfWeek;
+      } else if (gestionnaireTimeFilter === 'month') {
+        matchesTime =
+          txDateObj.getMonth() === now.getMonth() &&
+          txDateObj.getFullYear() === now.getFullYear();
+      } else if (gestionnaireTimeFilter === 'year') {
+        matchesTime = txDateObj.getFullYear() === now.getFullYear();
+      }
+
+      // 2. Filtre de Statut (Toutes, En attente, Validées)
+      let matchesStatus = true;
+      if (gestionnaireStatusFilter === 'in_progress') {
+        matchesStatus = tx.status === 'in_progress' || tx.status === 'pending_routing';
+      } else if (gestionnaireStatusFilter === 'completed') {
+        matchesStatus = tx.status === 'completed';
+      }
+
+      // 3. Recherche
+      const query = gestionnaireSearchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        tx.referenceNumber.toLowerCase().includes(query) ||
+        tx.receiverName.toLowerCase().includes(query) ||
+        tx.senderName.toLowerCase().includes(query) ||
+        tx.receiverPhone.includes(query) ||
+        tx.senderPhone.includes(query);
+
+      // 4. Filtre Opérateur
+      const matchesOperator =
+        gestionnaireOperatorFilter === 'all' || tx.operator === gestionnaireOperatorFilter;
+
+      return matchesTime && matchesStatus && matchesSearch && matchesOperator;
+    });
+
+    const totalGestionnaireCount = gestionnaireScopedTasks.length;
+    const pendingGestionnaireCount = gestionnaireScopedTasks.filter(
+      (t) => t.status === 'in_progress' || t.status === 'pending_routing'
+    ).length;
+    const completedGestionnaireCount = gestionnaireScopedTasks.filter(
+      (t) => t.status === 'completed'
+    ).length;
+
+    // A. VUE DÉTAILS PLEIN ÉCRAN (STRUCTURE LISTE VERTICALE IDENTIQUE À HISTORYVIEW)
+    if (gestionnaireDetailTx) {
+      return (
+        <div className="p-4 sm:p-6 w-full max-w-4xl mx-auto space-y-6 animate-in fade-in pb-28 font-sans">
+          {/* Top Header Bar */}
+          <div className="flex items-center justify-between py-1">
+            <button
+              onClick={() => setGestionnaireDetailTx(null)}
+              className="p-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+              title="Retour au flux"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Détails de la Transaction
+            </h3>
+
+            <div className="w-9" />
+          </div>
+
+          {/* Main Details Card */}
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-sm">
+            {/* Header Row: Reference & Status */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Référence</span>
+                <span className="font-mono font-black text-base text-slate-900 dark:text-white">
+                  {gestionnaireDetailTx.referenceNumber}
+                </span>
+              </div>
+
+              {gestionnaireDetailTx.status === 'completed' ? (
+                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50">
+                  ✓ Clôturé
+                </span>
+              ) : gestionnaireDetailTx.status === 'in_progress' || gestionnaireDetailTx.status === 'pending_routing' ? (
+                <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/50 flex items-center gap-1">
+                  <Clock className="w-3 h-3 animate-pulse" /> En attente
+                </span>
+              ) : (
+                <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/50">
+                  Annulé
+                </span>
+              )}
+            </div>
+
+            {/* Vertical Stacked Details List */}
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Service / Opérateur</span>
+                <OperatorBadge operator={gestionnaireDetailTx.operator} size="sm" />
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Bénéficiaire</span>
+                <span className="font-extrabold text-slate-900 dark:text-white">{gestionnaireDetailTx.receiverName}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Téléphone Bénéficiaire</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{gestionnaireDetailTx.receiverPhone}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(gestionnaireDetailTx.receiverPhone);
+                    }}
+                    className="p-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 hover:bg-slate-300 text-slate-600 dark:text-slate-300 cursor-pointer"
+                    title="Copier le numéro"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Expéditeur</span>
+                <span className="font-extrabold text-slate-900 dark:text-white">{gestionnaireDetailTx.senderName}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Téléphone Expéditeur</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-white">{gestionnaireDetailTx.senderPhone}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Montant Envoyé</span>
+                <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{gestionnaireDetailTx.amountDOP.toLocaleString()} DOP</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+                <span className="text-blue-700 dark:text-blue-400 font-bold">Commission Admin (DOP)</span>
+                <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                  +{(gestionnaireDetailTx.commissionDOP || Math.round(gestionnaireDetailTx.amountDOP * 0.01)).toLocaleString()} DOP
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+                <span className="text-blue-700 dark:text-blue-400 font-bold">Montant Reçu</span>
+                <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{gestionnaireDetailTx.amountHTG.toLocaleString()} HTG</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Date & Heure</span>
+                <span className="font-mono text-slate-700 dark:text-slate-300">
+                  {new Date(gestionnaireDetailTx.createdAt).toLocaleString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+                <span className="text-slate-500 font-medium">Créé par</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300">
+                  {gestionnaireDetailTx.createdByName} ({gestionnaireDetailTx.createdByRole})
+                </span>
+              </div>
+
+              {/* Preuve de validation si existante */}
+              {(gestionnaireDetailTx.proofNotes || gestionnaireDetailTx.proofUrl) && (
+                <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-400">
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <span>Preuve de Clôture & Validation :</span>
+                  </div>
+                  {gestionnaireDetailTx.proofNotes && (
+                    <p className="text-[11px] font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 break-words">
+                      {gestionnaireDetailTx.proofNotes}
+                    </p>
+                  )}
+                  {gestionnaireDetailTx.proofUrl && (
+                    <div className="mt-2 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-52 bg-slate-900 flex items-center justify-center p-1">
+                      <img 
+                        src={gestionnaireDetailTx.proofUrl} 
+                        alt="Preuve de transaction" 
+                        className="max-h-48 w-auto object-contain rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-2">
+            {(gestionnaireDetailTx.status === 'in_progress' || gestionnaireDetailTx.status === 'pending_routing') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setGestionnaireProofModalTx(gestionnaireDetailTx);
+                  setGestionnaireProofNotes('');
+                  setGestionnaireProofImage(null);
+                  setGestionnaireProofError(null);
+                }}
+                className="w-full py-3.5 rounded-2xl font-black text-xs text-slate-950 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Valider avec Preuve</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setSelectedReceiptTx(gestionnaireDetailTx)}
+              className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-blue-400" />
+              <span>Reçu Officiel (PDF / Partager)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setGestionnaireDetailTx(null)}
+              className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block"
+            >
+              Retour au flux
+            </button>
+          </div>
+
+          {/* Modal Validation if opened from details */}
+          {renderGestionnaireProofModal()}
+        </div>
+      );
+    }
+
+    // B. VUE PRINCIPALE : HEADER + BARRE DE FILTRES + CARTES MOBILES + TABLEAU BUREAU
+    return (
+      <div className="p-3 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 font-sans animate-in fade-in pb-24 md:pb-6">
+        
+        {/* Toast Feedback */}
+        {feedback && (
+          <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-lg flex items-center justify-between text-xs font-bold animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+              <span>{feedback.text}</span>
+            </div>
+            <button onClick={() => setFeedback(null)} className="text-white hover:text-emerald-100 font-extrabold text-sm p-1 cursor-pointer">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* 1. Header Toolbar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Zap className="w-6 h-6 text-amber-500 fill-amber-500" />
+              <span>Flux en Temps Réel</span>
+              {pendingGestionnaireCount > 0 && (
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold animate-pulse">
+                  {pendingGestionnaireCount} en attente
+                </span>
+              )}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              Supervision opérationnelle, traitement et validation des transferts numériques (MonCash, Natcash, Digicel, Claro, Altice)
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => exportTransactionsToCSV(gestionnaireFilteredTasks, 'Flux_Temps_Reel_Gestionnaire')}
+              className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              title="Exporter en CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-400" />
+              <span>CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => exportTransactionsToPDF(gestionnaireFilteredTasks, 'Flux en Temps Réel - Gestionnaire')}
+              className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              title="Exporter en PDF"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-400" />
+              <span>PDF</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Full-width Search and Filters Toolbar (Identique à HistoryView) */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs space-y-3">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            
+            {/* Search Input Box */}
+            <div className="relative flex-1 min-w-[280px]">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, téléphone, ou référence TRX..."
+                value={gestionnaireSearchQuery}
+                onChange={(e) => setGestionnaireSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-blue-500/20"
+              />
+              {gestionnaireSearchQuery && (
+                <button
+                  onClick={() => setGestionnaireSearchQuery('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Operator Filter Dropdown */}
+              <select
+                value={gestionnaireOperatorFilter}
+                onChange={(e) => setGestionnaireOperatorFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="all">Tous les opérateurs</option>
+                <option value="moncash">MonCash</option>
+                <option value="natcash">Natcash</option>
+                <option value="digicel">Digicel</option>
+                <option value="natcom">Natcom</option>
+                <option value="claro">Claro</option>
+                <option value="altice">Altice</option>
+                <option value="zelle">Zelle</option>
+              </select>
+
+              {/* Status Filter Buttons */}
+              <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setGestionnaireStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    gestionnaireStatusFilter === 'all'
+                      ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Toutes ({totalGestionnaireCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGestionnaireStatusFilter('in_progress')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer ${
+                    gestionnaireStatusFilter === 'in_progress'
+                      ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  <span>En attente ({pendingGestionnaireCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGestionnaireStatusFilter('completed')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    gestionnaireStatusFilter === 'completed'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Validées ({completedGestionnaireCount})
+                </button>
+              </div>
+
+              {/* Date Filters Bar (Tous, Jour, Semaine, Mois, Année) */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar bg-slate-100/80 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800">
+                {[
+                  { id: 'all', label: 'Tous' },
+                  { id: 'today', label: 'Jour' },
+                  { id: 'week', label: 'Semaine' },
+                  { id: 'month', label: 'Mois' },
+                  { id: 'year', label: 'Année' },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setGestionnaireTimeFilter(f.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
+                      gestionnaireTimeFilter === f.id
+                        ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* 3. Main Content: Mobile Stacked Cards & Desktop Data Table */}
+        {gestionnaireFilteredTasks.length > 0 ? (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/70 dark:bg-slate-950/50">
+                      <th className="py-4 px-5">Réf Transaction</th>
+                      <th className="py-4 px-5">Date & Heure</th>
+                      <th className="py-4 px-5">Opérateur</th>
+                      <th className="py-4 px-5">Expéditeur</th>
+                      <th className="py-4 px-5">Bénéficiaire</th>
+                      <th className="py-4 px-5 text-right">Montant DOP</th>
+                      <th className="py-4 px-5 text-right">Montant HTG</th>
+                      <th className="py-4 px-5 text-center">Statut</th>
+                      <th className="py-4 px-5 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-sans">
+                    {gestionnaireFilteredTasks.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3.5 px-5 font-mono font-black text-slate-900 dark:text-white text-xs">
+                          <span className="bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                            {tx.referenceNumber}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px] font-medium">
+                          {new Date(tx.createdAt).toLocaleDateString('fr-FR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <OperatorBadge operator={tx.operator} size="sm" />
+                        </td>
+                        <td className="py-3.5 px-5">
+                          <div className="font-extrabold text-slate-900 dark:text-white truncate max-w-[150px]">{tx.senderName}</div>
+                          <div className="text-[10px] text-slate-400 font-mono font-medium">{tx.senderPhone || '—'}</div>
+                        </td>
+                        <td className="py-3.5 px-5">
+                          <div className="font-extrabold text-slate-900 dark:text-white truncate max-w-[150px]">{tx.receiverName}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-bold bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                            {tx.receiverPhone}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-5 text-right font-black font-mono text-slate-900 dark:text-white text-sm whitespace-nowrap">
+                          {tx.amountDOP.toLocaleString()} DOP
+                        </td>
+                        <td className="py-3.5 px-5 text-right font-black font-mono text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
+                          {tx.amountHTG.toLocaleString()} HTG
+                        </td>
+                        <td className="py-3.5 px-5 text-center whitespace-nowrap">
+                          {tx.status === 'completed' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              <span>Clôturé</span>
+                            </span>
+                          ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/60 dark:border-amber-800">
+                              <Clock className="w-3 h-3 animate-pulse text-amber-500" />
+                              <span>En attente</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/60 dark:border-rose-800">
+                              Annulé
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-5 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {(tx.status === 'in_progress' || tx.status === 'pending_routing') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGestionnaireProofModalTx(tx);
+                                  setGestionnaireProofNotes('');
+                                  setGestionnaireProofImage(null);
+                                  setGestionnaireProofError(null);
+                                }}
+                                className="px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                                title="Valider avec preuve"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Valider</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setGestionnaireDetailTx(tx)}
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                              title="Voir tous les détails"
+                            >
+                              Détails
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReceiptTx(tx)}
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                              title="Télécharger ou partager le reçu PDF"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Reçu PDF</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Stacked Responsive Cards (<md) - EXACTEMENT comme l'historique mobile des agents */}
+            <div className="md:hidden space-y-3">
+              {gestionnaireFilteredTasks.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                >
+                  {/* Header Row: Operator + Reference + Status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <OperatorBadge operator={tx.operator} size="sm" />
+                      <span className="font-mono text-xs font-bold text-slate-400">
+                        {tx.referenceNumber}
+                      </span>
+                    </div>
+
+                    {tx.status === 'completed' ? (
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50 dark:border-blue-900/50">
+                        ✓ Clôturé
+                      </span>
+                    ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
+                      <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/50 dark:border-amber-900/50 flex items-center gap-1">
+                        <Clock className="w-3 h-3 animate-pulse" /> En attente
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/50 dark:border-rose-900/50">
+                        Annulé
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Beneficiary & Amount Info */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Bénéficiaire</span>
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                        {tx.receiverName}
+                      </h4>
+                      <p className="text-xs font-mono font-bold text-slate-400">
+                        {tx.receiverPhone}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-sm font-black font-mono text-slate-900 dark:text-white block">
+                        {tx.amountDOP.toLocaleString()} DOP
+                      </span>
+                      <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 block">
+                        {tx.amountHTG.toLocaleString()} HTG
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sender & Agency sub-row */}
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100/60 dark:border-slate-800/40">
+                    <span>Exp: <strong className="font-semibold text-slate-700 dark:text-slate-300">{tx.senderName}</strong></span>
+                    <span>Origine: <strong className="font-semibold text-slate-700 dark:text-slate-300">{tx.createdByName}</strong></span>
+                  </div>
+
+                  {/* Footer Row: Date/Time + Action Buttons */}
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {new Date(tx.createdAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      {(tx.status === 'in_progress' || tx.status === 'pending_routing') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGestionnaireProofModalTx(tx);
+                            setGestionnaireProofNotes('');
+                            setGestionnaireProofImage(null);
+                            setGestionnaireProofError(null);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-[11px] font-black transition-colors flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95"
+                          title="Valider avec preuve"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Valider</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setGestionnaireDetailTx(tx)}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
+                      >
+                        Détails
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReceiptTx(tx)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 text-white text-[11px] font-bold hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Télécharger ou partager le reçu PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Reçu PDF</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          /* Empty State */
+          <div className="p-12 sm:p-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-2xs w-full">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 mx-auto flex items-center justify-center">
+              <FolderArchive className="w-8 h-8" />
+            </div>
+            <div>
+              <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
+                Aucune transaction trouvée
+              </h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                Aucun résultat ne correspond aux filtres de date, de statut, d'opérateur ou de recherche sélectionnés.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setGestionnaireTimeFilter('all');
+                setGestionnaireStatusFilter('all');
+                setGestionnaireSearchQuery('');
+                setGestionnaireOperatorFilter('all');
+              }}
+              className="px-5 py-2.5 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs hover:shadow-sm cursor-pointer inline-flex items-center gap-2"
+            >
+              <span>Réinitialiser tous les filtres</span>
+            </button>
+          </div>
+        )}
+
+        {/* Modal Validation (if opened from card or table) */}
+        {renderGestionnaireProofModal()}
 
       </div>
     );
