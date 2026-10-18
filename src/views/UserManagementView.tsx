@@ -35,7 +35,11 @@ import {
   Calendar,
   DollarSign,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  ChevronDown
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { useApp } from '../context/AppContext';
@@ -69,6 +73,161 @@ export const UserManagementView: React.FC = () => {
   // Full-page User Inspection State (NO POPUP DIV MODAL)
   const [inspectedUser, setInspectedUser] = useState<User | null>(null);
   const [inspectionPeriod, setInspectionPeriod] = useState<'week' | 'month' | 'year' | 'all'>('week');
+
+  const currentYearNow = new Date().getFullYear();
+  const currentWeekNumberNow = (() => {
+    const now = new Date();
+    const date = new Date(now.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  })();
+
+  const [selectedWeekYear, setSelectedWeekYear] = useState<number>(currentYearNow);
+  const [selectedWeekNo, setSelectedWeekNo] = useState<number>(currentWeekNumberNow);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+
+  const getWeekRange = (year: number, weekNo: number) => {
+    const jan4 = new Date(year, 0, 4);
+    const day = jan4.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const firstMonday = new Date(jan4);
+    firstMonday.setDate(jan4.getDate() + diffToMonday);
+    firstMonday.setHours(0, 0, 0, 0);
+
+    const start = new Date(firstMonday);
+    start.setDate(firstMonday.getDate() + (weekNo - 1) * 7);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+
+    const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+
+    return {
+      weekNo,
+      year,
+      start,
+      end,
+      startDateStr: start.toISOString().split('T')[0],
+      endDateStr: end.toISOString().split('T')[0],
+      label: `Semaine ${weekNo} (${fmt(start)} - ${fmt(end)}/${year})`,
+      shortLabel: `Semaine ${weekNo}`,
+      isCurrent: year === currentYearNow && weekNo === currentWeekNumberNow,
+    };
+  };
+
+  const allWeeksOfYear = React.useMemo(() => {
+    const weeks = [];
+    for (let w = 1; w <= 52; w++) {
+      weeks.push(getWeekRange(selectedWeekYear, w));
+    }
+    return weeks;
+  }, [selectedWeekYear]);
+
+  const selectedWeekInfo = React.useMemo(() => {
+    return getWeekRange(selectedWeekYear, selectedWeekNo);
+  }, [selectedWeekYear, selectedWeekNo]);
+
+  const goToPrevWeek = () => {
+    if (selectedWeekNo > 1) {
+      setSelectedWeekNo(prev => prev - 1);
+    } else {
+      setSelectedWeekYear(prev => prev - 1);
+      setSelectedWeekNo(52);
+    }
+  };
+
+  const goToNextWeek = () => {
+    if (selectedWeekNo < 52) {
+      setSelectedWeekNo(prev => prev + 1);
+    } else {
+      setSelectedWeekYear(prev => prev + 1);
+      setSelectedWeekNo(1);
+    }
+  };
+
+  const goToCurrentWeek = () => {
+    setSelectedWeekYear(currentYearNow);
+    setSelectedWeekNo(currentWeekNumberNow);
+  };
+
+  const monthNames = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  ];
+
+  const isDateInFilter = (dateStr: string, periodMode: 'week' | 'month' | 'year' | 'all') => {
+    if (periodMode === 'all') return true;
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+
+    if (periodMode === 'week') {
+      return d >= selectedWeekInfo.start && d <= selectedWeekInfo.end;
+    }
+
+    if (periodMode === 'month') {
+      return d.getFullYear() === selectedWeekYear && d.getMonth() === selectedMonth;
+    }
+
+    if (periodMode === 'year') {
+      return d.getFullYear() === selectedWeekYear;
+    }
+
+    return true;
+  };
+
+  // Helper to compute activity statistics for any user over the selected period
+  const getUserPeriodStats = (user: User) => {
+    const userTx = transactions.filter(t => {
+      const nameMatch = (t.assignedToName && t.assignedToName.toLowerCase().includes(user.name.toLowerCase())) ||
+                        (t.createdByName && t.createdByName.toLowerCase().includes(user.name.toLowerCase()));
+      const nodeMatch = (t.createdByNode && t.createdByNode === user.nodeId) ||
+                        (t.assignedToNode && t.assignedToNode === user.nodeId);
+      const userMatch = user.username && (
+        (t.createdByName && t.createdByName.toLowerCase().includes(user.username.toLowerCase())) ||
+        (t.assignedToName && t.assignedToName.toLowerCase().includes(user.username.toLowerCase()))
+      );
+      return nameMatch || nodeMatch || userMatch;
+    });
+
+    const periodTx = userTx.filter(t => isDateInFilter(t.createdAt, inspectionPeriod));
+    const volumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+    const txCount = periodTx.length;
+    const commissionDOP = periodTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
+      Math.round(volumeDOP * ((user.commissionRate !== undefined ? user.commissionRate : 1.0) / 100));
+
+    const userSettlements = settlements.filter(s => 
+      s.agentId === user.id || 
+      s.agentName.toLowerCase() === user.name.toLowerCase() ||
+      (user.username && s.agentName.toLowerCase().includes(user.username.toLowerCase()))
+    );
+
+    let depositedDOP = 0;
+    userSettlements.forEach(s => {
+      if (s.deposits && s.deposits.length > 0) {
+        s.deposits.forEach(d => {
+          if (isDateInFilter(d.date, inspectionPeriod)) {
+            depositedDOP += (d.amount || 0);
+          }
+        });
+      }
+    });
+
+    const netExpected = Math.max(0, volumeDOP - commissionDOP);
+    const dueDOP = Math.max(0, netExpected - depositedDOP);
+
+    return {
+      volumeDOP,
+      txCount,
+      commissionDOP,
+      depositedDOP,
+      dueDOP,
+    };
+  };
 
   // Synchronize when activeTab changes
   React.useEffect(() => {
@@ -319,36 +478,8 @@ export const UserManagementView: React.FC = () => {
       (inspectedUser.username && s.agentName.toLowerCase().includes(inspectedUser.username.toLowerCase()))
     );
 
-    // Filter helper for date periods
-    const isDateInPeriod = (dateStr: string, period: 'week' | 'month' | 'year' | 'all') => {
-      if (period === 'all') return true;
-      if (!dateStr) return false;
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return false;
-      const now = new Date();
-
-      if (period === 'week') {
-        const day = now.getDay();
-        const diffToMonday = (day === 0 ? -6 : 1) - day;
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
-        monday.setHours(0, 0, 0, 0);
-        return d >= monday;
-      }
-
-      if (period === 'month') {
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-      }
-
-      if (period === 'year') {
-        return d.getFullYear() === now.getFullYear();
-      }
-
-      return true;
-    };
-
-    // Period-filtered transactions
-    const periodTx = userTx.filter(t => isDateInPeriod(t.createdAt, inspectionPeriod));
+    // Period-filtered transactions using the global week/month/year calendar
+    const periodTx = userTx.filter(t => isDateInFilter(t.createdAt, inspectionPeriod));
     const periodVolumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
     const periodTxCount = periodTx.length;
 
@@ -388,11 +519,11 @@ export const UserManagementView: React.FC = () => {
     userSettlements.forEach(s => {
       if (s.deposits && s.deposits.length > 0) {
         s.deposits.forEach(d => {
-          if (isDateInPeriod(d.date, inspectionPeriod)) {
+          if (isDateInFilter(d.date, inspectionPeriod)) {
             periodDepositsList.push(d);
           }
         });
-      } else if (s.amountDeposited > 0 && isDateInPeriod(s.startDate, inspectionPeriod)) {
+      } else if (s.amountDeposited > 0 && isDateInFilter(s.startDate, inspectionPeriod)) {
         periodDepositsList.push({
           amount: s.amountDeposited,
           date: s.startDate,
@@ -424,14 +555,13 @@ export const UserManagementView: React.FC = () => {
         format: 'a4',
       });
 
-      const periodLabels = {
-        week: 'Cette Semaine',
-        month: 'Ce Mois',
-        year: 'Cette Année',
-        all: 'Tout l\'Historique',
-      };
-
-      const periodLabel = periodLabels[inspectionPeriod];
+      const periodLabel = inspectionPeriod === 'week'
+        ? selectedWeekInfo.label
+        : inspectionPeriod === 'month'
+          ? `${monthNames[selectedMonth]} ${selectedWeekYear}`
+          : inspectionPeriod === 'year'
+            ? `Année ${selectedWeekYear}`
+            : 'Tout l\'Historique';
 
       // Header Background Banner
       doc.setFillColor(15, 23, 42);
@@ -645,7 +775,14 @@ export const UserManagementView: React.FC = () => {
 
       // Trigger download
       const safeName = inspectedUser.name.replace(/[^a-zA-Z0-9]/g, '_');
-      doc.save(`Rapport_Agent_${safeName}_${inspectionPeriod}.pdf`);
+      const safePeriod = inspectionPeriod === 'week'
+        ? `Semaine_${selectedWeekNo}_${selectedWeekYear}`
+        : inspectionPeriod === 'month'
+          ? `${monthNames[selectedMonth]}_${selectedWeekYear}`
+          : inspectionPeriod === 'year'
+            ? `Annee_${selectedWeekYear}`
+            : 'Global';
+      doc.save(`Rapport_Agent_${safeName}_${safePeriod}.pdf`);
     };
 
     return (
@@ -988,7 +1125,7 @@ export const UserManagementView: React.FC = () => {
                 <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-5">
                   
                   {/* Barre d'outils : Filtres Temporels (Semaine / Mois / Année / Tout) & Téléchargement PDF */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-600" />
@@ -1002,14 +1139,14 @@ export const UserManagementView: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Sélecteur de Période (Pills) */}
+                      {/* Sélecteur de Mode (Pills) */}
                       <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
                         <button
                           type="button"
                           onClick={() => setInspectionPeriod('week')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                             inspectionPeriod === 'week'
-                              ? 'bg-slate-900 text-white shadow-xs'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                           }`}
                         >
@@ -1022,11 +1159,10 @@ export const UserManagementView: React.FC = () => {
                           onClick={() => setInspectionPeriod('month')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                             inspectionPeriod === 'month'
-                              ? 'bg-slate-900 text-white shadow-xs'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                           }`}
                         >
-                          <Calendar className="w-3.5 h-3.5" />
                           <span>Mois</span>
                         </button>
 
@@ -1035,11 +1171,10 @@ export const UserManagementView: React.FC = () => {
                           onClick={() => setInspectionPeriod('year')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                             inspectionPeriod === 'year'
-                              ? 'bg-slate-900 text-white shadow-xs'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                           }`}
                         >
-                          <Calendar className="w-3.5 h-3.5" />
                           <span>Année</span>
                         </button>
 
@@ -1048,7 +1183,7 @@ export const UserManagementView: React.FC = () => {
                           onClick={() => setInspectionPeriod('all')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                             inspectionPeriod === 'all'
-                              ? 'bg-slate-900 text-white shadow-xs'
+                              ? 'bg-blue-600 text-white shadow-xs'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                           }`}
                         >
@@ -1066,6 +1201,123 @@ export const UserManagementView: React.FC = () => {
                         <FileDown className="w-4 h-4 text-blue-200" />
                         <span>Télécharger PDF</span>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Calendrier interactif par Semaine / Mois / Année */}
+                  <div className="bg-slate-50/90 border border-slate-200/90 p-3 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                        <CalendarDays className="w-4 h-4 text-blue-600" />
+                        <span>Période :</span>
+                      </span>
+
+                      {inspectionPeriod === 'week' && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Année */}
+                          <select
+                            value={selectedWeekYear}
+                            onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
+                            className="bg-white text-slate-800 text-xs font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
+                          >
+                            <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
+                            <option value={currentYearNow}>{currentYearNow}</option>
+                            <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
+                          </select>
+
+                          {/* Semaine précédente */}
+                          <button
+                            type="button"
+                            onClick={goToPrevWeek}
+                            title="Semaine précédente"
+                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          {/* Sélecteur déroulant Semaine 1 à 52 */}
+                          <div className="relative min-w-[240px] max-w-[320px]">
+                            <select
+                              value={selectedWeekNo}
+                              onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
+                              className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
+                            >
+                              {allWeeksOfYear.map((w) => (
+                                <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
+                                  {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+
+                          {/* Semaine suivante */}
+                          <button
+                            type="button"
+                            onClick={goToNextWeek}
+                            title="Semaine suivante"
+                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+
+                          {/* Raccourci Semaine Actuelle */}
+                          {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
+                            <button
+                              type="button"
+                              onClick={goToCurrentWeek}
+                              className="px-2.5 py-1.5 bg-blue-100/70 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                            >
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              <span>Sem. Actuelle ({currentWeekNumberNow})</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {inspectionPeriod === 'month' && (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                            className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                          >
+                            {monthNames.map((m, idx) => (
+                              <option key={m} value={idx}>{m} {selectedWeekYear}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {inspectionPeriod === 'year' && (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={selectedWeekYear}
+                            onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
+                            className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                          >
+                            <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
+                            <option value={currentYearNow}>{currentYearNow}</option>
+                            <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {inspectionPeriod === 'all' && (
+                        <span className="text-xs text-slate-500 font-medium">
+                          Toutes les transactions historiques de l'agent sont incluses.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Plage :</span>
+                      <strong className="text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                        {inspectionPeriod === 'week' ? selectedWeekInfo.label :
+                         inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
+                         inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : 'Toutes les dates'}
+                      </strong>
                     </div>
                   </div>
 
@@ -1627,6 +1879,184 @@ export const UserManagementView: React.FC = () => {
       {subTab === 'user_list' && (
         <div className="space-y-4">
           
+          {/* Calendrier de Filtrage par Semaine & Période */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              
+              {/* Titre & Sélecteur de Mode (Pills) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-xs font-black text-slate-800 mr-1">
+                  <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                    <CalendarDays className="w-4 h-4" />
+                  </div>
+                  <span>Filtre d'Activité :</span>
+                </div>
+
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setInspectionPeriod('week')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      inspectionPeriod === 'week'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Semaine</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInspectionPeriod('month')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      inspectionPeriod === 'month'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <span>Mois</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInspectionPeriod('year')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      inspectionPeriod === 'year'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <span>Année</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInspectionPeriod('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      inspectionPeriod === 'all'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <span>Tout</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Contrôles du Calendrier selon le mode */}
+              {inspectionPeriod === 'week' && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* Sélecteur Année */}
+                  <select
+                    value={selectedWeekYear}
+                    onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
+                    <option value={currentYearNow}>{currentYearNow}</option>
+                    <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
+                  </select>
+
+                  {/* Bouton Semaine Précédente */}
+                  <button
+                    type="button"
+                    onClick={goToPrevWeek}
+                    title="Semaine précédente"
+                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Sélecteur Déroulant de Toutes les Semaines (Semaine 1, Semaine 2, etc.) */}
+                  <div className="relative min-w-[240px] max-w-[320px]">
+                    <select
+                      value={selectedWeekNo}
+                      onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
+                      className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
+                    >
+                      {allWeeksOfYear.map((w) => (
+                        <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
+                          {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+
+                  {/* Bouton Semaine Suivante */}
+                  <button
+                    type="button"
+                    onClick={goToNextWeek}
+                    title="Semaine suivante"
+                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  {/* Bouton Raccourci Semaine en cours */}
+                  {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
+                    <button
+                      type="button"
+                      onClick={goToCurrentWeek}
+                      className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1 shadow-2xs"
+                    >
+                      <Clock className="w-3 h-3 text-blue-600" />
+                      <span>Sem. Actuelle ({currentWeekNumberNow})</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {inspectionPeriod === 'month' && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    {monthNames.map((m, idx) => (
+                      <option key={m} value={idx}>{m} {selectedWeekYear}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {inspectionPeriod === 'year' && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedWeekYear}
+                    onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
+                    className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
+                    <option value={currentYearNow}>{currentYearNow}</option>
+                    <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Légende / Période Sélectionnée */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-xl gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="font-semibold text-slate-600">
+                  Affichage des statistiques par employé pour :
+                </span>
+                <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/80">
+                  {inspectionPeriod === 'week' ? selectedWeekInfo.label :
+                   inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
+                   inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : 'Tout l\'Historique'}
+                </span>
+              </div>
+
+              <span className="text-[11px] text-slate-500 font-medium">
+                Cliquez sur un utilisateur pour voir sa fiche complète et télécharger son PDF.
+              </span>
+            </div>
+          </div>
+          
           {/* Search Control Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
             <div className="relative flex-1 w-full">
@@ -1649,6 +2079,8 @@ export const UserManagementView: React.FC = () => {
           <div className="space-y-3 md:hidden">
             {filteredUsers.map((user) => {
               const isOffline = user.status === 'offline';
+              const userStats = getUserPeriodStats(user);
+
               return (
                 <div 
                   key={user.id}
@@ -1685,7 +2117,34 @@ export const UserManagementView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                  {/* Performance Ribbon pour la semaine/période choisie */}
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">
+                        Volume ({inspectionPeriod === 'week' ? selectedWeekInfo.shortLabel : 'Période'})
+                      </span>
+                      <span className="font-black text-slate-900 font-mono text-sm">
+                        {userStats.volumeDOP.toLocaleString()} DOP
+                      </span>
+                      <span className="text-[10px] text-blue-600 font-bold block">
+                        {userStats.txCount} transaction{userStats.txCount > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">
+                        Dû Admin
+                      </span>
+                      <span className={`font-black font-mono text-sm ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {userStats.dueDOP.toLocaleString()} DOP
+                      </span>
+                      <span className="text-[10px] text-purple-700 font-bold block">
+                        +{userStats.commissionDOP.toLocaleString()} DOP com.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
                     <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${
                       user.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
                       user.role === 'agent_rd' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
@@ -1723,7 +2182,7 @@ export const UserManagementView: React.FC = () => {
                       className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>Fiche</span>
+                      <span>Fiche & PDF</span>
                     </button>
 
                     {currentUser.role === 'admin' && user.id !== currentUser.id && (
@@ -1749,20 +2208,24 @@ export const UserManagementView: React.FC = () => {
           <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
               <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
-                Répertoire des Comptes Employés & Accès
+                Répertoire des Comptes Employés & Performance
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">Liste des Employés</span>
+              <span className="text-[11px] text-blue-600 font-bold bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/80">
+                {inspectionPeriod === 'week' ? selectedWeekInfo.label :
+                 inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
+                 inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : 'Toutes dates'}
+              </span>
             </div>
 
             <div className="overflow-x-auto">
-              <div className="min-w-[850px]">
+              <div className="min-w-[950px]">
                 {/* Table Header Row */}
                 <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
                   <div className="col-span-3">Utilisateur / Courriel</div>
                   <div className="col-span-2">Rôle / Privilège</div>
-                  <div className="col-span-1 text-center">Taux (%)</div>
-                  <div className="col-span-2">Code Agence</div>
-                  <div className="col-span-2">Emplacement / Agence</div>
+                  <div className="col-span-2">Activité ({inspectionPeriod === 'week' ? selectedWeekInfo.shortLabel : 'Période'})</div>
+                  <div className="col-span-2">Dû Admin / Déposé</div>
+                  <div className="col-span-1 text-center">Commissions</div>
                   <div className="col-span-1 text-center">Statut</div>
                   <div className="col-span-1 text-center">Actions</div>
                 </div>
@@ -1771,6 +2234,7 @@ export const UserManagementView: React.FC = () => {
                 <div className="divide-y divide-slate-100 text-xs font-medium">
                   {filteredUsers.map((user) => {
                     const isOffline = user.status === 'offline';
+                    const userStats = getUserPeriodStats(user);
 
                     return (
                       <div 
@@ -1783,7 +2247,7 @@ export const UserManagementView: React.FC = () => {
                           setLastAssignedPassword(null);
                         }}
                         className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
-                        title="Cliquer pour voir la fiche utilisateur complète"
+                        title="Cliquer pour voir la fiche utilisateur complète et télécharger le PDF"
                       >
                         
                         {/* 1. Utilisateur / Profil */}
@@ -1816,30 +2280,37 @@ export const UserManagementView: React.FC = () => {
                           </span>
                         </div>
 
-                        {/* 3. Taux % Commission Agent */}
+                        {/* 3. Activité Période : Volume et nb transactions */}
+                        <div className="col-span-2">
+                          <p className="font-black text-slate-900 font-mono text-xs">
+                            {userStats.volumeDOP.toLocaleString()} DOP
+                          </p>
+                          <p className="text-[10px] text-blue-600 font-bold">
+                            {userStats.txCount} transaction{userStats.txCount > 1 ? 's' : ''}
+                          </p>
+                        </div>
+
+                        {/* 4. Dû Admin / Déposé */}
+                        <div className="col-span-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-400 font-bold">Dû:</span>
+                            <span className={`font-mono font-extrabold text-xs ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                              {userStats.dueDOP.toLocaleString()} DOP
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            Déposé: {userStats.depositedDOP.toLocaleString()} DOP
+                          </p>
+                        </div>
+
+                        {/* 5. Commissions Agent */}
                         <div className="col-span-1 text-center font-mono">
-                          <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 font-extrabold text-xs border border-blue-200 whitespace-nowrap">
-                            {user.commissionRate !== undefined ? `${user.commissionRate}%` : '1.0%'}
+                          <span className="px-2 py-0.5 rounded-lg bg-purple-50 text-purple-800 font-extrabold text-xs border border-purple-200 whitespace-nowrap">
+                            +{userStats.commissionDOP.toLocaleString()}
                           </span>
                         </div>
 
-                        {/* 3. Nœud Identifiant */}
-                        <div className="col-span-2 font-mono text-[11px]">
-                          <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded font-bold text-slate-700">
-                            <Cpu className="w-3 h-3 text-slate-400" />
-                            {user.nodeId}
-                          </span>
-                        </div>
-
-                        {/* 4. Emplacement / Agence */}
-                        <div className="col-span-2 text-slate-700 truncate">
-                          <span className="flex items-center gap-1 font-semibold truncate">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                            <span className="truncate">{user.location}</span>
-                          </span>
-                        </div>
-
-                        {/* 5. Statut Compte */}
+                        {/* 6. Statut Compte */}
                         <div className="col-span-1 text-center">
                           <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 ${
                             isOffline 
@@ -1851,10 +2322,10 @@ export const UserManagementView: React.FC = () => {
                           </span>
                         </div>
 
-                        {/* 6. Actions Admin */}
+                        {/* 7. Actions Admin */}
                         <div className="col-span-1 flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
                           
-                          {/* Bouton Voir Utilisateur */}
+                          {/* Bouton Voir Fiche & Rapport PDF */}
                           <button
                             onClick={() => {
                               setInspectedUser(user);
@@ -1864,7 +2335,7 @@ export const UserManagementView: React.FC = () => {
                               setLastAssignedPassword(null);
                             }}
                             className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-bold transition-all flex items-center justify-center shadow-2xs cursor-pointer"
-                            title="Ouvrir la Fiche Complète"
+                            title="Ouvrir la Fiche Complète & Télécharger le PDF"
                           >
                             <Eye className="w-3.5 h-3.5 text-white" />
                           </button>
