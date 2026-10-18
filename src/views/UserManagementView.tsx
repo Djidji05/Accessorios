@@ -1124,9 +1124,9 @@ export const UserManagementView: React.FC = () => {
                 {/* BLOC STATISTIQUES, FILTRE TEMPOREL & RAPPORT PDF */}
                 <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-5">
                   
-                  {/* Barre d'outils : Filtres Temporels (Semaine / Mois / Année / Tout) & Téléchargement PDF */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                    <div className="space-y-1">
+                  {/* Barre d'outils : Calendrier par Semaine & Téléchargement PDF */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-600" />
                         <h4 className="font-black text-slate-900 text-sm tracking-tight">
@@ -1134,190 +1134,88 @@ export const UserManagementView: React.FC = () => {
                         </h4>
                       </div>
                       <p className="text-[11px] text-slate-500 font-medium">
-                        Filtrage en temps réel par semaine, mois ou année avec division par service.
+                        Filtrage par semaine avec division par service.
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Sélecteur de Mode (Pills) */}
-                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-                        <button
-                          type="button"
-                          onClick={() => setInspectionPeriod('week')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            inspectionPeriod === 'week'
-                              ? 'bg-blue-600 text-white shadow-xs'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                          }`}
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>Semaine</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setInspectionPeriod('month')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            inspectionPeriod === 'month'
-                              ? 'bg-blue-600 text-white shadow-xs'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                          }`}
-                        >
-                          <span>Mois</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setInspectionPeriod('year')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            inspectionPeriod === 'year'
-                              ? 'bg-blue-600 text-white shadow-xs'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                          }`}
-                        >
-                          <span>Année</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setInspectionPeriod('all')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            inspectionPeriod === 'all'
-                              ? 'bg-blue-600 text-white shadow-xs'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                          }`}
-                        >
-                          <span>Tout</span>
-                        </button>
-                      </div>
-
-                      {/* Bouton Télécharger Rapport PDF */}
-                      <button
-                        type="button"
-                        onClick={handleDownloadPDF}
-                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
-                        title="Télécharger le rapport complet au format PDF"
-                      >
-                        <FileDown className="w-4 h-4 text-blue-200" />
-                        <span>Télécharger PDF</span>
-                      </button>
-                    </div>
+                    {/* Bouton Télécharger Rapport PDF */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadPDF}
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95 self-start sm:self-auto"
+                      title="Télécharger le rapport complet au format PDF"
+                    >
+                      <FileDown className="w-4 h-4 text-blue-200" />
+                      <span>Télécharger PDF</span>
+                    </button>
                   </div>
 
-                  {/* Calendrier interactif par Semaine / Mois / Année */}
-                  <div className="bg-slate-50/90 border border-slate-200/90 p-3 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                  {/* Calendrier de sélection par Semaine */}
+                  <div className="bg-slate-50/90 border border-slate-200/90 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 mr-1">
                         <CalendarDays className="w-4 h-4 text-blue-600" />
-                        <span>Période :</span>
+                        <span>Semaine :</span>
                       </span>
 
-                      {inspectionPeriod === 'week' && (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Année */}
-                          <select
-                            value={selectedWeekYear}
-                            onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
-                            className="bg-white text-slate-800 text-xs font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
-                          >
-                            <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
-                            <option value={currentYearNow}>{currentYearNow}</option>
-                            <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
-                          </select>
+                      {/* Année */}
+                      <select
+                        value={selectedWeekYear}
+                        onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
+                        className="bg-white text-slate-800 text-xs font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
+                      >
+                        <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
+                        <option value={currentYearNow}>{currentYearNow}</option>
+                        <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
+                      </select>
 
-                          {/* Semaine précédente */}
-                          <button
-                            type="button"
-                            onClick={goToPrevWeek}
-                            title="Semaine précédente"
-                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
+                      {/* Semaine précédente */}
+                      <button
+                        type="button"
+                        onClick={goToPrevWeek}
+                        title="Semaine précédente"
+                        className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
 
-                          {/* Sélecteur déroulant Semaine 1 à 52 */}
-                          <div className="relative min-w-[240px] max-w-[320px]">
-                            <select
-                              value={selectedWeekNo}
-                              onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
-                              className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
-                            >
-                              {allWeeksOfYear.map((w) => (
-                                <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
-                                  {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          </div>
+                      {/* Sélecteur déroulant Semaine 1 à 52 */}
+                      <div className="relative min-w-[240px] max-w-[320px]">
+                        <select
+                          value={selectedWeekNo}
+                          onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
+                          className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
+                        >
+                          {allWeeksOfYear.map((w) => (
+                            <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
+                              {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
 
-                          {/* Semaine suivante */}
-                          <button
-                            type="button"
-                            onClick={goToNextWeek}
-                            title="Semaine suivante"
-                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
+                      {/* Semaine suivante */}
+                      <button
+                        type="button"
+                        onClick={goToNextWeek}
+                        title="Semaine suivante"
+                        className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
 
-                          {/* Raccourci Semaine Actuelle */}
-                          {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
-                            <button
-                              type="button"
-                              onClick={goToCurrentWeek}
-                              className="px-2.5 py-1.5 bg-blue-100/70 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1"
-                            >
-                              <Clock className="w-3 h-3 text-blue-600" />
-                              <span>Sem. Actuelle ({currentWeekNumberNow})</span>
-                            </button>
-                          )}
-                        </div>
+                      {/* Raccourci Semaine Actuelle */}
+                      {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
+                        <button
+                          type="button"
+                          onClick={goToCurrentWeek}
+                          className="px-2.5 py-1.5 bg-blue-100/70 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                        >
+                          <Clock className="w-3 h-3 text-blue-600" />
+                          <span>Sem. Actuelle ({currentWeekNumberNow})</span>
+                        </button>
                       )}
-
-                      {inspectionPeriod === 'month' && (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                            className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                          >
-                            {monthNames.map((m, idx) => (
-                              <option key={m} value={idx}>{m} {selectedWeekYear}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {inspectionPeriod === 'year' && (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={selectedWeekYear}
-                            onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
-                            className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                          >
-                            <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
-                            <option value={currentYearNow}>{currentYearNow}</option>
-                            <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
-                          </select>
-                        </div>
-                      )}
-
-                      {inspectionPeriod === 'all' && (
-                        <span className="text-xs text-slate-500 font-medium">
-                          Toutes les transactions historiques de l'agent sont incluses.
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span>Plage :</span>
-                      <strong className="text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                        {inspectionPeriod === 'week' ? selectedWeekInfo.label :
-                         inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
-                         inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : 'Toutes les dates'}
-                      </strong>
                     </div>
                   </div>
 
@@ -1879,181 +1777,74 @@ export const UserManagementView: React.FC = () => {
       {subTab === 'user_list' && (
         <div className="space-y-4">
           
-          {/* Calendrier de Filtrage par Semaine & Période */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              
-              {/* Titre & Sélecteur de Mode (Pills) */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-2 text-xs font-black text-slate-800 mr-1">
-                  <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                    <CalendarDays className="w-4 h-4" />
-                  </div>
-                  <span>Filtre d'Activité :</span>
+          {/* Calendrier de Filtrage par Semaine */}
+          <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs font-black text-slate-800 mr-1">
+                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                  <CalendarDays className="w-4 h-4" />
                 </div>
-
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-                  <button
-                    type="button"
-                    onClick={() => setInspectionPeriod('week')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      inspectionPeriod === 'week'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Semaine</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setInspectionPeriod('month')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      inspectionPeriod === 'month'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <span>Mois</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setInspectionPeriod('year')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      inspectionPeriod === 'year'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <span>Année</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setInspectionPeriod('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      inspectionPeriod === 'all'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <span>Tout</span>
-                  </button>
-                </div>
+                <span>Semaine :</span>
               </div>
 
-              {/* Contrôles du Calendrier selon le mode */}
-              {inspectionPeriod === 'week' && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {/* Sélecteur Année */}
-                  <select
-                    value={selectedWeekYear}
-                    onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                  >
-                    <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
-                    <option value={currentYearNow}>{currentYearNow}</option>
-                    <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
-                  </select>
+              {/* Sélecteur Année */}
+              <select
+                value={selectedWeekYear}
+                onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
+                <option value={currentYearNow}>{currentYearNow}</option>
+                <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
+              </select>
 
-                  {/* Bouton Semaine Précédente */}
-                  <button
-                    type="button"
-                    onClick={goToPrevWeek}
-                    title="Semaine précédente"
-                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
+              {/* Bouton Semaine Précédente */}
+              <button
+                type="button"
+                onClick={goToPrevWeek}
+                title="Semaine précédente"
+                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
-                  {/* Sélecteur Déroulant de Toutes les Semaines (Semaine 1, Semaine 2, etc.) */}
-                  <div className="relative min-w-[240px] max-w-[320px]">
-                    <select
-                      value={selectedWeekNo}
-                      onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
-                      className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
-                    >
-                      {allWeeksOfYear.map((w) => (
-                        <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
-                          {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-
-                  {/* Bouton Semaine Suivante */}
-                  <button
-                    type="button"
-                    onClick={goToNextWeek}
-                    title="Semaine suivante"
-                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-
-                  {/* Bouton Raccourci Semaine en cours */}
-                  {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
-                    <button
-                      type="button"
-                      onClick={goToCurrentWeek}
-                      className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1 shadow-2xs"
-                    >
-                      <Clock className="w-3 h-3 text-blue-600" />
-                      <span>Sem. Actuelle ({currentWeekNumberNow})</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {inspectionPeriod === 'month' && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                    className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    {monthNames.map((m, idx) => (
-                      <option key={m} value={idx}>{m} {selectedWeekYear}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {inspectionPeriod === 'year' && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedWeekYear}
-                    onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
-                    className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
-                    <option value={currentYearNow}>{currentYearNow}</option>
-                    <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Légende / Période Sélectionnée */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs bg-slate-50 border border-slate-100 px-3.5 py-2 rounded-xl gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span className="font-semibold text-slate-600">
-                  Affichage des statistiques par employé pour :
-                </span>
-                <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/80">
-                  {inspectionPeriod === 'week' ? selectedWeekInfo.label :
-                   inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
-                   inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : 'Tout l\'Historique'}
-                </span>
+              {/* Sélecteur Déroulant de Toutes les Semaines (Semaine 1, Semaine 2, etc.) */}
+              <div className="relative min-w-[240px] max-w-[320px]">
+                <select
+                  value={selectedWeekNo}
+                  onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
+                  className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
+                >
+                  {allWeeksOfYear.map((w) => (
+                    <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
+                      {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
-              <span className="text-[11px] text-slate-500 font-medium">
-                Cliquez sur un utilisateur pour voir sa fiche complète et télécharger son PDF.
-              </span>
+              {/* Bouton Semaine Suivante */}
+              <button
+                type="button"
+                onClick={goToNextWeek}
+                title="Semaine suivante"
+                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Bouton Raccourci Semaine en cours */}
+              {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
+                <button
+                  type="button"
+                  onClick={goToCurrentWeek}
+                  className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1 shadow-2xs"
+                >
+                  <Clock className="w-3 h-3 text-blue-600" />
+                  <span>Sem. Actuelle ({currentWeekNumberNow})</span>
+                </button>
+              )}
             </div>
           </div>
           
