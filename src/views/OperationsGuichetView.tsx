@@ -8,7 +8,6 @@ import {
   UserCheck, 
   ArrowRight, 
   Lock, 
-  Printer, 
   FileText, 
   Sparkles, 
   User, 

@@ -15,7 +15,6 @@ import {
   Volume2,
   CheckCircle2,
   Shield,
-  Printer,
   Building,
   Sparkles,
   LogOut,
@@ -182,7 +181,7 @@ export const SettingsView: React.FC = () => {
     localStorage.setItem('agent_rd_sound_alert', String(rdSoundAlert));
     localStorage.setItem('agent_rd_visual_alert', String(rdVisualAlert));
 
-    setFeedbackMessage('Paramètres de l\'Agent R.D. (Imprimante thermique, Langue ES/FR & Alertes temps réel) enregistrés avec succès !');
+    setFeedbackMessage('Paramètres de l\'Agent R.D. (Langue ES/FR & Alertes temps réel) enregistrés avec succès !');
     setSaveSuccess(true);
     setCurrentPassword('');
     setNewPassword('');

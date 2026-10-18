@@ -175,7 +175,7 @@ export const translations: Record<Language, Translations> = {
     password_placeholder: "Mot de passe",
     connect: "Se connecter",
     receipt_title: "Reçu Officiel de Transaction",
-    print_receipt: "Reçu (PDF / Partager)",
+    print_receipt: "Télécharger Reçu (PDF)",
     close: "Fermer",
   },
 
@@ -264,7 +264,7 @@ export const translations: Record<Language, Translations> = {
     password_placeholder: "Mots de pas",
     connect: "Konekte",
     receipt_title: "Resi Ofisyèl Tranzaksyon",
-    print_receipt: "Resi (PDF / Pataje)",
+    print_receipt: "Telechaje Resi (PDF)",
     close: "Fèmen",
   },
 
@@ -353,7 +353,7 @@ export const translations: Record<Language, Translations> = {
     password_placeholder: "Contraseña",
     connect: "Iniciar sesión",
     receipt_title: "Recibo Oficial de Transacción",
-    print_receipt: "Recibo (PDF / Compartir)",
+    print_receipt: "Descargar Recibo (PDF)",
     close: "Cerrar",
   },
 };

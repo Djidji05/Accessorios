@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   FolderArchive, 
   Search, 
-  Printer, 
   Clock, 
   ArrowLeft,
   X,
@@ -261,9 +260,10 @@ export const HistoryView: React.FC = () => {
             type="button"
             onClick={() => setSelectedReceiptTx(inspectedTx)}
             className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            title="Consulter et télécharger le reçu officiel"
           >
-            <FileText className="w-4 h-4 text-blue-400" />
-            <span>Reçu Officiel (PDF / Partager)</span>
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Télécharger Reçu (PDF / Partager)</span>
           </button>
 
           <button

@@ -13,7 +13,6 @@ import {
   ArrowRight, 
   ChevronRight, 
   CheckCircle2, 
-  Printer, 
   FileText,
   ArrowLeft, 
   User, 

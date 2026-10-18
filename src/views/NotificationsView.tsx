@@ -6,7 +6,6 @@ import {
   ShieldAlert, 
   DollarSign, 
   Lock, 
-  Printer, 
   ArrowRight, 
   ArrowLeft,
   Filter, 

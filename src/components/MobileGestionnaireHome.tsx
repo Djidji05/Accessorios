@@ -18,7 +18,6 @@ import {
   ArrowRight, 
   Search, 
   Bell, 
-  Printer, 
   X, 
   Edit3, 
   Check, 

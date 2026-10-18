@@ -65,8 +65,10 @@ export function exportToCSV<T>(
   URL.revokeObjectURL(url);
 }
 
+import { jsPDF } from 'jspdf';
+
 /**
- * Génère et affiche un document PDF vectoriel prêt à être imprimé / enregistré en PDF
+ * Génère et télécharge directement un document PDF vectoriel officiel
  */
 export function exportToPDF<T>(
   data: T[],
@@ -74,108 +76,180 @@ export function exportToPDF<T>(
   title: string,
   subtitle = 'Rapport Officiel de la Plateforme',
   summaryBoxes: SummaryBox[] = [],
-  extraHTML = ''
+  _extraHTML = ''
 ) {
   if (!data || data.length === 0) {
-    alert("Aucune donnée disponible pour la génération du PDF.");
+    alert("Aucune donnée disponible pour le téléchargement du PDF.");
     return;
   }
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert("Veuillez autoriser les fenêtres surgissantes (popups) pour afficher et télécharger le PDF.");
-    return;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const marginX = 12;
+  const contentWidth = pageWidth - marginX * 2; // 186mm
+  const nowStr = new Date().toLocaleDateString('fr-FR');
+  const nowTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  // Function to draw header & footer on any page
+  const drawPageDecorations = (pageNum: number) => {
+    // Header banner
+    doc.setFillColor(15, 23, 42); // slate-900
+    doc.rect(0, 0, pageWidth, 26, 'F');
+
+    // Brand Name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.text("ALEXIS TRANSFERENCIA", marginX, 11);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text("Plateforme de Gestion & Transferts Transfrontaliers (RD ⇄ Haïti)", marginX, 17);
+    doc.text("Direction Financière & Contrôle des Opérations", marginX, 22);
+
+    // Right Badge
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(52, 211, 153); // emerald-400
+    doc.text(title.toUpperCase().slice(0, 36), pageWidth - marginX, 11, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(226, 232, 240);
+    doc.text(`Édité le : ${nowStr} à ${nowTime} • Total : ${data.length} enregistrements`, pageWidth - marginX, 17, { align: 'right' });
+    doc.text(`Document officiel téléchargeable`, pageWidth - marginX, 22, { align: 'right' });
+
+    // Footer
+    doc.setDrawColor(226, 232, 240);
+    doc.line(marginX, pageHeight - 12, pageWidth - marginX, pageHeight - 12);
+    doc.setFontSize(6.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Alexis Transferencia • Document Officiel d'Exploitation & Supervision Bancaire (RD ⇄ Haïti)", marginX, pageHeight - 8);
+    doc.text(`Page ${pageNum}`, pageWidth - marginX, pageHeight - 8, { align: 'right' });
+  };
+
+  let pageIndex = 1;
+  drawPageDecorations(pageIndex);
+
+  let curY = 32;
+
+  // Title & Subtitle block
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(15, 23, 42);
+  doc.text(title, marginX, curY);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 116, 139);
+  curY += 5;
+  doc.text(subtitle, marginX, curY);
+  curY += 6;
+
+  // Summary Boxes (grid of 3 columns max)
+  if (summaryBoxes.length > 0) {
+    const boxGap = 3;
+    const cols = Math.min(summaryBoxes.length, 3);
+    const boxWidth = (contentWidth - boxGap * (cols - 1)) / cols;
+    const boxHeight = 15;
+
+    summaryBoxes.forEach((box, i) => {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const bx = marginX + col * (boxWidth + boxGap);
+      const by = curY + row * (boxHeight + boxGap);
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(bx, by, boxWidth, boxHeight, 1.5, 1.5, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(box.label.toUpperCase(), bx + 3, by + 4);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(box.value, bx + 3, by + 9.5);
+
+      if (box.subtext) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(37, 99, 235);
+        doc.text(box.subtext, bx + 3, by + 13);
+      }
+    });
+
+    const totalRows = Math.ceil(summaryBoxes.length / cols);
+    curY += totalRows * (boxHeight + boxGap) + 4;
   }
 
-  const nowStr = new Date().toLocaleString('fr-FR');
+  // Table Setup
+  const colCount = columns.length;
+  const colWidth = contentWidth / colCount;
+  const rowHeight = 6.5;
 
-  const summaryHTML = summaryBoxes.length > 0 ? `
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
-      ${summaryBoxes.map(box => `
-        <div style="background: #F8FAFC; border: 1px solid #CBD5E1; padding: 10px; border-radius: 8px;">
-          <div style="font-size: 9px; font-weight: 800; color: #64748B; text-transform: uppercase;">${box.label}</div>
-          <div style="font-size: 14px; font-weight: 900; color: #0F172A; margin-top: 4px;">${box.value}</div>
-          ${box.subtext ? `<div style="font-size: 9px; color: #2563EB; font-weight: 700; margin-top: 2px;">${box.subtext}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>
-  ` : '';
+  const drawTableHeader = (y: number) => {
+    doc.setFillColor(30, 41, 59); // slate-800
+    doc.rect(marginX, y, contentWidth, rowHeight + 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
 
-  const headersHTML = columns
-    .map(c => `<th style="padding: 8px 10px; border-bottom: 2px solid #0F172A; text-align: left; font-size: 10px; text-transform: uppercase; color: #0F172A;">${c.header}</th>`)
-    .join('');
+    columns.forEach((col, idx) => {
+      const cx = marginX + idx * colWidth + 2;
+      const truncatedHeader = doc.splitTextToSize(col.header.toUpperCase(), colWidth - 4)[0] || col.header.toUpperCase();
+      doc.text(truncatedHeader, cx, y + 5);
+    });
+  };
 
-  const rowsHTML = data
-    .map((item, idx) => {
-      const bg = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-      const cells = columns
-        .map(col => {
-          const val = col.accessor(item);
-          const strVal = val === null || val === undefined ? '' : String(val);
-          return `<td style="padding: 8px 10px; border-bottom: 1px solid #E2E8F0; font-size: 10px; color: #1E293B;">${strVal}</td>`;
-        })
-        .join('');
-      return `<tr style="background-color: ${bg};">${cells}</tr>`;
-    })
-    .join('');
+  drawTableHeader(curY);
+  curY += rowHeight + 1;
 
-  const html = `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <title>${title} - Alexis Transferencia</title>
-      <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #0F172A; margin: 20px; background: #fff; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0F172A; padding-bottom: 12px; margin-bottom: 20px; }
-        .brand { font-size: 22px; font-weight: 900; color: #0F172A; letter-spacing: -0.5px; }
-        .brand span { color: #2563EB; }
-        .meta { font-size: 10px; color: #64748B; text-align: right; line-height: 1.4; }
-        .title { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: #0F172A; }
-        .subtitle { font-size: 11px; color: #64748B; margin-bottom: 16px; font-weight: 500; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .footer { margin-top: 30px; border-top: 1px solid #CBD5E1; padding-top: 10px; text-align: center; font-size: 9px; color: #94A3B8; }
-        @media print {
-          body { margin: 10mm; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <div class="brand">Alexis <span>Transferencia</span></div>
-        <div class="meta">
-          <div>Généré le : <strong>${nowStr}</strong></div>
-          <div>Nombre de lignes : <strong>${data.length}</strong></div>
-        </div>
-      </div>
-      <div class="title">${title}</div>
-      <div class="subtitle">${subtitle}</div>
-      ${summaryHTML}
-      <table>
-        <thead>
-          <tr>${headersHTML}</tr>
-        </thead>
-        <tbody>
-          ${rowsHTML}
-        </tbody>
-      </table>
-      ${extraHTML}
-      <div class="footer">
-        Alexis Transferencia • Document Officiel d'Exploitation & Supervision Transfrontalière (RD ⇄ Haïti)
-      </div>
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.print();
-          }, 300);
-        };
-      </script>
-    </body>
-    </html>
-  `;
+  // Table Data Rows
+  data.forEach((item, rowIdx) => {
+    // Page break check
+    if (curY + rowHeight > pageHeight - 16) {
+      doc.addPage();
+      pageIndex++;
+      drawPageDecorations(pageIndex);
+      curY = 32;
+      drawTableHeader(curY);
+      curY += rowHeight + 1;
+    }
 
-  printWindow.document.write(html);
-  printWindow.document.close();
+    const bg = rowIdx % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+    doc.setFillColor(bg[0], bg[1], bg[2]);
+    doc.rect(marginX, curY, contentWidth, rowHeight, 'F');
+    doc.setDrawColor(241, 245, 249);
+    doc.line(marginX, curY + rowHeight, marginX + contentWidth, curY + rowHeight);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.setTextColor(30, 41, 59);
+
+    columns.forEach((col, colIdx) => {
+      const val = col.accessor(item);
+      const strVal = val === null || val === undefined ? '-' : String(val);
+      const cx = marginX + colIdx * colWidth + 2;
+      const fitText = doc.splitTextToSize(strVal, colWidth - 3)[0] || strVal;
+      doc.text(fitText, cx, curY + 4.5);
+    });
+
+    curY += rowHeight;
+  });
+
+  // Save / Trigger Download directly in browser
+  const safeFilename = title.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`${safeFilename}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 /**

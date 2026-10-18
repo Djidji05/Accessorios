@@ -28,7 +28,6 @@ import {
   Image,
   Trash2,
   ShieldCheck,
-  Printer,
   PlusCircle,
   ArrowUpRight,
   Phone,
@@ -448,7 +447,7 @@ export const TaskQueueView: React.FC = () => {
     if (res.success) {
       setFeedback({
         type: 'success',
-        text: `Transaction ${haitiProofModalTx.referenceNumber} clôturée avec succès ! L'agence en RD a été notifiée et peut imprimer le reçu client.`
+        text: `Transaction ${haitiProofModalTx.referenceNumber} clôturée avec succès ! L'agence en RD a été notifiée et peut télécharger le reçu client.`
       });
       setHaitiProofModalTx(null);
       setHaitiProofImage(null);
@@ -2209,10 +2208,11 @@ export const TaskQueueView: React.FC = () => {
 
             <button
               onClick={() => setSelectedReceiptTx(tx)}
-              className="px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5 shadow-2xs"
+              className="px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+              title="Consulter et télécharger le reçu officiel (PDF)"
             >
-              <FileText className="w-4 h-4" />
-              <span>Imprimer Reçu PDF</span>
+              <Download className="w-4 h-4 text-emerald-400" />
+              <span>Télécharger Reçu PDF</span>
             </button>
 
             {/* Gestionnaire Quality Control: Report Anomaly to Admin (Superviser sans modifier) */}
@@ -3100,9 +3100,9 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               type="button"
               onClick={() => exportTransactionsToPDF(gestionnaireFilteredTasks, 'Flux en Temps Réel - Gestionnaire')}
               className="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
-              title="Exporter en PDF"
+              title="Télécharger en PDF"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-400" />
+              <Download className="w-3.5 h-3.5 text-slate-400" />
               <span>PDF</span>
             </button>
           </div>
@@ -3738,7 +3738,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           setSelectedReceiptTx(tx);
                         }}
                         className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
-                        title="Consulter et imprimer le reçu"
+                        title="Consulter et télécharger le reçu"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         <span>Reçu</span>
