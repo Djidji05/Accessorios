@@ -61,21 +61,73 @@ export const TreasuryView: React.FC = () => {
   const [rechargeNote, setRechargeNote] = useState<string>('');
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  // Calendar Date Range Filter
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({
+    preset: 'last_7_days',
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    endDate: new Date(),
+    label: '7 derniers jours',
+  });
+
   // Taux de conversion USD -> DOP (1 USD ≈ 60 DOP, dérivé de USD/HTG vs DOP/HTG)
   const usdToDopRate = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
   const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
 
-  // Transactions Zelle & Calculs dédiés en USD
-  const zelleTxs = transactions.filter(t => t.operator === 'zelle');
+  // Filtrage temporel précis des transactions
+  const isTxInDateRange = (t: any, range: DateRange) => {
+    if (!t.createdAt) return false;
+    const txDate = new Date(t.createdAt);
+    if (isNaN(txDate.getTime())) return false;
+
+    const { preset, startDate, endDate } = range;
+    const now = new Date();
+
+    if (preset === 'today') {
+      return txDate.toDateString() === now.toDateString();
+    }
+    if (preset === 'yesterday') {
+      const yest = new Date();
+      yest.setDate(now.getDate() - 1);
+      return txDate.toDateString() === yest.toDateString();
+    }
+    if (preset === 'last_7_days') {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return txDate >= sevenDaysAgo;
+    }
+    if (preset === 'last_30_days' || preset === 'this_month') {
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return txDate >= thirtyDaysAgo;
+    }
+    if (preset === 'last_month') {
+      const firstDayPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      return txDate >= firstDayPrevMonth && txDate <= lastDayPrevMonth;
+    }
+    if (startDate && endDate) {
+      return txDate >= new Date(startDate) && txDate <= new Date(endDate);
+    }
+    return true;
+  };
+
+  // Transactions valides de la période (exclut les transactions annulées pour la trésorerie)
+  const validPeriodTxs = transactions.filter((t) => {
+    if (t.status === 'cancelled') return false;
+    return isTxInDateRange(t, selectedDateRange);
+  });
+
+  const hasSystemHistory = transactions.length > 0;
+
+  // Transactions Zelle & Calculs dédiés en USD sur la période
+  const zelleTxs = validPeriodTxs.filter(t => t.operator === 'zelle');
   const liveZelleUSD = zelleTxs.reduce((sum, t) => sum + (t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0)), 0);
-  const totalZelleVolumeUSD = liveZelleUSD > 0 ? liveZelleUSD : 5300; // Baseline $5,300 USD
+  const totalZelleVolumeUSD = (liveZelleUSD > 0 || hasSystemHistory) ? liveZelleUSD : 5300;
   const totalZelleCommissionUSD = Math.round(totalZelleVolumeUSD * (zelleCommRate / 100) * 100) / 100;
   const totalZelleCommissionDOP = Math.round(totalZelleCommissionUSD * usdToDopRate);
   const totalZelleVolumeDOP = Math.round(totalZelleVolumeUSD * usdToDopRate);
   const totalZelleVolumeHTG = Math.round(totalZelleVolumeUSD * (usdToHtgRate || 140.5));
 
-  // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME (COMMISSIONS + FRAIS + AUTRES) ---
-  const liveFeesDOP = transactions.reduce((sum, t) => {
+  // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME SUR LA PÉRIODE SÉLECTIONNÉE ---
+  const liveFeesDOP = validPeriodTxs.reduce((sum, t) => {
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
       const feeUSD = amtUSD * 0.035;
@@ -83,9 +135,9 @@ export const TreasuryView: React.FC = () => {
     }
     return sum + (t.feeDOP || Math.round(t.amountDOP * 0.03));
   }, 0);
-  const totalFeesDOP = liveFeesDOP > 0 ? liveFeesDOP : 48500; // Baseline démo
+  const totalFeesDOP = (liveFeesDOP > 0 || hasSystemHistory) ? liveFeesDOP : 48500;
 
-  const liveAdminCommissionsDOP = transactions.reduce((sum, t) => {
+  const liveAdminCommissionsDOP = validPeriodTxs.reduce((sum, t) => {
     const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
@@ -94,19 +146,11 @@ export const TreasuryView: React.FC = () => {
     }
     return sum + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
   }, 0);
-  const totalAdminCommissionsDOP = liveAdminCommissionsDOP > 0 ? liveAdminCommissionsDOP : 24800; // Baseline démo
+  const totalAdminCommissionsDOP = (liveAdminCommissionsDOP > 0 || hasSystemHistory) ? liveAdminCommissionsDOP : 24800;
 
   const totalPlatformRevenueDOP = totalFeesDOP + totalAdminCommissionsDOP;
   const totalPlatformRevenueHTG = Math.round(totalPlatformRevenueDOP * dopToHtgRate);
   const totalPlatformRevenueUSD = Math.round((totalPlatformRevenueDOP / usdToDopRate) * 100) / 100;
-
-  // Calendar Date Range Filter
-  const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({
-    preset: 'last_7_days',
-    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    endDate: new Date(),
-    label: '7 derniers jours',
-  });
 
   const OPERATOR_CARDS_CONFIG: Array<{
     code: OperatorCode;
@@ -127,43 +171,25 @@ export const TreasuryView: React.FC = () => {
 
   // Dynamic calculation for volume transited per operator during selected date period
   const getOperatorVolumeData = (opCode: OperatorCode) => {
-    const { preset, startDate, endDate } = selectedDateRange;
-    const now = new Date();
-
-    const periodFilteredTxs = transactions.filter((t) => {
-      const txDate = new Date(t.createdAt);
-      if (preset === 'today') {
-        return txDate.toDateString() === now.toDateString();
-      }
-      if (preset === 'yesterday') {
-        const yest = new Date();
-        yest.setDate(now.getDate() - 1);
-        return txDate.toDateString() === yest.toDateString();
-      }
-      if (preset === 'last_7_days') {
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return txDate >= sevenDaysAgo;
-      }
-      if (preset === 'last_30_days' || preset === 'this_month') {
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return txDate >= thirtyDaysAgo;
-      }
-      if (startDate && endDate) {
-        return txDate >= new Date(startDate) && txDate <= new Date(endDate);
-      }
-      return true;
-    });
-
-    const opTxs = periodFilteredTxs.filter((t) => t.operator === opCode);
-    const liveHTG = opTxs.reduce((sum, t) => sum + t.amountHTG, 0);
-    const liveDOP = opTxs.reduce((sum, t) => sum + t.amountDOP, 0);
-    const liveUSD = opTxs.reduce((sum, t) => sum + (t.amountUSD || Math.round(t.amountDOP / 60)), 0);
+    const opTxs = validPeriodTxs.filter((t) => t.operator === opCode);
+    const liveHTG = opTxs.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
+    const liveDOP = opTxs.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+    const liveUSD = opTxs.reduce((sum, t) => sum + (t.amountUSD || (t.amountDOP ? Math.round(t.amountDOP / usdToDopRate) : 0)), 0);
     const liveCount = opTxs.length;
 
+    if (hasSystemHistory) {
+      return {
+        htg: liveHTG,
+        dop: liveDOP,
+        usd: liveUSD,
+        count: liveCount,
+      };
+    }
+
     const mult = 
-      preset === 'today' ? 1 :
-      preset === 'yesterday' ? 0.85 :
-      preset === 'last_30_days' || preset === 'this_month' ? 4.2 : 2.5;
+      selectedDateRange.preset === 'today' ? 1 :
+      selectedDateRange.preset === 'yesterday' ? 0.85 :
+      selectedDateRange.preset === 'last_30_days' || selectedDateRange.preset === 'this_month' ? 4.2 : 2.5;
 
     const mockBaselines: Record<OperatorCode, { htg: number; dop: number; usd: number; count: number }> = {
       natcash: { htg: Math.round(620000 * mult), dop: Math.round(263000 * mult), usd: 0, count: Math.round(18 * mult) },
@@ -177,15 +203,15 @@ export const TreasuryView: React.FC = () => {
 
     const base = mockBaselines[opCode] || { htg: 0, dop: 0, usd: 0, count: 0 };
     return {
-      htg: liveHTG > 0 ? liveHTG : base.htg,
-      dop: liveDOP > 0 ? liveDOP : base.dop,
-      usd: liveUSD > 0 ? liveUSD : base.usd,
-      count: liveCount > 0 ? liveCount : base.count,
+      htg: base.htg,
+      dop: base.dop,
+      usd: base.usd,
+      count: base.count,
     };
   };
 
   const getVolumeMetrics = () => {
-    const totalVolHTG = transactions.reduce((sum, tx) => sum + tx.amountHTG, 0);
+    const totalVolHTG = validPeriodTxs.reduce((sum, tx) => sum + (tx.amountHTG || 0), 0);
     const label = selectedDateRange.preset === 'today' 
       ? 'Volume Traité (Aujourd\'hui)'
       : selectedDateRange.preset === 'yesterday'
@@ -194,11 +220,11 @@ export const TreasuryView: React.FC = () => {
       ? 'Volume Traité (30 jours)'
       : selectedDateRange.preset === 'last_month'
       ? 'Volume Traité (Mois dernier)'
-      : 'Volume Traité (7 jours)';
+      : `Volume Traité (${selectedDateRange.label})`;
 
     return {
       volume: totalVolHTG.toLocaleString(),
-      diff: totalVolHTG > 0 ? '+18.2% vs période préc.' : '0% vs période préc.',
+      diff: totalVolHTG > 0 ? `${validPeriodTxs.length} tx validée(s)` : '0 tx sur la période',
       label
     };
   };
@@ -279,7 +305,7 @@ export const TreasuryView: React.FC = () => {
 
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => exportTreasuryReportToCSV(accountBalances, transactions, undefined, logs)}
+              onClick={() => exportTreasuryReportToCSV(accountBalances, validPeriodTxs, `Alexis_Transferencia_Tresorerie_${selectedDateRange.preset || 'export'}`, logs)}
               className="px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs"
               title="Exporter Rapport CSV Financier avec Journal des Opérations"
             >
@@ -288,7 +314,7 @@ export const TreasuryView: React.FC = () => {
             </button>
 
             <button
-              onClick={() => exportTreasuryReportToPDF(accountBalances, transactions, undefined, logs)}
+              onClick={() => exportTreasuryReportToPDF(accountBalances, validPeriodTxs, `Rapport Financier & Trésorerie (${selectedDateRange.label})`, logs)}
               className="px-3 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-900 dark:border-slate-700 cursor-pointer shadow-2xs"
               title="Générer & Télécharger le Rapport PDF Financier avec Journal des Opérations"
             >
@@ -373,9 +399,12 @@ export const TreasuryView: React.FC = () => {
             </div>
           </div>
 
-          <div className="self-start sm:self-auto">
+          <div className="self-start sm:self-auto flex items-center gap-2">
             <span className="text-[11px] font-mono font-extrabold px-3 py-1 rounded-xl bg-emerald-950/80 text-emerald-400 border border-emerald-800 inline-block">
               ● Performance {selectedDateRange.label}
+            </span>
+            <span className="text-[11px] font-mono text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-700 inline-block">
+              {validPeriodTxs.length} trans.
             </span>
           </div>
         </div>
