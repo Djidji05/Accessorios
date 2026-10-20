@@ -130,7 +130,10 @@ export const MobileAgentHome: React.FC = () => {
     openSearch,
     logout,
     selectedService,
-    setSelectedService
+    setSelectedService,
+    readNotificationIds,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useApp();
 
   const [showBalance, setShowBalance] = useState<boolean>(true);
@@ -262,6 +265,9 @@ export const MobileAgentHome: React.FC = () => {
 
     return list;
   }, [transactions, currentUser, dopToHtgRate, killSwitchList, isAdmin, isGestionnaire, isAgentRD, isAgentHaiti, isMyTransaction]);
+
+  const unreadNotifications = notifications.filter(n => !readNotificationIds.includes(n.id));
+  const unreadCount = unreadNotifications.length;
 
   // Calculate transactions & amount realized during the current week for this user
   const now = new Date();
@@ -624,15 +630,16 @@ export const MobileAgentHome: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-28 space-y-4 animate-in fade-in">
         
-        {/* Top Header Bar with Centered Title */}
-        <div className="flex items-center justify-between py-2">
+        {/* Top Header Bar with Centered Title (Sticky Navbar en mode Mobile) */}
+        <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 -mt-4 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
           <button
+            type="button"
             onClick={() => {
               setSelectedService(null);
               setFeedback(null);
               setLastCreatedTx(null);
             }}
-            className="p-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 cursor-pointer"
+            className="p-2 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 cursor-pointer"
             title="Retour"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -643,7 +650,7 @@ export const MobileAgentHome: React.FC = () => {
           </h3>
 
           <div className="w-9" />
-        </div>
+        </header>
 
         {/* Feedback Error Banner */}
         {feedback && feedback.type === 'error' && (
@@ -660,20 +667,22 @@ export const MobileAgentHome: React.FC = () => {
         <form onSubmit={handleTransferSubmit} className="space-y-4">
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-sm">
             
-            {/* Phone Number Field (Numero de telephone) */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-400 dark:text-slate-400">
-                Numero de telephone
-              </label>
-              <div className="relative flex items-center bg-slate-100/80 dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200/60 dark:border-slate-800">
-                <input
-                  type="text"
-                  required
-                  placeholder="509XXXXXX"
-                  value={receiverPhone}
-                  onChange={(e) => setReceiverPhone(e.target.value)}
-                  className="w-full bg-transparent font-mono text-base font-black text-slate-900 dark:text-white px-3 py-2 focus:outline-none"
-                />
+              {/* Phone Number Field (Numero de telephone - Pavé numérique activé) */}
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-400 dark:text-slate-400">
+                  Numero de telephone
+                </label>
+                <div className="relative flex items-center bg-slate-100/80 dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200/60 dark:border-slate-800">
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    required
+                    placeholder="509XXXXXX"
+                    value={receiverPhone}
+                    onChange={(e) => setReceiverPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-full bg-transparent font-mono text-base font-black text-slate-900 dark:text-white px-3 py-2 focus:outline-none"
+                  />
                 
                 {receiverPhone && (
                   <button
@@ -853,9 +862,9 @@ export const MobileAgentHome: React.FC = () => {
         </div>
       )}
 
-      {/* 1. TOP HEADER: Agent Avatar, Greeting, Notifications & Icons (Hidden for Admin & Gestionnaire) */}
+      {/* 1. TOP HEADER: Agent Avatar, Greeting, Notifications & Icons (Sticky Navbar en mode Mobile) */}
       {!isDesktopNavRole && (
-        <div className="flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 -mt-4 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-3">
             {/* Agent Avatar */}
             <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md ring-2 ring-white dark:ring-slate-800">
@@ -887,14 +896,15 @@ export const MobileAgentHome: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+                className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer relative"
                 title="Notifications"
               >
                 <Bell className="w-4 h-4" />
-                <span className="absolute top-1 right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-in zoom-in-75">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Notifications Dropdown Panel */}
@@ -920,41 +930,67 @@ export const MobileAgentHome: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => setIsNotificationsOpen(false)}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => markAllNotificationsAsRead(notifications.map(n => n.id))}
+                            className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                          >
+                            Tout lire
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setIsNotificationsOpen(false)}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                      {notifications.map((notif) => {
-                        const IconComp = notif.icon;
-                        return (
-                          <div 
-                            key={notif.id}
-                            onClick={() => {
-                              if (notif.tx) setSelectedReceiptTx(notif.tx);
-                              setIsNotificationsOpen(false);
-                            }}
-                            className="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-50/70 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-800/80"
-                          >
-                            <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
-                              <IconComp className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0 text-xs">
-                              <div className="flex items-center justify-between gap-1">
-                                <p className="font-bold text-slate-900 dark:text-white truncate">{notif.title}</p>
-                                <span className="text-[10px] text-slate-400 whitespace-nowrap">{notif.time}</span>
+                      {notifications.length === 0 ? (
+                        <p className="text-center py-6 text-xs text-slate-400">Aucune notification</p>
+                      ) : (
+                        notifications.map((notif) => {
+                          const IconComp = notif.icon;
+                          const isUnread = !readNotificationIds.includes(notif.id);
+                          return (
+                            <div 
+                              key={notif.id}
+                              onClick={() => {
+                                markNotificationAsRead(notif.id);
+                                if (notif.tx) setSelectedReceiptTx(notif.tx);
+                                setIsNotificationsOpen(false);
+                              }}
+                              className={`flex items-start gap-3 p-2.5 rounded-2xl transition-colors cursor-pointer border ${
+                                isUnread
+                                  ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/50 hover:bg-rose-50/80'
+                                  : 'bg-slate-50/70 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200/50 dark:border-slate-800/80 opacity-80'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
+                                <IconComp className="w-4 h-4" />
                               </div>
-                              <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5 line-clamp-2">
-                                {notif.message}
-                              </p>
+                              <div className="flex-1 min-w-0 text-xs">
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <p className="font-bold text-slate-900 dark:text-white truncate">{notif.title}</p>
+                                    {isUnread && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 whitespace-nowrap">{notif.time}</span>
+                                </div>
+                                <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5 line-clamp-2">
+                                  {notif.message}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
 
                     <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -984,7 +1020,7 @@ export const MobileAgentHome: React.FC = () => {
               <LogOut className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </header>
       )}
 
       {/* 2. MAIN AGENT CARD */}

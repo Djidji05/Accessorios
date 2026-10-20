@@ -65,7 +65,10 @@ export const TaskQueueView: React.FC = () => {
     setActiveTab,
     accountBalances,
     logout,
-    setIsTransactionDetailOpen
+    setIsTransactionDetailOpen,
+    readNotificationIds,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useApp();
 
   // Full-page transaction view state (NO modal popups)
@@ -529,6 +532,9 @@ export const TaskQueueView: React.FC = () => {
       }));
     }, [haitiScopedTasks]);
 
+    const unreadHaitiNotifs = haitiNotifications.filter(n => !readNotificationIds.includes(n.id));
+    const unreadHaitiCount = unreadHaitiNotifs.length;
+
     return (
       <div className="p-4 sm:p-6 space-y-5 max-w-[1600px] mx-auto font-sans animate-in fade-in pb-24">
         {/* Toast feedback */}
@@ -548,8 +554,8 @@ export const TaskQueueView: React.FC = () => {
         {/* 1. MOBILE ONLY VIEW (block md:hidden)                                    */}
         {/* ========================================================================= */}
         <div className="block md:hidden space-y-4">
-          {/* Mobile Top Header */}
-          <div className="flex items-center justify-between py-1">
+          {/* Mobile Top Header (Sticky Navbar en mode Mobile) */}
+          <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 -mt-4 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
             <div>
               <span className="text-[10px] font-black uppercase text-orange-500 tracking-wider">
                 Agent Haïti • Décaissements
@@ -568,10 +574,9 @@ export const TaskQueueView: React.FC = () => {
                   title="Notifications Agent Haïti"
                 >
                   <Bell className="w-5 h-5 text-orange-500" />
-                  {haitiPendingCount > 0 && (
-                    <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                  {unreadHaitiCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-in zoom-in-75">
+                      {unreadHaitiCount > 99 ? '99+' : unreadHaitiCount}
                     </span>
                   )}
                 </button>
@@ -598,47 +603,71 @@ export const TaskQueueView: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => setIsNotificationsOpen(false)}
-                          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {unreadHaitiCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => markAllNotificationsAsRead(haitiNotifications.map(n => n.id))}
+                              className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                            >
+                              Tout lire
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setIsNotificationsOpen(false)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                         {haitiNotifications.length > 0 ? (
-                          haitiNotifications.map((notif) => (
-                            <div
-                              key={notif.id}
-                              onClick={() => {
-                                handleOpenHaitiDetails(notif.tx);
-                                setIsNotificationsOpen(false);
-                              }}
-                              className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border border-slate-100 dark:border-slate-800/80 flex items-start gap-2.5"
-                            >
-                              <div className={`p-1.5 rounded-xl flex-shrink-0 mt-0.5 ${
-                                notif.status === 'completed'
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
-                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'
-                              }`}>
-                                {notif.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-1">
-                                  <p className="text-xs font-black text-slate-900 dark:text-white truncate">
-                                    {notif.title}
-                                  </p>
-                                  <span className="text-[10px] text-slate-400 font-mono font-medium flex-shrink-0">
-                                    {notif.time}
-                                  </span>
+                          haitiNotifications.map((notif) => {
+                            const isUnread = !readNotificationIds.includes(notif.id);
+                            return (
+                              <div
+                                key={notif.id}
+                                onClick={() => {
+                                  markNotificationAsRead(notif.id);
+                                  handleOpenHaitiDetails(notif.tx);
+                                  setIsNotificationsOpen(false);
+                                }}
+                                className={`p-2.5 rounded-2xl transition-colors cursor-pointer border flex items-start gap-2.5 ${
+                                  isUnread
+                                    ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/50 hover:bg-rose-50/80'
+                                    : 'bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-100 dark:border-slate-800/80 opacity-80'
+                                }`}
+                              >
+                                <div className={`p-1.5 rounded-xl flex-shrink-0 mt-0.5 ${
+                                  notif.status === 'completed'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'
+                                }`}>
+                                  {notif.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                                 </div>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
-                                  {notif.message}
-                                </p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      <p className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                        {notif.title}
+                                      </p>
+                                      {isUnread && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-mono font-medium flex-shrink-0">
+                                      {notif.time}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                                    {notif.message}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
                           <div className="py-6 text-center text-xs text-slate-400">
                             Aucune notification pour le moment.
@@ -673,7 +702,7 @@ export const TaskQueueView: React.FC = () => {
                 <LogOut className="w-5 h-5 text-rose-500" />
               </button>
             </div>
-          </div>
+          </header>
 
           {/* MAIN LARGE BALANCE CARD (Natcash & Natcom) */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 text-white p-5 shadow-xl border border-slate-800/80 space-y-4">
@@ -702,41 +731,25 @@ export const TaskQueueView: React.FC = () => {
               </button>
             </div>
 
-            {/* Balances Cards Grid: Natcash & Natcom */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              {/* Natcash Card */}
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
+            {/* Balance Card: Natcash & Natcom (Compte unique partagé - Recharges et Caisse décréditées ensemble) */}
+            <div className="pt-1">
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">
-                    Natcash
+                  <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
+                    <span>Solde Natcash & Natcom</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                      Compte Partagé HTG
+                    </span>
                   </span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                    HTG
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Caisse Mobile & Recharges
                   </span>
                 </div>
-                <p className="text-xl font-black font-mono text-white tracking-tight">
-                  {showHaitiBalance ? natcashBalance.toLocaleString('fr-FR') : '••••••••'}
+                <p className="text-2xl font-black font-mono text-white tracking-tight">
+                  {showHaitiBalance ? natcashBalance.toLocaleString('fr-FR') : '••••••••'} <span className="text-xs font-bold text-slate-400">HTG</span>
                 </p>
                 <span className="text-[10px] text-slate-400 font-medium block">
-                  Caisse Mobile
-                </span>
-              </div>
-
-              {/* Natcom Card */}
-              <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase text-blue-400 tracking-wider">
-                    Natcom
-                  </span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
-                    HTG
-                  </span>
-                </div>
-                <p className="text-xl font-black font-mono text-white tracking-tight">
-                  {showHaitiBalance ? natcomBalance.toLocaleString('fr-FR') : '••••••••'}
-                </p>
-                <span className="text-[10px] text-slate-400 font-medium block">
-                  Flotte Recharges
+                  Les retraits Natcash et recharges Natcom se décréditent sur ce même compte.
                 </span>
               </div>
             </div>
@@ -921,23 +934,12 @@ export const TaskQueueView: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde Natcash</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde Natcash & Natcom</p>
                 <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{natcashBalance.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-500 font-bold mt-0.5">Gourdes (HTG) en Caisse</p>
+                <p className="text-[10px] text-slate-500 font-bold mt-0.5">Gourdes (HTG) en Caisse & Recharges</p>
               </div>
               <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-black text-xs">
-                NC
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde Natcom</p>
-                <p className="text-2xl font-black text-blue-600 mt-1 font-mono">{natcomBalance.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-500 font-bold mt-0.5">Gourdes (HTG) Flotte</p>
-              </div>
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center font-black text-xs">
-                NAT
+                NC / NAT
               </div>
             </div>
 
@@ -2315,9 +2317,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Téléphone Bénéficiaire (Portefeuille HT)</label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={editData.receiverPhone}
-                    onChange={(e) => setEditData({ ...editData, receiverPhone: e.target.value })}
+                    onChange={(e) => setEditData({ ...editData, receiverPhone: e.target.value.replace(/[^0-9]/g, '') })}
                     className="w-full bg-white border border-slate-300 text-xs font-mono text-slate-900 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     required
                   />
@@ -3871,9 +3875,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">Téléphone</label>
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={newTxSenderPhone}
-                      onChange={(e) => setNewTxSenderPhone(e.target.value)}
+                      onChange={(e) => setNewTxSenderPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                       placeholder="+1 809 000 0000"
                       className="w-full bg-white border border-slate-200 text-xs font-mono px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
                     />
@@ -3906,10 +3912,12 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           {isNoBeneficiary ? 'Numéro de Téléphone à Recharger' : 'Numéro Récepteur'}
                         </label>
                         <input
-                          type="text"
+                          type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={newTxReceiverPhone}
-                          onChange={(e) => setNewTxReceiverPhone(e.target.value)}
-                          placeholder={newTxOperator === 'claro' || newTxOperator === 'altice' ? '+1 809 / 829 ...' : '+509 3...'}
+                          onChange={(e) => setNewTxReceiverPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                          placeholder={newTxOperator === 'claro' || newTxOperator === 'altice' ? '809XXXXXXX' : '509XXXXXXX'}
                           className="w-full bg-white border border-slate-200 text-xs font-mono font-bold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600"
                           required
                         />

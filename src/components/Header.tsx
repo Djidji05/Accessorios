@@ -46,7 +46,10 @@ export const Header: React.FC = () => {
     selectedService,
     currentLang,
     setLanguage,
-    t
+    t,
+    readNotificationIds,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useApp();
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -135,6 +138,9 @@ export const Header: React.FC = () => {
     return list;
   }, [transactions, currentUser, dopToHtgRate, activeKillCount, isAgentRD, isAgentHaiti, t]);
 
+  const unreadNotifications = notifications.filter(n => !readNotificationIds.includes(n.id));
+  const unreadCount = unreadNotifications.length;
+
   const languages: Array<{ code: 'FR' | 'HT' | 'ES'; label: string }> = [
     { code: 'FR', label: 'Français 🇫🇷' },
     { code: 'HT', label: 'Kreyòl 🇭🇹' },
@@ -142,7 +148,7 @@ export const Header: React.FC = () => {
   ];
 
   return (
-    <header className={`${isDesktopNavRole ? (selectedService ? 'hidden md:flex' : 'flex') : 'hidden md:flex'} h-14 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 px-2 sm:px-6 items-center justify-between sticky top-0 z-20 transition-colors w-full min-w-0`}>
+    <header className={`${isDesktopNavRole ? (selectedService ? 'hidden md:flex' : 'flex') : 'hidden md:flex'} h-14 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 px-2 sm:px-6 items-center justify-between sticky top-0 z-30 transition-colors w-full min-w-0`}>
       {/* Left Section: Mobile Brand Header & Desktop Breadcrumbs */}
       <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 min-w-0 flex-shrink">
         {/* Mobile Menu Toggle Button */}
@@ -238,11 +244,12 @@ export const Header: React.FC = () => {
           >
             <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             
-            {/* Animated Red Badge Dot */}
-            <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
-            </span>
+            {/* Small Red Number Badge (Disparaît si 0 notifications non lues) */}
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-in zoom-in-75">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Notifications Dropdown Panel */}
@@ -255,41 +262,71 @@ export const Header: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                   <Bell className="w-4 h-4 text-slate-900 dark:text-slate-100" />
                   <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 text-[10px] font-black rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
-                <button 
-                  onClick={() => setIsNotificationsOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => markAllNotificationsAsRead(notifications.map(n => n.id))}
+                      className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                    >
+                      Tout marquer lu
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setIsNotificationsOpen(false)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {notifications.map((notif) => {
-                  const IconComp = notif.icon;
-                  return (
-                    <div 
-                      key={notif.id}
-                      onClick={() => {
-                        if (notif.tx) setSelectedReceiptTx(notif.tx);
-                        if (notif.actionTab) setActiveTab(notif.actionTab);
-                        setIsNotificationsOpen(false);
-                      }}
-                      className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer border border-transparent hover:border-slate-200/80 dark:hover:border-slate-700"
-                    >
-                      <div className={`w-7 h-7 rounded-lg border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
-                        <IconComp className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="flex items-center justify-between">
-                          <p className="font-bold text-slate-900 dark:text-slate-100">{notif.title}</p>
-                          <span className="text-[10px] text-slate-400 font-normal">{notif.time}</span>
+                {notifications.length === 0 ? (
+                  <p className="text-center py-6 text-xs text-slate-400">Aucune notification</p>
+                ) : (
+                  notifications.map((notif) => {
+                    const IconComp = notif.icon;
+                    const isUnread = !readNotificationIds.includes(notif.id);
+                    return (
+                      <div 
+                        key={notif.id}
+                        onClick={() => {
+                          markNotificationAsRead(notif.id);
+                          if (notif.tx) setSelectedReceiptTx(notif.tx);
+                          if (notif.actionTab) setActiveTab(notif.actionTab);
+                          setIsNotificationsOpen(false);
+                        }}
+                        className={`flex items-start gap-2.5 p-2 rounded-xl transition-colors cursor-pointer border ${
+                          isUnread
+                            ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/40 hover:bg-rose-50/80'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 border-transparent hover:border-slate-200/80 dark:hover:border-slate-700 opacity-80'
+                        }`}
+                      >
+                        <div className={`w-7 h-7 rounded-lg border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
+                          <IconComp className="w-3.5 h-3.5" />
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5">{notif.message}</p>
+                        <div className="flex-1 text-xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-slate-900 dark:text-slate-100">{notif.title}</p>
+                              {isUnread && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-normal">{notif.time}</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-snug mt-0.5">{notif.message}</p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
               <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-center">

@@ -242,8 +242,11 @@ export const TreasuryView: React.FC = () => {
     .filter(b => b.currency === 'USD')
     .reduce((acc, curr) => acc + curr.balance, 0);
 
+  // Natcom partage le même compte que Natcash (décrédité ensemble). Pas de carte séparée ni d'injection flotte pour Natcom.
+  const displayAccounts = accountBalances.filter(b => b.operator !== 'natcom');
+
   // Identify float warning (< 10,000)
-  const lowFloatAccounts = accountBalances.filter(b => b.balance < 10000);
+  const lowFloatAccounts = displayAccounts.filter(b => b.balance < 10000);
 
   const handleRechargeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -699,12 +702,12 @@ export const TreasuryView: React.FC = () => {
             </div>
 
             <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-mono">
-              {accountBalances.length} Comptes
+              {displayAccounts.length} Comptes
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {accountBalances.map((bal) => {
+            {displayAccounts.map((bal) => {
               const isLow = bal.balance < 10000;
               const maxTarget = bal.currency === 'HTG' ? 1000000 : 2000000;
               const percent = Math.min(100, Math.round((bal.balance / maxTarget) * 100));
@@ -719,8 +722,12 @@ export const TreasuryView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">{bal.name}</span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">{bal.operator}</span>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                      {bal.operator === 'natcash' ? 'Solde Natcash & Natcom (HT)' : bal.name}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">
+                      {bal.operator === 'natcash' ? 'Natcash / Natcom' : bal.operator}
+                    </span>
                   </div>
 
                   <div>
@@ -897,9 +904,9 @@ export const TreasuryView: React.FC = () => {
                   onChange={(e) => setSelectedAccountId(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-3 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-blue-500 cursor-pointer"
                 >
-                  {accountBalances.map(acc => (
+                  {displayAccounts.map(acc => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.name} ({acc.balance.toLocaleString()} {acc.currency === 'DOP' ? 'Pesos' : acc.currency})
+                      {acc.operator === 'natcash' ? 'Solde Natcash & Natcom (Natcom HT)' : acc.name} ({acc.balance.toLocaleString()} {acc.currency === 'DOP' ? 'Pesos' : acc.currency})
                     </option>
                   ))}
                 </select>

@@ -71,7 +71,9 @@ export const MobileGestionnaireHome: React.FC = () => {
     cancelTransaction,
     setSelectedReceiptTx,
     setActiveTab,
-    openSearch
+    openSearch,
+    readNotificationIds,
+    killSwitchList
   } = useApp();
 
   // Filter States for Pending Tasks
@@ -131,6 +133,23 @@ export const MobileGestionnaireHome: React.FC = () => {
     (t) => t.status === 'completed' && 
            ['moncash', 'digicel', 'claro', 'altice', 'natcash', 'natcom', 'zelle'].includes(t.operator)
   ).length;
+
+  const unreadCount = React.useMemo(() => {
+    let count = 0;
+    transactions.forEach(tx => {
+      if (!readNotificationIds.includes(`notif_tx_${tx.id}`)) {
+        count++;
+      }
+    });
+    if (!readNotificationIds.includes('notif_rate')) {
+      count++;
+    }
+    const activeKillCount = killSwitchList.filter(k => !k.enabled).length;
+    if (activeKillCount > 0 && !readNotificationIds.includes('notif_ks')) {
+      count++;
+    }
+    return count;
+  }, [transactions, readNotificationIds, killSwitchList]);
 
   // Handle proof upload image for existing pending tx
   const handleProofImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,7 +332,7 @@ export const MobileGestionnaireHome: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-28 font-sans">
       
       {/* 1. TOP MOBILE CONTROL HEADER */}
-      <header className="sticky top-0 z-20 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 shadow-2xs">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 shadow-2xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -350,9 +369,9 @@ export const MobileGestionnaireHome: React.FC = () => {
               className="relative p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 active:scale-95 transition-all"
             >
               <Bell className="w-4 h-4" />
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white font-black text-[10px] rounded-full flex items-center justify-center animate-pulse">
-                  {pendingCount}
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs">
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>
@@ -846,9 +865,11 @@ export const MobileGestionnaireHome: React.FC = () => {
                   />
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="Téléphone RD (Optionnel)"
                     value={directSenderPhone}
-                    onChange={(e) => setDirectSenderPhone(e.target.value)}
+                    onChange={(e) => setDirectSenderPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -874,9 +895,11 @@ export const MobileGestionnaireHome: React.FC = () => {
                   )}
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder={['claro', 'altice'].includes(directOperator) ? "Téléphone RD (+1 809 / 829...)" : "Téléphone HT (509...)"}
                     value={directReceiverPhone}
-                    onChange={(e) => setDirectReceiverPhone(e.target.value)}
+                    onChange={(e) => setDirectReceiverPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                     required
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-amber-500 focus:outline-none"
                   />

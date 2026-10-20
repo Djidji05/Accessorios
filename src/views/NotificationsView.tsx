@@ -27,7 +27,10 @@ export const NotificationsView: React.FC = () => {
     dopToHtgRate, 
     killSwitchList, 
     setSelectedReceiptTx, 
-    setActiveTab 
+    setActiveTab,
+    readNotificationIds,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   } = useApp();
 
   const [activeFilter, setActiveFilter] = useState<NotificationFilterType>('all');
@@ -166,8 +169,8 @@ export const NotificationsView: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in pb-28">
       
-      {/* Top Bar with Back Button */}
-      <div className="flex items-center justify-between pt-1">
+      {/* Top Bar with Back Button & Mark All Read (Sticky Navbar en mode Mobile) */}
+      <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
         <button
           onClick={() => setActiveTab(isAgentRD ? 'guichet' : 'overview')}
           className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-xs font-extrabold cursor-pointer transition-colors"
@@ -176,7 +179,15 @@ export const NotificationsView: React.FC = () => {
           <ArrowLeft className="w-4 h-4 text-orange-500" />
           <span>Retour</span>
         </button>
-      </div>
+
+        <button
+          onClick={() => markAllNotificationsAsRead(allNotifications.map(n => n.id))}
+          className="px-3 py-1.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+        >
+          <CheckCheck className="w-4 h-4 text-emerald-500" />
+          <span>Tout marquer lu</span>
+        </button>
+      </header>
 
       {/* 1. Header Banner */}
       <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -214,11 +225,20 @@ export const NotificationsView: React.FC = () => {
         {filteredNotifications.length > 0 ? (
           filteredNotifications.map((notif) => {
             const IconComp = notif.icon;
+            const isUnread = !readNotificationIds.includes(notif.id);
 
             return (
               <div
                 key={notif.id}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-3"
+                onClick={() => {
+                  markNotificationAsRead(notif.id);
+                  if (notif.tx) setSelectedReceiptTx(notif.tx);
+                }}
+                className={`p-4 sm:p-5 rounded-3xl border transition-all cursor-pointer space-y-3 ${
+                  isUnread
+                    ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs opacity-85'
+                }`}
               >
                 {/* Top Row: Icon, Title, Badge, Time */}
                 <div className="flex items-start justify-between gap-3">
@@ -231,6 +251,9 @@ export const NotificationsView: React.FC = () => {
                         <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
                           {notif.title}
                         </h4>
+                        {isUnread && (
+                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                        )}
                         <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${notif.badgeColor}`}>
                           {notif.badgeText}
                         </span>

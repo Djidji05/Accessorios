@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   User, 
   Transaction, 
@@ -142,6 +142,11 @@ interface AppContextType {
   // Transaction Detail View State (To hide bottom navbar when viewing details)
   isTransactionDetailOpen: boolean;
   setIsTransactionDetailOpen: (open: boolean) => void;
+
+  // Notifications Tracking State
+  readNotificationIds: string[];
+  markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: (ids?: string[]) => void;
 
   // i18n Internationalization State
   currentLang: Language;
@@ -363,6 +368,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_SETTLEMENTS;
   });
+
+  // Notifications Tracking (Persist read notifications in localStorage)
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('dalexis_read_notifs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const markNotificationAsRead = useCallback((id: string) => {
+    setReadNotificationIds((prev) => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      try {
+        localStorage.setItem('dalexis_read_notifs', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback((ids?: string[]) => {
+    setReadNotificationIds((prev) => {
+      const next = ids ? Array.from(new Set([...prev, ...ids])) : prev;
+      try {
+        localStorage.setItem('dalexis_read_notifs', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (settlements) {
@@ -758,10 +794,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setTransactions((prev) => [newTx, ...prev]);
 
-    // Update balances
+    // Update balances: Natcom shares the Natcash balance and decredits directly from it
     setAccountBalances((prev) =>
       prev.map((b) => {
-        if (b.operator === data.operator) {
+        const targetOperator = data.operator === 'natcom' ? 'natcash' : data.operator;
+        if (b.operator === targetOperator) {
           return { ...b, balance: Math.max(0, b.balance - data.amountDOP), lastUpdated: new Date().toISOString() };
         }
         return b;
@@ -1354,6 +1391,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentLang,
         setLanguage,
         t,
+        readNotificationIds,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
       }}
     >
       {children}

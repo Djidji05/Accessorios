@@ -564,11 +564,13 @@ export const OperationsGuichetView: React.FC = () => {
                         <span>{isTelecom ? `Numéro de Téléphone à Recharger (${opLabel})` : 'Numéro Portefeuille / Compte (Haïti)'}</span>
                       </label>
                       <input
-                        type="text"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         required
-                        placeholder={isTelecom ? "ex: 3700 0000 ou 809 000 0000" : "+509 3700 0000"}
+                        placeholder={isTelecom ? "ex: 37000000 ou 8090000000" : "+509 37000000"}
                         value={receiverPhone}
-                        onChange={(e) => setReceiverPhone(e.target.value)}
+                        onChange={(e) => setReceiverPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                         className="w-full bg-white border border-blue-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
