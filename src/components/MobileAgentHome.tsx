@@ -399,15 +399,15 @@ export const MobileAgentHome: React.FC = () => {
                 <div className="w-20 h-20 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 flex items-center justify-center ring-8 ring-emerald-500/5">
                   <CheckCircle2 className="w-12 h-12" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900">
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900">
                   <Clock className="w-4 h-4 animate-pulse" />
                 </div>
               </div>
 
               {/* Title & Success Message */}
               <div>
-                <span className="text-[10px] font-mono font-black px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 uppercase tracking-wider inline-flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                <span className="text-[10px] font-mono font-black px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/80 text-orange-800 dark:text-orange-300 uppercase tracking-wider inline-flex items-center gap-1 border border-orange-200 dark:border-orange-800">
+                  <Clock className="w-3 h-3 text-orange-600" />
                   Réf: {lastCreatedTx.referenceNumber} • En attente de preuve
                 </span>
 
@@ -415,7 +415,7 @@ export const MobileAgentHome: React.FC = () => {
                   Transfert envoyé !
                 </h4>
 
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed bg-amber-500/10 dark:bg-amber-500/10 p-3 rounded-2xl border border-amber-500/20 text-amber-800 dark:text-amber-300">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed bg-orange-500/10 dark:bg-orange-500/10 p-3 rounded-2xl border border-orange-500/20 text-orange-900 dark:text-orange-200">
                   {['digicel', 'claro', 'altice', 'natcom'].includes(lastCreatedTx.operator) ? (
                     <>La recharge de <strong className="font-black text-slate-900 dark:text-white">{lastCreatedTx.amountHTG.toLocaleString()} HTG</strong> pour le numéro <span className="font-mono font-bold">{lastCreatedTx.receiverPhone}</span> a été envoyée. </>
                   ) : (
@@ -429,8 +429,8 @@ export const MobileAgentHome: React.FC = () => {
               <div className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 space-y-2.5 text-xs text-left border border-slate-100 dark:border-slate-800/80">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">Statut</span>
-                  <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 rounded-md flex items-center gap-1 text-[11px]">
-                    <Clock className="w-3 h-3" />
+                  <span className="font-bold text-orange-800 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 border border-orange-200 dark:border-orange-800 px-2 py-0.5 rounded-md flex items-center gap-1 text-[11px]">
+                    <Clock className="w-3 h-3 text-orange-600" />
                     En attente de l'agent Haïti
                   </span>
                 </div>

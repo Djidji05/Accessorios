@@ -217,10 +217,10 @@ export const Sidebar: React.FC = () => {
               </div>
               {agentRDPendingCount > 0 && (
                 isSidebarCollapsed ? (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
+                    activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-200'
                   }`}>
                     {agentRDPendingCount} en attente
                   </span>
@@ -282,10 +282,10 @@ export const Sidebar: React.FC = () => {
               </div>
               {unreadTasksCount > 0 && (
                 isSidebarCollapsed ? (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-amber-400 text-slate-950' : 'bg-slate-100 text-slate-800'
+                    activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-300'
                   }`}>
                     {unreadTasksCount}
                   </span>
@@ -394,10 +394,10 @@ export const Sidebar: React.FC = () => {
               </div>
               {gestionnairePendingCount > 0 && (
                 isSidebarCollapsed ? (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
+                    activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-300'
                   }`}>
                     {gestionnairePendingCount}
                   </span>
@@ -485,10 +485,10 @@ export const Sidebar: React.FC = () => {
               </div>
               {unreadTasksCount > 0 && (
                 isSidebarCollapsed ? (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-amber-400 text-slate-950' : 'bg-amber-100 text-amber-900'
+                    activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-300'
                   }`}>
                     {unreadTasksCount}
                   </span>

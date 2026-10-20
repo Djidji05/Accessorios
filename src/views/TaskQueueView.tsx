@@ -829,7 +829,7 @@ export const TaskQueueView: React.FC = () => {
                       <span className={`text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0 ${
                         isCompleted 
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
-                          : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                          : 'bg-orange-100 text-orange-900 border border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800'
                       }`}>
                         {isCompleted ? '✓ Clôturé' : '⏳ En attente'}
                       </span>
@@ -1193,8 +1193,8 @@ export const TaskQueueView: React.FC = () => {
                     {/* 5. Statut (Strictement 1 ligne) */}
                     <div className="col-span-2 flex items-center justify-center">
                       {isPending ? (
-                        <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-200">
-                          <Clock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                        <span className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-orange-100 text-orange-900 border border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800">
+                          <Clock className="w-3.5 h-3.5 text-orange-600 flex-shrink-0 animate-pulse" />
                           <span className="whitespace-nowrap">En attente</span>
                         </span>
                       ) : (
@@ -1289,7 +1289,7 @@ export const TaskQueueView: React.FC = () => {
 
                   <div>
                     {haitiDetailTx.status === 'in_progress' ? (
-                      <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 text-xs font-black border border-amber-200 dark:border-amber-800">
+                      <span className="px-2.5 py-1 rounded-full bg-orange-100 text-orange-900 dark:bg-orange-950/80 dark:text-orange-300 text-xs font-black border border-orange-300 dark:border-orange-800">
                         ⏳ En attente
                       </span>
                     ) : (
@@ -1920,8 +1920,8 @@ export const TaskQueueView: React.FC = () => {
                               <span>Clôturé / Validé</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
-                              <Clock className="w-3.5 h-3.5 text-slate-500 animate-pulse" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-orange-100 text-orange-900 border border-orange-300 shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-orange-600 animate-pulse" />
                               <span>En attente Haïti</span>
                             </span>
                           )}
@@ -2174,7 +2174,7 @@ export const TaskQueueView: React.FC = () => {
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold capitalize ${
                   isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
                   isCancelled ? 'bg-rose-100 text-rose-800 border border-rose-200' :
-                  'bg-amber-100 text-amber-900 border border-amber-200'
+                  'bg-orange-100 text-orange-900 border border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800'
                 }`}>
                   {tx.status === 'completed' ? 'Clôturée' : tx.status === 'cancelled' ? 'Annulée' : 'En Attente'}
                 </span>
@@ -2898,8 +2898,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   ✓ Clôturé
                 </span>
               ) : gestionnaireDetailTx.status === 'in_progress' || gestionnaireDetailTx.status === 'pending_routing' ? (
-                <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/50 flex items-center gap-1">
-                  <Clock className="w-3 h-3 animate-pulse" /> En attente
+                <span className="text-[10px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800 flex items-center gap-1">
+                  <Clock className="w-3 h-3 animate-pulse text-orange-600" /> En attente
                 </span>
               ) : (
                 <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/50">
@@ -3276,8 +3276,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                               <span>Clôturé</span>
                             </span>
                           ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/60 dark:border-amber-800">
-                              <Clock className="w-3 h-3 animate-pulse text-amber-500" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800">
+                              <Clock className="w-3 h-3 animate-pulse text-orange-600" />
                               <span>En attente</span>
                             </span>
                           ) : (
@@ -3351,8 +3351,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         ✓ Clôturé
                       </span>
                     ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
-                      <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/50 dark:border-amber-900/50 flex items-center gap-1">
-                        <Clock className="w-3 h-3 animate-pulse" /> En attente
+                      <span className="text-[10px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800 flex items-center gap-1">
+                        <Clock className="w-3 h-3 animate-pulse text-orange-600" /> En attente
                       </span>
                     ) : (
                       <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/50 dark:border-rose-900/50">

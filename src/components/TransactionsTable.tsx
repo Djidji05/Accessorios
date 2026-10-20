@@ -57,8 +57,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
-        <Clock className="w-3 h-3 text-amber-600" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-orange-100 text-orange-900 border border-orange-300">
+        <Clock className="w-3 h-3 text-orange-600 animate-pulse" />
         <span>En cours ({15 - minutes}m restants)</span>
       </span>
     );

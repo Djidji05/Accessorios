@@ -28,6 +28,7 @@ export const AuditLogsView: React.FC = () => {
   const { auditLogs } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'guichet' | 'security' | 'user' | 'treasury'>('all');
+  const [selectedPriority, setSelectedPriority] = useState<'all' | 'Critical' | 'High' | 'Medium' | 'Low'>('all');
   
   // Standardized Date Range Picker
   const [selectedRange, setSelectedRange] = useState<DateRange>({
@@ -43,31 +44,39 @@ export const AuditLogsView: React.FC = () => {
   const getPriorityBadge = (p?: string, action?: string) => {
     let priority = p;
     if (!priority && action) {
-      if (action.includes('KILL_SWITCH') || action.includes('SECURITY')) priority = 'High';
+      if (action.includes('KILL_SWITCH') || action.includes('SECURITY_CRITICAL')) priority = 'Critical';
+      else if (action.includes('SECURITY') || action.includes('PERMISSION_DENIED')) priority = 'High';
       else if (action.includes('USER') || action.includes('PERMISSION') || action.includes('TREASURY')) priority = 'Medium';
       else priority = 'Low';
     }
 
     switch (priority) {
       case 'Critical':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-rose-600 text-white shadow-2xs border border-rose-700">
+            <AlertTriangle className="w-3 h-3 text-white fill-white shrink-0" />
+            <span>Critical</span>
+          </span>
+        );
       case 'High':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-            <Flag className="w-3 h-3 text-rose-500 fill-rose-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800">
+            <Flag className="w-3 h-3 text-rose-600 fill-rose-600 shrink-0" />
             <span>High</span>
           </span>
         );
       case 'Medium':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-            <Flag className="w-3 h-3 text-amber-500 fill-amber-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800">
+            <Flag className="w-3 h-3 text-amber-600 fill-amber-600 shrink-0" />
             <span>Medium</span>
           </span>
         );
+      case 'Low':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-            <Flag className="w-3 h-3 text-slate-400" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800">
+            <Flag className="w-3 h-3 text-emerald-600 fill-emerald-600 shrink-0" />
             <span>Low</span>
           </span>
         );
@@ -95,6 +104,12 @@ export const AuditLogsView: React.FC = () => {
       matchesCat = log.action.includes('TREASURY') || log.action.includes('FLOAT');
     }
 
+    let matchesPriority = true;
+    if (selectedPriority !== 'all') {
+      const p = log.priority || (log.action.includes('KILL_SWITCH') ? 'Critical' : log.action.includes('SECURITY') ? 'High' : log.action.includes('USER') ? 'Medium' : 'Low');
+      matchesPriority = p === selectedPriority;
+    }
+
     // Date filtering logic
     let matchesDate = true;
     if (selectedRange && selectedRange.startDate && selectedRange.endDate) {
@@ -105,7 +120,7 @@ export const AuditLogsView: React.FC = () => {
       matchesDate = logDateObj >= start && logDateObj <= end;
     }
 
-    return matchesSearch && matchesCat && matchesDate;
+    return matchesSearch && matchesCat && matchesPriority && matchesDate;
   });
 
   /* -------------------------------------------------------------------------- */
@@ -263,26 +278,53 @@ export const AuditLogsView: React.FC = () => {
           />
         </div>
 
-        {/* Category Filter Chips */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
-          {[
-            { id: 'all', label: 'Tous les Logs' },
-            { id: 'guichet', label: 'Guichet & Opérations' },
-            { id: 'security', label: 'Sécurité & Interrupteurs' },
-            { id: 'user', label: 'Utilisateurs' }
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                selectedCategory === cat.id 
-                  ? 'bg-slate-900 text-white shadow-xs' 
-                  : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        {/* Category & Priority Filter Chips */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full lg:w-auto">
+          {/* Category Chips */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { id: 'all', label: 'Tous les Logs' },
+              { id: 'guichet', label: 'Guichet & Opérations' },
+              { id: 'security', label: 'Sécurité & Interrupteurs' },
+              { id: 'user', label: 'Utilisateurs' }
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id as any)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategory === cat.id 
+                    ? 'bg-slate-900 text-white shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Priority Chips */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:border-l sm:border-slate-200 sm:pl-2.5 pt-2 sm:pt-0">
+            <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Priorité:</span>
+            {[
+              { id: 'all', label: 'Toutes', activeClass: 'bg-slate-900 text-white' },
+              { id: 'Critical', label: 'Critical', activeClass: 'bg-rose-600 text-white border-rose-700 shadow-xs' },
+              { id: 'High', label: 'High', activeClass: 'bg-rose-100 text-rose-800 border-rose-400 font-black' },
+              { id: 'Medium', label: 'Medium', activeClass: 'bg-amber-100 text-amber-900 border-amber-400 font-black' },
+              { id: 'Low', label: 'Low', activeClass: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-black' },
+            ].map((pr) => (
+              <button
+                key={pr.id}
+                onClick={() => setSelectedPriority(pr.id as any)}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold transition-all border ${
+                  selectedPriority === pr.id 
+                    ? `${pr.activeClass} scale-105` 
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {pr.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

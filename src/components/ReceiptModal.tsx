@@ -48,8 +48,8 @@ export const ReceiptModal: React.FC = () => {
                   {isTelecom ? 'REÇU OFFICIEL • VALIDÉ PAR LE GESTIONNAIRE' : 'REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ'}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-800 border border-slate-200">
-                  <Clock className="w-3 h-3 text-slate-600" />
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-900 border border-orange-300">
+                  <Clock className="w-3 h-3 text-orange-600" />
                   {isTelecom ? 'BORDEREAU PROVISOIRE • EN ATTENTE DU GESTIONNAIRE' : 'BORDEREAU PROVISOIRE • EN COURS EN HAÏTI'}
                 </span>
               )}

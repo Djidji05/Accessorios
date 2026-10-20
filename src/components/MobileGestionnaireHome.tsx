@@ -428,7 +428,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                 onClick={() => setStatusFilter('pending')}
                 className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold whitespace-nowrap transition-all ${
                   statusFilter === 'pending'
-                    ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                    ? 'bg-orange-500 text-white font-black shadow-sm'
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                 }`}
               >
@@ -492,7 +492,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                     key={tx.id}
                     className={`bg-slate-900 rounded-2xl p-4 border transition-all ${
                       isPending 
-                        ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' 
+                        ? 'border-orange-500/40 shadow-lg shadow-orange-500/5' 
                         : 'border-slate-800/80 opacity-90'
                     }`}
                   >
@@ -507,7 +507,7 @@ export const MobileGestionnaireHome: React.FC = () => {
 
                       <div className="flex items-center gap-2">
                         {isPending ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 animate-pulse">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1 animate-pulse">
                             <Clock className="w-3 h-3" />
                             Preuve Requise
                           </span>

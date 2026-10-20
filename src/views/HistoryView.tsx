@@ -146,8 +146,8 @@ export const HistoryView: React.FC = () => {
                 ✓ Clôturé
               </span>
             ) : (
-              <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60 px-2.5 py-1 rounded-full border border-slate-200/50 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> En attente
+              <span className="text-[10px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-orange-600" /> En attente
               </span>
             )}
           </div>
@@ -593,8 +593,8 @@ export const HistoryView: React.FC = () => {
                             <span>Clôturé</span>
                           </span>
                         ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200/60 dark:border-amber-800">
-                            <Clock className="w-3 h-3 animate-pulse text-amber-500" />
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800">
+                            <Clock className="w-3 h-3 animate-pulse text-orange-600" />
                             <span>En attente</span>
                           </span>
                         ) : (
@@ -654,8 +654,8 @@ export const HistoryView: React.FC = () => {
                       ✓ Clôturé
                     </span>
                   ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
-                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-900/50 flex items-center gap-1">
-                      <Clock className="w-3 h-3 animate-pulse" /> En attente
+                    <span className="text-[10px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800 flex items-center gap-1">
+                      <Clock className="w-3 h-3 animate-pulse text-orange-600" /> En attente
                     </span>
                   ) : (
                     <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/50 dark:border-rose-900/50">
