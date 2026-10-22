@@ -166,7 +166,7 @@ export const Sidebar: React.FC = () => {
             {!isSidebarCollapsed && (
               <div className="px-2 mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Espace Guichet R.D.
+                  {t('Espace Guichet R.D.')}
                 </span>
               </div>
             )}
@@ -179,15 +179,15 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="➕ Nouvelle Transaction (Guichet Saisie)"
+              title={t('Nouvelle Transaction')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <PlusCircle className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Nouvelle Transaction</span>
+                    <span className="block font-bold leading-tight">{t('Nouvelle Transaction')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'guichet' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Guichet Saisie
+                      {t('Guichet Saisie')}
                     </span>
                   </div>
                 )}
@@ -202,15 +202,15 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="📋 Mes Transactions du Jour"
+              title={t('Mes Transactions')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <ClipboardList className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Mes Transactions</span>
+                    <span className="block font-bold leading-tight">{t('Mes Transactions')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Suivi & Reçus du Jour
+                      {t('Suivi & Reçus du Jour')}
                     </span>
                   </div>
                 )}
@@ -222,7 +222,7 @@ export const Sidebar: React.FC = () => {
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                     activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-200'
                   }`}>
-                    {agentRDPendingCount} en attente
+                    {agentRDPendingCount} {t('En attente')}
                   </span>
                 )
               )}
@@ -236,14 +236,14 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Versements & Liquidations Hebdo"
+              title={t('Versements & Liquidations')}
             >
               <Landmark className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settlements' ? 'text-white' : 'text-slate-500'}`} />
               {!isSidebarCollapsed && (
                 <div className="text-left">
-                  <span className="block font-bold leading-tight">Versements & Liquidations</span>
+                  <span className="block font-bold leading-tight">{t('Versements & Liquidations')}</span>
                   <span className={`text-[10px] block font-medium ${activeTab === 'settlements' ? 'text-slate-300' : 'text-slate-400'}`}>
-                    Solde & Dépôts Admin
+                    {t('Solde & Dépôts Admin')}
                   </span>
                 </div>
               )}
@@ -254,7 +254,7 @@ export const Sidebar: React.FC = () => {
             {!isSidebarCollapsed && (
               <div className="px-2 mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Espace Opérationnel Haïti
+                  {t('Espace Opérationnel Haïti')}
                 </span>
               </div>
             )}
@@ -267,15 +267,15 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Décaissements & Recharges Haïti"
+              title={t('Décaissements Haïti')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <ClipboardList className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Décaissements Haïti</span>
+                    <span className="block font-bold leading-tight">{t('Décaissements Haïti')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Retraits & Recharges
+                      {t('Retraits & Recharges')}
                     </span>
                   </div>
                 )}
@@ -301,14 +301,14 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-xs' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="📁 Historique & Reçus Clôturés"
+              title={t('Historique & Reçus')}
             >
               <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-400'}`} />
               {!isSidebarCollapsed && (
                 <div className="text-left">
-                  <span className="block font-bold leading-tight">Historique & Reçus</span>
+                  <span className="block font-bold leading-tight">{t('Historique & Reçus')}</span>
                   <span className={`text-[10px] block font-medium ${activeTab === 'history' ? 'text-slate-300' : 'text-slate-400'}`}>
-                    Dossiers Clôturés
+                    {t('Dossiers Clôturés')}
                   </span>
                 </div>
               )}
@@ -320,7 +320,7 @@ export const Sidebar: React.FC = () => {
             {!isSidebarCollapsed && (
               <div className="px-2 mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Espace Gestion & Supervision
+                  {t('Centre d\'Action Mobile')}
                 </span>
               </div>
             )}
@@ -333,13 +333,13 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Tableau de bord de l'entreprise (KPIs & Statistiques)"
+              title={t('Tableau de bord')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <LayoutDashboard className={`w-4 h-4 flex-shrink-0 ${activeTab === 'overview' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Tableau de bord</span>
+                    <span className="block font-bold leading-tight">{t('Tableau de bord')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'overview' ? 'text-slate-300' : 'text-slate-400'}`}>
                       KPIs & Statistiques
                     </span>
@@ -356,15 +356,15 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="➕ Nouvelle Transaction (Saisie Directe Gestionnaire)"
+              title={t('Nouvelle Transaction')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <PlusCircle className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Nouvelle Transaction</span>
+                    <span className="block font-bold leading-tight">{t('Nouvelle Transaction')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'guichet' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Saisie Directe (Guichet)
+                      {t('Guichet Saisie')}
                     </span>
                   </div>
                 )}
@@ -379,15 +379,15 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Flux en Temps Réel (Tâches Numériques)"
+              title={t('File d\'attente Tâches')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <Zap className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Flux en Temps Réel</span>
+                    <span className="block font-bold leading-tight">{t('File d\'attente')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Tâches Numériques & MonCash
+                      Tâches & Routage
                     </span>
                   </div>
                 )}
@@ -413,13 +413,13 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Suivi de la Trésorerie"
+              title={t('Trésorerie & Solde')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <Wallet className={`w-4 h-4 flex-shrink-0 ${activeTab === 'treasury' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Suivi Trésorerie</span>
+                    <span className="block font-bold leading-tight">{t('Trésorerie & Solde')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'treasury' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Soldes & Liquidités
                     </span>
@@ -436,13 +436,13 @@ export const Sidebar: React.FC = () => {
                   ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title="Historique & Rapports"
+              title={t('Historique')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">Historique & Rapports</span>
+                    <span className="block font-bold leading-tight">{t('Historique')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'history' ? 'text-slate-300' : 'text-slate-400'}`}>
                       Archives & Bilans
                     </span>
@@ -552,7 +552,7 @@ export const Sidebar: React.FC = () => {
             {!isSidebarCollapsed ? (
               <div className="px-3 mb-1">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  Opérations Guichet
+                  {t('Opérations Guichet')}
                 </span>
               </div>
             ) : (
@@ -567,10 +567,10 @@ export const Sidebar: React.FC = () => {
                     ? 'bg-slate-900 text-white font-bold shadow-xs' 
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
                 }`}
-                title="Espace Opérations Guichet"
+                title={t('Espace Opérations')}
               >
                 <Wrench className={`w-4 h-4 flex-shrink-0 ${activeTab === 'guichet' ? 'text-indigo-300' : 'text-indigo-600'}`} />
-                {!isSidebarCollapsed && <span className="truncate">Espace Opérations</span>}
+                {!isSidebarCollapsed && <span className="truncate">{t('Espace Opérations')}</span>}
               </button>
             </div>
           </div>
@@ -583,7 +583,7 @@ export const Sidebar: React.FC = () => {
               <div className="px-3 mb-1.5 flex items-center justify-between">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
                   <Lock className="w-3 h-3 text-slate-400" />
-                  Administration & Sécurité
+                  {t('Administration & Sécurité')}
                 </span>
               </div>
             ) : (
@@ -637,7 +637,7 @@ export const Sidebar: React.FC = () => {
                           }`}
                         >
                           <UserCheck className="w-3.5 h-3.5 text-blue-500" />
-                          <span>📋 {t('nav_users')}</span>
+                          <span>📋 {t('sub_user_list')}</span>
                         </button>
                         <button 
                           onClick={() => {
@@ -651,7 +651,7 @@ export const Sidebar: React.FC = () => {
                           }`}
                         >
                           <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>➕ Créer Utilisateur</span>
+                          <span>➕ {t('sub_create_user')}</span>
                         </button>
                       </div>
                     )}
@@ -766,7 +766,7 @@ export const Sidebar: React.FC = () => {
                 className="w-full flex items-center gap-2 p-2 rounded-lg text-left text-xs text-rose-600 hover:bg-rose-50 transition-colors font-bold cursor-pointer"
               >
                 <LogOut className="w-4 h-4 text-rose-500" />
-                <span>Se Déconnecter</span>
+                <span>{t('Se déconnecter')}</span>
               </button>
             </div>
           )}

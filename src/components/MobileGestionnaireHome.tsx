@@ -34,9 +34,12 @@ import {
   ArrowUpRight,
   TrendingUp,
   Building2,
-  Sparkles
+  Sparkles,
+  Globe,
+  ChevronDown
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Language } from '../i18n/translations';
 import { OperatorCode, ServiceType, Transaction } from '../types';
 import { OperatorBadge } from './OperatorBadge';
 import { getOperatorLogo } from '../utils/operatorLogos';
@@ -73,8 +76,13 @@ export const MobileGestionnaireHome: React.FC = () => {
     setActiveTab,
     openSearch,
     readNotificationIds,
-    killSwitchList
+    killSwitchList,
+    currentLang,
+    setLanguage,
+    t
   } = useApp();
+
+  const [isLangOpen, setIsLangOpen] = useState(false);
 
   // Filter States for Pending Tasks
   const [operatorFilter, setOperatorFilter] = useState<string>('all');
@@ -349,24 +357,75 @@ export const MobileGestionnaireHome: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <h1 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">{currentUser.name}</h1>
                 <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  Gestionnaire
+                  {t("Gestionnaire")}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Centre d'Action Mobile • RD</p>
+              <p className="text-[11px] text-slate-400 font-medium">{t("Centre d'Action Mobile • RD")}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 active:scale-95 transition-all cursor-pointer text-xs font-bold"
+                title={t('Changer de langue')}
+              >
+                <Globe className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px]">{currentLang}</span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {isLangOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40 bg-black/20"
+                    onClick={() => setIsLangOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 space-y-1">
+                    {[
+                      { code: 'FR' as Language, label: 'Français', flag: '🇫🇷' },
+                      { code: 'HT' as Language, label: 'Kreyòl', flag: '🇭🇹' },
+                      { code: 'ES' as Language, label: 'Español', flag: '🇩🇴' },
+                    ].map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setIsLangOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-xs transition-colors ${
+                          currentLang === lang.code
+                            ? 'bg-amber-500 text-white font-bold'
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span>{lang.flag}</span>
+                          <span>{lang.label}</span>
+                        </span>
+                        {currentLang === lang.code && <Check className="w-3 h-3 text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               onClick={openSearch}
               className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 active:scale-95 transition-all"
-              title="Rechercher"
+              title={t("Rechercher")}
             >
               <Search className="w-4 h-4" />
             </button>
             <button
               onClick={() => setActiveTab('notifications')}
               className="relative p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 active:scale-95 transition-all"
+              title={t("nav_notifications")}
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -433,11 +492,11 @@ export const MobileGestionnaireHome: React.FC = () => {
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
-                  Transactions en Attente de Preuve
+                  {t("Transactions en Attente de Preuve")}
                 </h2>
               </div>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                Preuve Obligatoire
+                {t("Preuve photo obligatoire")}
               </span>
             </div>
 
@@ -451,7 +510,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                 }`}
               >
-                En Attente ({pendingCount})
+                {t("En attente")} ({pendingCount})
               </button>
               <button
                 onClick={() => setStatusFilter('completed')}
@@ -461,7 +520,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                 }`}
               >
-                Validées ({completedTodayCount})
+                {t("Validé")} ({completedTodayCount})
               </button>
               <button
                 onClick={() => setStatusFilter('all')}
@@ -471,7 +530,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                 }`}
               >
-                Toutes
+                {t("Voir tout")}
               </button>
 
               <div className="h-4 w-px bg-slate-800 mx-1 shrink-0" />
@@ -498,8 +557,8 @@ export const MobileGestionnaireHome: React.FC = () => {
             {digitalTransactions.length === 0 ? (
               <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-8 text-center space-y-2">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto opacity-80" />
-                <p className="text-sm font-bold text-slate-300">Aucune transaction en attente !</p>
-                <p className="text-xs text-slate-500">Toutes les opérations numériques du gestionnaire sont traitées.</p>
+                <p className="text-sm font-bold text-slate-300">{t("Aucune transaction en attente !")}</p>
+                <p className="text-xs text-slate-500">{t("Toutes les opérations numériques du gestionnaire sont traitées.")}</p>
               </div>
             ) : (
               digitalTransactions.map((tx) => {
@@ -528,16 +587,16 @@ export const MobileGestionnaireHome: React.FC = () => {
                         {isPending ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1 animate-pulse">
                             <Clock className="w-3 h-3" />
-                            Preuve Requise
+                            {t("Preuve Requise")}
                           </span>
                         ) : isCompleted ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            Validée
+                            {t("Validé")}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                            Annulée
+                            {t("Annulé")}
                           </span>
                         )}
                       </div>
@@ -546,14 +605,14 @@ export const MobileGestionnaireHome: React.FC = () => {
                     {/* Transaction Details Grid */}
                     <div className="grid grid-cols-2 gap-3 text-xs mb-3">
                       <div className="bg-slate-100 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800/50">
-                        <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">Expéditeur (R.D.)</span>
+                        <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">{t("Expéditeur")}</span>
                         <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{tx.senderName}</p>
                         <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-mono text-[11px] mt-0.5">
                           <span>{tx.senderPhone}</span>
                           <button 
                             onClick={() => copyToClipboard(tx.senderPhone, `sp_${tx.id}`)}
                             className="p-1 hover:text-slate-900 dark:hover:text-white" 
-                            title="Copier"
+                            title={t("Copier")}
                           >
                             <Copy className="w-3 h-3" />
                           </button>
@@ -561,14 +620,14 @@ export const MobileGestionnaireHome: React.FC = () => {
                       </div>
 
                       <div className="bg-slate-100 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800/50">
-                        <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">Destinataire (HT)</span>
+                        <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">{t("Destinataire")}</span>
                         <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{tx.receiverName}</p>
                         <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-mono text-[11px] font-extrabold mt-0.5">
                           <span>{tx.receiverPhone}</span>
                           <button 
                             onClick={() => copyToClipboard(tx.receiverPhone, `rp_${tx.id}`)}
                             className="p-1 hover:text-slate-900 dark:hover:text-white" 
-                            title="Copier Numéro"
+                            title={t("Copier")}
                           >
                             <Copy className="w-3 h-3 text-amber-500" />
                           </button>
@@ -579,13 +638,13 @@ export const MobileGestionnaireHome: React.FC = () => {
                     {/* Amounts Banner */}
                     <div className="bg-slate-100 dark:bg-slate-950/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800/80 flex items-center justify-between mb-3">
                       <div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">Montant DOP Encaissé</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">{t("Montant DOP Encaissé")}</span>
                         <span className="text-sm font-black text-slate-900 dark:text-white font-mono">
                           {tx.amountDOP.toLocaleString()} DOP
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block">À Transférer HTG</span>
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block">{t("À Transférer HTG")}</span>
                         <span className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">
                           {tx.amountHTG.toLocaleString()} HTG
                         </span>
@@ -616,7 +675,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                             className="flex-1 py-2.5 px-3 bg-emerald-500 hover:bg-emerald-600 active:scale-98 text-slate-950 font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md transition-all"
                           >
                             <Upload className="w-4 h-4" />
-                            <span>Valider avec Preuve</span>
+                            <span>{t("Valider avec Preuve")}</span>
                           </button>
 
                           {currentUser.role === 'admin' && (
@@ -629,7 +688,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                               }}
                               className="py-2.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold rounded-xl transition-all"
                             >
-                              Annuler
+                              {t("Annuler")}
                             </button>
                           )}
                         </>
@@ -639,7 +698,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                           className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all border border-slate-700/60"
                         >
                           <FileText className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Reçu Officiel (PDF / Partager)</span>
+                          <span>{t("Reçu (PDF / Partager)")}</span>
                         </button>
                       )}
                     </div>

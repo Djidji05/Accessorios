@@ -3,7 +3,7 @@ import { LayoutDashboard, History, Landmark, Settings, Zap, Bell, Users } from '
 import { useApp } from '../context/AppContext';
 
 export const BottomNavBar: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, selectedService, selectedReceiptTx, isTransactionDetailOpen } = useApp();
+  const { activeTab, setActiveTab, currentUser, selectedService, selectedReceiptTx, isTransactionDetailOpen, t } = useApp();
 
   // Hide bottom navbar when inspecting receipts, filling transfer forms, viewing details, or on administrative pages
   if (
@@ -39,7 +39,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Zap className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Tâches</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Tâches')}</span>
           </button>
 
           {/* Historique Haïti */}
@@ -53,7 +53,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <History className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Historique</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Historique')}</span>
           </button>
 
           {/* Paramètres */}
@@ -67,7 +67,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Paramètres</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Paramètres')}</span>
           </button>
         </div>
       </nav>
@@ -89,7 +89,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Accueil</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Accueil')}</span>
           </button>
 
           {/* Historique */}
@@ -103,7 +103,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <History className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Historique</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Historique')}</span>
           </button>
 
           {/* Dépôts */}
@@ -117,7 +117,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Landmark className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Dépôts</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Dépôts')}</span>
           </button>
 
           {/* Paramètres */}
@@ -131,7 +131,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">Paramètres</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('Paramètres')}</span>
           </button>
         </div>
       </nav>

@@ -37,9 +37,12 @@ import {
   Percent,
   LogOut,
   FolderArchive,
-  Download
+  Download,
+  Globe,
+  ChevronDown
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Language } from '../i18n/translations';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction, ChannelType, OperatorCode, ServiceType } from '../types';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
@@ -69,7 +72,12 @@ export const TaskQueueView: React.FC = () => {
     readNotificationIds,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    currentLang,
+    setLanguage,
+    t
   } = useApp();
+
+  const [isLangOpen, setIsLangOpen] = useState(false);
 
   // Full-page transaction view state (NO modal popups)
   const [selectedTxForDetails, setSelectedTxForDetails] = useState<Transaction | null>(null);
@@ -558,20 +566,70 @@ export const TaskQueueView: React.FC = () => {
           <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 -mt-4 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
             <div>
               <span className="text-[10px] font-black uppercase text-orange-500 tracking-wider">
-                Agent Haïti • Décaissements
+                {t("Agent Haïti • Décaissements")}
               </span>
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Mes Tâches & Soldes
+                {t("Mes Tâches & Soldes")}
               </h2>
             </div>
             <div className="flex items-center gap-2">
+              {/* Language Switcher */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsLangOpen(!isLangOpen)}
+                  className="flex items-center gap-1 px-2.5 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer text-xs font-bold"
+                  title={t("Changer de langue")}
+                >
+                  <Globe className="w-4 h-4 text-orange-500" />
+                  <span className="text-[11px] font-black">{currentLang}</span>
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                </button>
+
+                {isLangOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40 bg-black/20"
+                      onClick={() => setIsLangOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 space-y-1">
+                      {[
+                        { code: 'FR' as Language, label: 'Français', flag: '🇫🇷' },
+                        { code: 'HT' as Language, label: 'Kreyòl', flag: '🇭🇹' },
+                        { code: 'ES' as Language, label: 'Español', flag: '🇩🇴' },
+                      ].map((lang) => (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          onClick={() => {
+                            setLanguage(lang.code);
+                            setIsLangOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-xs transition-colors ${
+                            currentLang === lang.code
+                              ? 'bg-orange-500 text-white font-bold'
+                              : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                          }`}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span>{lang.flag}</span>
+                            <span>{lang.label}</span>
+                          </span>
+                          {currentLang === lang.code && <Check className="w-3 h-3 text-white" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
               {/* NOTIFICATION BELL ICON BUTTON WITH DROPDOWN */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                   className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer relative"
-                  title="Notifications Agent Haïti"
+                  title={t("nav_notifications")}
                 >
                   <Bell className="w-5 h-5 text-orange-500" />
                   {unreadHaitiCount > 0 && (

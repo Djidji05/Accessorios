@@ -28,7 +28,7 @@ import {
 } from '../core/initialData';
 import { eventBus } from '../core/eventBus';
 import { api } from '../services/api';
-import { Language, Translations, translations } from '../i18n/translations';
+import { Language, Translations, translations, translateText } from '../i18n/translations';
 import { soundPlayer } from '../utils/audioNotification';
 
 export const DEFAULT_SERVICE_COMMISSION_RATES: Record<string, number> = {
@@ -151,7 +151,7 @@ interface AppContextType {
   // i18n Internationalization State
   currentLang: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof Translations) => string;
+  t: (key: string, fallback?: string) => string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -255,10 +255,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('dalexis_lang', lang);
   };
 
-  const t = (key: keyof Translations): string => {
-    const dict = translations[currentLang] || translations.FR;
-    return dict[key] || translations.FR[key] || key;
-  };
+  const t = useCallback((key: string, fallback?: string): string => {
+    return translateText(key, currentLang, fallback);
+  }, [currentLang]);
 
   useEffect(() => {
     document.documentElement.classList.remove('dark');

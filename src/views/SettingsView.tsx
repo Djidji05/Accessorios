@@ -25,6 +25,7 @@ import {
   Receipt
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Language } from '../i18n/translations';
 import { ServiceType, OperatorCode } from '../types';
 import { OperatorBadge } from '../components/OperatorBadge';
 
@@ -38,7 +39,10 @@ export const SettingsView: React.FC = () => {
     adminCommissionRate,
     setAdminCommissionRate,
     serviceCommissionRates,
-    updateServiceCommissionRate
+    updateServiceCommissionRate,
+    currentLang,
+    setLanguage,
+    t
   } = useApp();
   const isAgentHaiti = currentUser.role === 'agent_haiti';
   const isAgentRD = currentUser.role === 'agent_rd';
@@ -88,7 +92,7 @@ export const SettingsView: React.FC = () => {
   const [haitiPhone, setHaitiPhone] = useState('+509 37 44 89 10');
 
   const [haitiLanguage, setHaitiLanguage] = useState<'fr' | 'ht' | 'es'>(() => {
-    return (localStorage.getItem('agent_haiti_lang') as 'fr' | 'ht' | 'es') || 'fr';
+    return (currentLang.toLowerCase() as 'fr' | 'ht' | 'es') || (localStorage.getItem('agent_haiti_lang') as 'fr' | 'ht' | 'es') || 'fr';
   });
   const [haitiSoundAlerts, setHaitiSoundAlerts] = useState<boolean>(() => {
     const saved = localStorage.getItem('agent_haiti_sound');
@@ -106,7 +110,7 @@ export const SettingsView: React.FC = () => {
   const [rdAgency, setRdAgency] = useState('Agence Av. Independence - Santo Domingo');
 
   const [rdLanguage, setRdLanguage] = useState<'es' | 'fr' | 'ht'>(() => {
-    return (localStorage.getItem('agent_rd_lang') as 'es' | 'fr' | 'ht') || 'es';
+    return (currentLang.toLowerCase() as 'es' | 'fr' | 'ht') || (localStorage.getItem('agent_rd_lang') as 'es' | 'fr' | 'ht') || 'es';
   });
 
   const [rdCurrencyDisplay, setRdCurrencyDisplay] = useState<'DOP_WITH_HTG_CONVERSION' | 'DOP_ONLY'>(() => {
@@ -163,6 +167,7 @@ export const SettingsView: React.FC = () => {
     localStorage.setItem('agent_haiti_lang', haitiLanguage);
     localStorage.setItem('agent_haiti_sound', String(haitiSoundAlerts));
     localStorage.setItem('agent_haiti_visual', String(haitiVisualNotifications));
+    setLanguage(haitiLanguage.toUpperCase() as Language);
     setFeedbackMessage('Vos préférences d\'agent Haïti et informations de sécurité ont été enregistrées avec succès !');
     setSaveSuccess(true);
     setCurrentPassword('');
@@ -180,6 +185,7 @@ export const SettingsView: React.FC = () => {
     localStorage.setItem('agent_rd_print_copies', String(rdPrintCopies));
     localStorage.setItem('agent_rd_sound_alert', String(rdSoundAlert));
     localStorage.setItem('agent_rd_visual_alert', String(rdVisualAlert));
+    setLanguage(rdLanguage.toUpperCase() as Language);
 
     setFeedbackMessage('Paramètres de l\'Agent R.D. (Langue ES/FR & Alertes temps réel) enregistrés avec succès !');
     setSaveSuccess(true);
@@ -303,9 +309,12 @@ export const SettingsView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => setRdLanguage('es')}
+                  onClick={() => {
+                    setRdLanguage('es');
+                    setLanguage('ES');
+                  }}
                   className={`p-3.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
-                    rdLanguage === 'es' 
+                    rdLanguage === 'es' || currentLang === 'ES'
                       ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
@@ -316,9 +325,12 @@ export const SettingsView: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setRdLanguage('fr')}
+                  onClick={() => {
+                    setRdLanguage('fr');
+                    setLanguage('FR');
+                  }}
                   className={`p-3.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
-                    rdLanguage === 'fr' 
+                    rdLanguage === 'fr' || currentLang === 'FR'
                       ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
@@ -329,9 +341,12 @@ export const SettingsView: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setRdLanguage('ht')}
+                  onClick={() => {
+                    setRdLanguage('ht');
+                    setLanguage('HT');
+                  }}
                   className={`p-3.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
-                    rdLanguage === 'ht' 
+                    rdLanguage === 'ht' || currentLang === 'HT'
                       ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
@@ -472,9 +487,12 @@ export const SettingsView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => setHaitiLanguage('fr')}
+                  onClick={() => {
+                    setHaitiLanguage('fr');
+                    setLanguage('FR');
+                  }}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    haitiLanguage === 'fr' 
+                    haitiLanguage === 'fr' || currentLang === 'FR'
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
@@ -485,9 +503,12 @@ export const SettingsView: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setHaitiLanguage('ht')}
+                  onClick={() => {
+                    setHaitiLanguage('ht');
+                    setLanguage('HT');
+                  }}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    haitiLanguage === 'ht' 
+                    haitiLanguage === 'ht' || currentLang === 'HT'
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
@@ -498,9 +519,12 @@ export const SettingsView: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setHaitiLanguage('es')}
+                  onClick={() => {
+                    setHaitiLanguage('es');
+                    setLanguage('ES');
+                  }}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    haitiLanguage === 'es' 
+                    haitiLanguage === 'es' || currentLang === 'ES'
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}

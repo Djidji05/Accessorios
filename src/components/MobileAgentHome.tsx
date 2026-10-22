@@ -34,7 +34,10 @@ import {
   Clock,
   Home,
   PlusCircle,
-  Users
+  Users,
+  Globe,
+  Check,
+  ChevronDown
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
@@ -134,11 +137,21 @@ export const MobileAgentHome: React.FC = () => {
     readNotificationIds,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    currentLang,
+    setLanguage,
+    t,
   } = useApp();
 
   const [showBalance, setShowBalance] = useState<boolean>(true);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [isLangOpen, setIsLangOpen] = useState<boolean>(false);
+
+  const languages: Array<{ code: 'FR' | 'HT' | 'ES'; label: string; flag: string }> = [
+    { code: 'FR', label: 'Français', flag: '🇫🇷' },
+    { code: 'HT', label: 'Kreyòl', flag: '🇭🇹' },
+    { code: 'ES', label: 'Español', flag: '🇩🇴' },
+  ];
 
   // Form states for transfer entry page
   const [serviceType, setServiceType] = useState<ServiceType | null>(null);
@@ -418,7 +431,7 @@ export const MobileAgentHome: React.FC = () => {
                 </span>
 
                 <h4 className="text-xl font-black text-slate-900 dark:text-white mt-3">
-                  Transfert envoyé !
+                  {t('Transfert envoyé !')}
                 </h4>
 
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 max-w-xs mx-auto leading-relaxed bg-orange-500/10 dark:bg-orange-500/10 p-3 rounded-2xl border border-orange-500/20 text-orange-900 dark:text-orange-200">
@@ -427,43 +440,43 @@ export const MobileAgentHome: React.FC = () => {
                   ) : (
                     <>Le transfert de <strong className="font-black text-slate-900 dark:text-white">{lastCreatedTx.amountHTG.toLocaleString()} HTG</strong> pour <strong className="font-bold text-slate-900 dark:text-white">{lastCreatedTx.receiverName}</strong> (<span className="font-mono font-bold">{lastCreatedTx.receiverPhone}</span>) a été envoyé. </>
                   )}
-                  <span className="block mt-1 font-semibold">Nous sommes en attente de l'agent Haïti pour la preuve.</span>
+                  <span className="block mt-1 font-semibold">{t('En attente de l\'agent Haïti')}</span>
                 </p>
               </div>
 
               {/* Transaction Detail Card */}
               <div className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 space-y-2.5 text-xs text-left border border-slate-100 dark:border-slate-800/80">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Statut</span>
+                  <span className="text-slate-500 font-medium">{t('Statut')}</span>
                   <span className="font-bold text-orange-800 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 border border-orange-200 dark:border-orange-800 px-2 py-0.5 rounded-md flex items-center gap-1 text-[11px]">
                     <Clock className="w-3 h-3 text-orange-600" />
-                    En attente de l'agent Haïti
+                    {t('En attente de l\'agent Haïti')}
                   </span>
                 </div>
                 {!['digicel', 'claro', 'altice', 'natcom'].includes(lastCreatedTx.operator) && lastCreatedTx.receiverName && !lastCreatedTx.receiverName.startsWith('Recharge') && (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Bénéficiaire</span>
+                    <span className="text-slate-500 font-medium">{t('Bénéficiaire')}</span>
                     <span className="font-extrabold text-slate-900 dark:text-white">{lastCreatedTx.receiverName}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{['digicel', 'claro', 'altice', 'natcom'].includes(lastCreatedTx.operator) ? 'Numéro Rechargé' : 'Téléphone'}</span>
+                  <span className="text-slate-500 font-medium">{['digicel', 'claro', 'altice', 'natcom'].includes(lastCreatedTx.operator) ? t('Numéro de téléphone') : t('Téléphone')}</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">{lastCreatedTx.receiverPhone}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Service</span>
+                  <span className="text-slate-500 font-medium">{t('Service')}</span>
                   <span className="font-bold text-slate-900 dark:text-white uppercase">{lastCreatedTx.operator}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Montant Envoyé</span>
+                  <span className="text-slate-500 font-medium">{t('Montant Envoyé')}</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">{lastCreatedTx.amountDOP.toLocaleString()} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Commission Admin</span>
+                  <span className="text-slate-500 font-medium">{t('Commission Admin')}</span>
                   <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || Math.round(lastCreatedTx.amountDOP * 0.01)} DOP</span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-500 font-medium">Montant Reçu</span>
+                  <span className="text-slate-500 font-medium">{t('Montant Reçu')}</span>
                   <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">{lastCreatedTx.amountHTG.toLocaleString()} HTG</span>
                 </div>
               </div>
@@ -480,7 +493,7 @@ export const MobileAgentHome: React.FC = () => {
                 className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FileText className="w-4 h-4 text-emerald-400" />
-                <span>Reçu (PDF / Partager)</span>
+                <span>{t("Reçu (PDF / Partager)")}</span>
               </button>
 
               <div className="grid grid-cols-2 gap-2">
@@ -498,7 +511,7 @@ export const MobileAgentHome: React.FC = () => {
                   className="w-full py-3 rounded-2xl font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 dark:bg-blue-500/20 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>Nouveau Transfert</span>
+                  <span>{t("Nouveau Transfert")}</span>
                 </button>
 
                 <button
@@ -511,7 +524,7 @@ export const MobileAgentHome: React.FC = () => {
                   className="w-full py-3 rounded-2xl font-bold text-xs text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                 >
                   <Home className="w-4 h-4" />
-                  <span>Accueil</span>
+                  <span>{t("Accueil")}</span>
                 </button>
               </div>
             </div>
@@ -531,13 +544,13 @@ export const MobileAgentHome: React.FC = () => {
             <button
               onClick={() => setShowConfirmation(false)}
               className="p-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 cursor-pointer"
-              title="Retour"
+              title={t('Retour')}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Confirmation du Transfert
+              {t('Confirmation du Transfert')}
             </h3>
 
             <div className="w-9" />
@@ -552,7 +565,7 @@ export const MobileAgentHome: React.FC = () => {
                 <img src={getOperatorLogo(selectedService)} alt={selectedService} className="w-full h-full object-contain rounded-xl" />
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Service</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('Service')}</span>
                 <h4 className="text-base font-black text-slate-900 dark:text-white">
                   {serviceInfo?.name || selectedService.toUpperCase()}
                 </h4>
@@ -562,14 +575,14 @@ export const MobileAgentHome: React.FC = () => {
             {/* Visual Amount Cards */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Montant Envoyé</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">{t('Montant Envoyé')}</span>
                 <p className="text-lg font-black text-slate-900 dark:text-white font-mono mt-0.5">
                   {numAmountDOP.toLocaleString()} <span className="text-xs font-bold text-slate-400">DOP</span>
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-blue-500/10 dark:bg-blue-950/40 border border-blue-500/20">
-                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase block">Montant Recevant</span>
+                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase block">{t('Montant Recevant')}</span>
                 <p className="text-lg font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5">
                   {computedHTG.toLocaleString()} <span className="text-xs font-bold text-blue-500">HTG</span>
                 </p>
@@ -580,18 +593,18 @@ export const MobileAgentHome: React.FC = () => {
             <div className="space-y-2.5 text-xs pt-1">
               {!isNoBeneficiaryOperator && receiverName && (
                 <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                  <span className="text-slate-500 font-medium">Bénéficiaire</span>
+                  <span className="text-slate-500 font-medium">{t('Bénéficiaire')}</span>
                   <span className="font-extrabold text-slate-900 dark:text-white">{receiverName}</span>
                 </div>
               )}
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                <span className="text-slate-500 font-medium">{isNoBeneficiaryOperator ? 'Numéro Rechargé' : 'Téléphone'}</span>
+                <span className="text-slate-500 font-medium">{isNoBeneficiaryOperator ? t('Numéro de téléphone') : t('Téléphone')}</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-white">{receiverPhone}</span>
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                <span className="text-slate-500 font-medium">Taux du jour</span>
+                <span className="text-slate-500 font-medium">{t('Taux du jour')}</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-white">
                   100 DOP = {Math.round(dopToHtgRate * 100)} HTG
                 </span>
@@ -611,7 +624,7 @@ export const MobileAgentHome: React.FC = () => {
                 onClick={executeTransaction}
                 className="w-full py-4 rounded-full font-black text-sm text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Confirmer & Effectuer le Transfert</span>
+                <span>{t('Valider')}</span>
               </button>
 
               <button
@@ -619,7 +632,7 @@ export const MobileAgentHome: React.FC = () => {
                 onClick={() => setShowConfirmation(false)}
                 className="w-full py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block"
               >
-                Modifier les informations
+                {t('Modifier')}
               </button>
             </div>
           </div>
@@ -873,7 +886,7 @@ export const MobileAgentHome: React.FC = () => {
 
             <div>
               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block leading-none">
-                {isGestionnaire ? 'Gestionnaire Numérique' : isAgentRD ? 'Agent Comptoir R.D.' : isAgentHaiti ? 'Agent Terrain Haïti' : 'Hello,'}
+                {isGestionnaire ? t('Gestionnaire Numérique') : isAgentRD ? t('Agent Comptoir R.D.') : isAgentHaiti ? t('Agent Terrain Haïti') : t('hello')}
               </span>
               <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5">
                 {currentUser.name}
@@ -882,12 +895,54 @@ export const MobileAgentHome: React.FC = () => {
           </div>
 
           {/* Top Right Action Icons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Mobile Language Switcher Globe */}
+            <div className="relative">
+              <button 
+                type="button"
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-black"
+                title={t('Changer de langue')}
+              >
+                <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>{currentLang}</span>
+              </button>
+
+              {isLangOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setIsLangOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-xs transition-colors ${
+                          currentLang === lang.code
+                            ? 'bg-slate-900 dark:bg-blue-600 text-white font-bold'
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span>{lang.flag}</span>
+                          <span>{lang.label}</span>
+                        </span>
+                        {currentLang === lang.code && <Check className="w-3 h-3 text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Search Trigger */}
             <button 
               onClick={openSearch}
               className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50"
-              title="Rechercher"
+              title={t('Rechercher')}
             >
               <Search className="w-4 h-4" />
             </button>
@@ -897,7 +952,7 @@ export const MobileAgentHome: React.FC = () => {
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer relative"
-                title="Notifications"
+                title={t('nav_notifications')}
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
@@ -1002,7 +1057,7 @@ export const MobileAgentHome: React.FC = () => {
                         }}
                         className="w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] cursor-pointer"
                       >
-                        <span>Voir toutes les notifications</span>
+                        <span>{t("Voir toutes les notifications")}</span>
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1015,7 +1070,7 @@ export const MobileAgentHome: React.FC = () => {
             <button
               onClick={logout}
               className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 shadow-2xs hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-              title="Se déconnecter"
+              title={t("Se déconnecter")}
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -1030,13 +1085,13 @@ export const MobileAgentHome: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">
-                {isGestionnaire ? "Flux numérique cette semaine" : "Montant des transactions cette semaine"}
+                {isGestionnaire ? t("Flux numérique cette semaine") : t("Montant des transactions cette semaine")}
               </span>
               <button
                 type="button"
                 onClick={() => setShowBalance(!showBalance)}
                 className="p-1 text-slate-300 hover:text-white transition-colors cursor-pointer focus:outline-none"
-                title={showBalance ? "Masquer le montant" : "Afficher le montant"}
+                title={showBalance ? t("Masquer le montant") : t("Afficher le montant")}
               >
                 {showBalance ? (
                   <Eye className="w-4 h-4 text-slate-200" />
@@ -1059,7 +1114,7 @@ export const MobileAgentHome: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 pt-0.5">
-            <span>{weeklyCount} transfert{weeklyCount > 1 ? 's' : ''} réalisé{weeklyCount > 1 ? 's' : ''} cette semaine</span>
+            <span>{weeklyCount} {weeklyCount > 1 ? t("transferts réalisés cette semaine") : t("transfert réalisé cette semaine")}</span>
             {weeklyCount > 0 && showBalance && (
               <span className="text-emerald-400/90 font-mono">≈ {displayTotalHTG.toLocaleString('fr-FR')} HTG</span>
             )}
@@ -1081,7 +1136,7 @@ export const MobileAgentHome: React.FC = () => {
               </div>
               <div className="text-right">
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
-                  Équivalent DOP
+                  {t("Équivalent DOP")}
                 </span>
                 <span className="text-xs font-bold font-mono text-slate-300">
                   {showBalance ? `${zelleTotalDOP.toLocaleString('fr-FR')} DOP` : '••••'}
@@ -1097,10 +1152,10 @@ export const MobileAgentHome: React.FC = () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
-            Top services
+            {t("Top services")}
           </h4>
           <span className="text-[11px] font-bold text-slate-400">
-            Cliquez pour transférer
+            {t("Cliquez pour transférer")}
           </span>
         </div>
 
@@ -1163,13 +1218,13 @@ export const MobileAgentHome: React.FC = () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
-            Recent transactions
+            {t("Transactions récentes")}
           </h4>
           <button
             onClick={() => setActiveTab('history')}
             className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline cursor-pointer"
           >
-            <span>See all</span>
+            <span>{t("Voir tout")}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -1179,10 +1234,10 @@ export const MobileAgentHome: React.FC = () => {
           {recentTxs.length === 0 ? (
             <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center space-y-1">
               <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                Aucune transaction récente
+                {t("Aucune transaction récente")}
               </p>
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Les transferts que vous effectuez apparaîtront ici.
+                {t("Les transferts que vous effectuez apparaîtront ici.")}
               </p>
             </div>
           ) : (
@@ -1220,18 +1275,18 @@ export const MobileAgentHome: React.FC = () => {
                     <div className="flex items-center gap-1.5 justify-end mt-0.5">
                       {isCompleted ? (
                         <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
-                          Clôturé
+                          {t("Clôturé")}
                         </span>
                       ) : (
                         <span className="text-[9px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-1.5 py-0.5 rounded">
-                          En cours
+                          {t("En cours")}
                         </span>
                       )}
 
                       <button
                         onClick={() => setSelectedReceiptTx(tx)}
                         className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                        title="Télécharger ou partager le reçu PDF"
+                        title={t("Télécharger ou partager le reçu PDF")}
                       >
                         <FileText className="w-3.5 h-3.5" />
                       </button>
