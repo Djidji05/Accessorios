@@ -107,8 +107,12 @@ export const HistoryView: React.FC = () => {
 
   /* -------------------------------------------------------------------------- */
   /* TRANSACTION DETAILS VIEW (STRUCTURED AS A CLEAN VERTICAL LIST)             */
-  /* -------------------------------------------------------------------------- */
+  /* -------------------------------------------------------------------------  /* -------------------------------------------------------------------------- */
   if (inspectedTx) {
+    const tx = transactions.find((t) => t.id === inspectedTx.id) || inspectedTx;
+    const isCompleted = tx.status === 'completed';
+    const isCancelled = tx.status === 'cancelled';
+
     return (
       <div className="p-4 sm:p-6 w-full max-w-4xl mx-auto space-y-6 animate-in fade-in pb-28">
         
@@ -137,11 +141,15 @@ export const HistoryView: React.FC = () => {
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Référence</span>
               <span className="font-mono font-black text-base text-slate-900 dark:text-white">
-                {inspectedTx.referenceNumber}
+                {tx.referenceNumber}
               </span>
             </div>
 
-            {inspectedTx.status === 'completed' ? (
+            {isCancelled ? (
+              <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/60 dark:border-rose-900/60 flex items-center gap-1 shadow-2xs">
+                ✕ Annulé
+              </span>
+            ) : isCompleted ? (
               <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50">
                 ✓ Clôturé
               </span>
@@ -152,56 +160,82 @@ export const HistoryView: React.FC = () => {
             )}
           </div>
 
+          {/* Cancellation Info Banner (when cancelled) */}
+          {isCancelled && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border-2 border-rose-200 dark:border-rose-900/60 space-y-2 animate-in fade-in">
+              <div className="flex items-center gap-1.5 text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wide">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Information d'Annulation Officielle :</span>
+              </div>
+              <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-rose-200 dark:border-rose-900/40 space-y-1 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-slate-500 font-bold text-[11px]">Motif :</span>
+                  <span className="font-extrabold text-rose-700 dark:text-rose-400 text-right break-words text-[11px]">
+                    {tx.cancellationReason || "Annulé par l'administrateur"}
+                  </span>
+                </div>
+                {tx.cancelledAt && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-rose-100 dark:border-slate-800 font-mono">
+                    <span>Date d'annulation :</span>
+                    <span>{new Date(tx.cancelledAt).toLocaleString('fr-FR')}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-rose-700 dark:text-rose-400 font-semibold leading-tight">
+                ⚠️ Cette opération a été révoquée par l'Administrateur. Aucun fonds n'a été décaissé.
+              </p>
+            </div>
+          )}
+
           {/* Vertical Stacked Details List */}
           <div className="space-y-2 text-xs">
             
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Service / Opérateur</span>
-              <OperatorBadge operator={inspectedTx.operator} size="sm" />
+              <OperatorBadge operator={tx.operator} size="sm" />
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Bénéficiaire</span>
-              <span className="font-extrabold text-slate-900 dark:text-white">{inspectedTx.receiverName}</span>
+              <span className="font-extrabold text-slate-900 dark:text-white">{tx.receiverName}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Téléphone Bénéficiaire</span>
-              <span className="font-mono font-bold text-slate-900 dark:text-white">{inspectedTx.receiverPhone}</span>
+              <span className="font-mono font-bold text-slate-900 dark:text-white">{tx.receiverPhone}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Expéditeur</span>
-              <span className="font-extrabold text-slate-900 dark:text-white">{inspectedTx.senderName}</span>
+              <span className="font-extrabold text-slate-900 dark:text-white">{tx.senderName}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Téléphone Expéditeur</span>
-              <span className="font-mono font-bold text-slate-900 dark:text-white">{inspectedTx.senderPhone}</span>
+              <span className="font-mono font-bold text-slate-900 dark:text-white">{tx.senderPhone}</span>
             </div>
-
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Montant Envoyé</span>
-              <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{inspectedTx.amountDOP.toLocaleString()} DOP</span>
+              <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{tx.amountDOP.toLocaleString()} DOP</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
               <span className="text-blue-700 dark:text-blue-400 font-bold">Commission Admin (DOP)</span>
               <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
-                +{(inspectedTx.commissionDOP || Math.round(inspectedTx.amountDOP * 0.01)).toLocaleString()} DOP
+                +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
               </span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
               <span className="text-blue-700 dark:text-blue-400 font-bold">Montant Reçu</span>
-              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{inspectedTx.amountHTG.toLocaleString()} HTG</span>
+              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{tx.amountHTG.toLocaleString()} HTG</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
               <span className="text-slate-500 font-medium">Date & Heure</span>
               <span className="font-mono text-slate-700 dark:text-slate-300">
-                {new Date(inspectedTx.createdAt).toLocaleString('fr-FR', {
+                {new Date(tx.createdAt).toLocaleString('fr-FR', {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
@@ -212,21 +246,21 @@ export const HistoryView: React.FC = () => {
             </div>
 
             {/* Proof Section in Details */}
-            {(inspectedTx.proofNotes || inspectedTx.proofUrl) && (
+            {(tx.proofNotes || tx.proofUrl) && (
               <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-400">
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
                   <span>Preuve de Clôture & Validation :</span>
                 </div>
-                {inspectedTx.proofNotes && (
+                {tx.proofNotes && (
                   <p className="text-[11px] font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 break-words">
-                    {inspectedTx.proofNotes}
+                    {tx.proofNotes}
                   </p>
                 )}
-                {inspectedTx.proofUrl && (
+                {tx.proofUrl && (
                   <div className="mt-2 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-52 bg-slate-900 flex items-center justify-center p-1">
                     <img 
-                      src={inspectedTx.proofUrl} 
+                      src={tx.proofUrl} 
                       alt="Preuve de transaction" 
                       className="max-h-48 w-auto object-contain rounded-lg"
                     />
@@ -234,17 +268,16 @@ export const HistoryView: React.FC = () => {
                 )}
               </div>
             )}
-
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-2">
-          {(inspectedTx.status === 'in_progress' || inspectedTx.status === 'pending_routing') && (currentUser.role === 'admin' || currentUser.role === 'gestionnaire' || currentUser.role === 'agent_haiti') && (
+          {!isCancelled && !isCompleted && (currentUser.role === 'admin' || currentUser.role === 'gestionnaire' || currentUser.role === 'agent_haiti') && (
             <button
               type="button"
               onClick={() => {
-                setProofModalTx(inspectedTx);
+                setProofModalTx(tx);
                 setProofNotes('');
                 setProofImage(null);
                 setProofError(null);
@@ -258,7 +291,7 @@ export const HistoryView: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setSelectedReceiptTx(inspectedTx)}
+            onClick={() => setSelectedReceiptTx(tx)}
             className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             title="Consulter et télécharger le reçu officiel"
           >

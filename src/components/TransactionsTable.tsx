@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Clock, CheckCircle2, FileText, AlertTriangle } from 'lucide-react';
+import { Search, Clock, CheckCircle2, FileText, AlertTriangle, XCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
 import { DateRange } from './DateRangePicker';
@@ -37,6 +37,15 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
   });
 
   const getSlaStatus = (createdAtIso: string, status: string) => {
+    if (status === 'cancelled') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300">
+          <XCircle className="w-3 h-3 text-rose-600" />
+          <span>Annulé</span>
+        </span>
+      );
+    }
+
     if (status === 'completed') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">

@@ -298,7 +298,10 @@ export const Header: React.FC = () => {
                         key={notif.id}
                         onClick={() => {
                           markNotificationAsRead(notif.id);
-                          if (notif.tx) setSelectedReceiptTx(notif.tx);
+                          if (notif.tx) {
+                            const freshTx = transactions.find((t) => t.id === notif.tx?.id) || notif.tx;
+                            setSelectedReceiptTx(freshTx);
+                          }
                           if (notif.actionTab) setActiveTab(notif.actionTab);
                           setIsNotificationsOpen(false);
                         }}

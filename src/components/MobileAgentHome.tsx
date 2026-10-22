@@ -1016,7 +1016,10 @@ export const MobileAgentHome: React.FC = () => {
                               key={notif.id}
                               onClick={() => {
                                 markNotificationAsRead(notif.id);
-                                if (notif.tx) setSelectedReceiptTx(notif.tx);
+                                if (notif.tx) {
+                                  const freshTx = transactions.find((t) => t.id === notif.tx!.id) || notif.tx;
+                                  setSelectedReceiptTx(freshTx);
+                                }
                                 setIsNotificationsOpen(false);
                               }}
                               className={`flex items-start gap-3 p-2.5 rounded-2xl transition-colors cursor-pointer border ${
@@ -1247,7 +1250,8 @@ export const MobileAgentHome: React.FC = () => {
               return (
                 <div
                   key={tx.id}
-                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+                  onClick={() => setSelectedReceiptTx(tx)}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer"
                 >
                   {/* Left: Operator Icon & Transaction Info */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -1277,9 +1281,13 @@ export const MobileAgentHome: React.FC = () => {
                         <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
                           {t("Clôturé")}
                         </span>
+                      ) : tx.status === 'cancelled' ? (
+                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/40">
+                          {t("Annulé")}
+                        </span>
                       ) : (
-                        <span className="text-[9px] font-black text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-1.5 py-0.5 rounded">
-                          {t("En cours")}
+                        <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200/50 dark:border-amber-900/50">
+                          {t("En attente")}
                         </span>
                       )}
 

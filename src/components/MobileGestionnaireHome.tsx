@@ -602,6 +602,26 @@ export const MobileGestionnaireHome: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Cancellation reason banner if cancelled */}
+                    {tx.status === 'cancelled' && (
+                      <div className="bg-rose-500/10 border border-rose-500/30 p-2.5 rounded-xl mb-3 text-xs text-rose-400 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5 text-xs text-rose-300">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+                          <span>{t("Transaction Annulée")}</span>
+                        </div>
+                        {tx.cancellationReason && (
+                          <p className="text-[11px] text-rose-200">
+                            <strong>{t("Motif")} :</strong> {tx.cancellationReason}
+                          </p>
+                        )}
+                        {tx.cancelledAt && (
+                          <p className="text-[10px] text-rose-400/80">
+                            {new Date(tx.cancelledAt).toLocaleString('fr-FR')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Transaction Details Grid */}
                     <div className="grid grid-cols-2 gap-3 text-xs mb-3">
                       <div className="bg-slate-100 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800/50">

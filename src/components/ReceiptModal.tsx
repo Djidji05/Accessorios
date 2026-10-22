@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, CheckCircle2, Clock, Share2, Check, FileText } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, Clock, Share2, Check, FileText, AlertTriangle, XCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
 import { downloadReceiptPDF, shareReceiptPDF } from '../utils/receiptGenerator';
 
 export const ReceiptModal: React.FC = () => {
-  const { selectedReceiptTx, setSelectedReceiptTx, showToast } = useApp();
+  const { selectedReceiptTx, setSelectedReceiptTx, showToast, transactions, t } = useApp();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
   if (!selectedReceiptTx) return null;
 
-  const tx = selectedReceiptTx;
+  // Toujours résoudre la transaction la plus à jour depuis le state global
+  const tx = transactions.find((item) => item.id === selectedReceiptTx.id) || selectedReceiptTx;
   const isCompleted = tx.status === 'completed';
+  const isCancelled = tx.status === 'cancelled';
   const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(tx.operator);
 
   return (
@@ -23,7 +25,7 @@ export const ReceiptModal: React.FC = () => {
         {/* Close Button */}
         <button
           onClick={() => setSelectedReceiptTx(null)}
-          className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors z-20"
+          className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors z-20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -33,8 +35,8 @@ export const ReceiptModal: React.FC = () => {
           
           {/* Ticket Header */}
           <div className="border-b border-dashed border-slate-300 pb-4 space-y-1">
-            <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white font-black text-xl flex items-center justify-center mx-auto shadow-md">
-              D
+            <div className={`w-10 h-10 rounded-2xl ${isCancelled ? 'bg-rose-600' : 'bg-slate-900'} text-white font-black text-xl flex items-center justify-center mx-auto shadow-md transition-colors`}>
+              {isCancelled ? '✕' : 'D'}
             </div>
             <h2 className="font-extrabold text-slate-900 text-base leading-tight mt-2">D'Alexis</h2>
             <p className="text-[11px] font-semibold text-slate-500">Transferencia y accesorio</p>
@@ -42,7 +44,12 @@ export const ReceiptModal: React.FC = () => {
             
             {/* Status Indicator on Receipt */}
             <div className="pt-2">
-              {isCompleted ? (
+              {isCancelled ? (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-900 border border-rose-300 shadow-2xs">
+                  <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                  {t("TRANSACTION ANNULÉE")}
+                </span>
+              ) : isCompleted ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
                   <CheckCircle2 className="w-3 h-3 text-blue-600" />
                   {isTelecom ? 'REÇU OFFICIEL • VALIDÉ PAR LE GESTIONNAIRE' : 'REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ'}
@@ -55,6 +62,33 @@ export const ReceiptModal: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Cancellation Notice Banner */}
+          {isCancelled && (
+            <div className="bg-rose-50 p-3.5 rounded-2xl border-2 border-rose-300 text-left space-y-1.5 animate-in fade-in">
+              <div className="flex items-center gap-1.5 text-xs font-black text-rose-900 uppercase tracking-wide">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Information d'Annulation :</span>
+              </div>
+              <div className="p-2.5 bg-white rounded-xl border border-rose-200 space-y-1 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-slate-500 font-bold text-[11px]">Motif :</span>
+                  <span className="font-extrabold text-rose-700 text-right break-words text-[11px]">
+                    {tx.cancellationReason || "Annulé par l'administrateur"}
+                  </span>
+                </div>
+                {tx.cancelledAt && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-rose-100 font-mono">
+                    <span>Date d'annulation :</span>
+                    <span>{new Date(tx.cancelledAt).toLocaleString('fr-FR')}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-rose-700 font-semibold leading-tight pt-0.5">
+                ⚠️ Ce transfert a été annulé par la direction. Aucun fonds n'a été décaissé.
+              </p>
+            </div>
+          )}
 
           {/* Transaction Metadata */}
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-left">

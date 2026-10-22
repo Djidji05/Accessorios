@@ -232,7 +232,10 @@ export const NotificationsView: React.FC = () => {
                 key={notif.id}
                 onClick={() => {
                   markNotificationAsRead(notif.id);
-                  if (notif.tx) setSelectedReceiptTx(notif.tx);
+                  if (notif.tx) {
+                    const freshTx = transactions.find((t) => t.id === notif.tx?.id) || notif.tx;
+                    setSelectedReceiptTx(freshTx);
+                  }
                 }}
                 className={`p-4 sm:p-5 rounded-3xl border transition-all cursor-pointer space-y-3 ${
                   isUnread

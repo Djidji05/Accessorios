@@ -6,7 +6,12 @@ import { jsPDF } from 'jspdf';
  */
 export function getReceiptShareText(tx: Transaction): string {
   const isCompleted = tx.status === 'completed';
-  const statusLabel = isCompleted ? '✅ EFFECTUÉ & CLÔTURÉ' : '⏳ EN COURS / EN ATTENTE';
+  const isCancelled = tx.status === 'cancelled';
+  const statusLabel = isCancelled 
+    ? '❌ TRANSACTION ANNULÉE' 
+    : isCompleted 
+    ? '✅ EFFECTUÉ & CLÔTURÉ' 
+    : '⏳ EN COURS / EN ATTENTE';
   const dateStr = new Date(tx.createdAt).toLocaleString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
@@ -25,14 +30,14 @@ Transfert & Services RD ➔ Haïti
 📅 *Date :* ${dateStr}
 📶 *Service :* ${tx.operator.toUpperCase()}
 ⚡ *Statut :* ${statusLabel}
---------------------------------
+${isCancelled && tx.cancellationReason ? `⚠️ *Motif d'annulation :* ${tx.cancellationReason}\n` : ''}--------------------------------
 ${showReceiverName ? `👤 *Bénéficiaire :* ${tx.receiverName}\n` : ''}📞 *${isTelecom ? 'Numéro Rechargé' : 'Téléphone'} :* ${tx.receiverPhone}
 💵 *Montant Reçu :* ${tx.amountHTG.toLocaleString()} HTG
 💰 *Montant Payé :* ${tx.amountDOP.toLocaleString()} DOP
 📊 *Taux :* 100 DOP = ${Math.round(tx.exchangeRate * 100)} HTG
 --------------------------------
 🏢 Agent : ${tx.createdByName || 'Agence Santo Domingo'}
-🔒 _Transaction officielle certifiée D'Alexis_`;
+🔒 _${isCancelled ? 'Transaction annulée et révoquée' : 'Transaction officielle certifiée D\'Alexis'}_`;
 }
 
 /**
@@ -41,23 +46,23 @@ ${showReceiverName ? `👤 *Bénéficiaire :* ${tx.receiverName}\n` : ''}📞 *$
 export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   const hasProof = !!tx.proofUrl;
+  const isCancelled = tx.status === 'cancelled';
+  const isCompleted = tx.status === 'completed';
   canvas.width = 650;
-  canvas.height = hasProof ? 1160 : 920;
+  canvas.height = (hasProof ? 1160 : 920) + (isCancelled ? 90 : 0);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Impossible d\'initialiser le contexte canvas 2D');
-
-  const isCompleted = tx.status === 'completed';
 
   // Fond blanc avec texture soignée
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Bandeau supérieur sombre
-  ctx.fillStyle = '#0F172A';
+  // Bandeau supérieur sombre (ou rouge si annulé)
+  ctx.fillStyle = isCancelled ? '#BE123C' : '#0F172A';
   ctx.fillRect(0, 0, canvas.width, 16);
 
   // Logo D'Alexis
-  ctx.fillStyle = '#0F172A';
+  ctx.fillStyle = isCancelled ? '#BE123C' : '#0F172A';
   ctx.beginPath();
   ctx.roundRect(285, 45, 80, 80, 20);
   ctx.fill();
@@ -65,7 +70,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 44px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('D', 325, 102);
+  ctx.fillText(isCancelled ? '✕' : 'D', 325, 102);
 
   // Titre & En-tête
   ctx.fillStyle = '#0F172A';
@@ -82,18 +87,22 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
 
   // Statut Badge
   const badgeY = 230;
-  ctx.fillStyle = isCompleted ? '#EFF6FF' : '#FFFBEB';
+  ctx.fillStyle = isCancelled ? '#FEF2F2' : isCompleted ? '#EFF6FF' : '#FFFBEB';
   ctx.beginPath();
-  ctx.roundRect(125, badgeY, 400, 36, 18);
+  ctx.roundRect(100, badgeY, 450, 36, 18);
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = isCompleted ? '#BFDBFE' : '#FDE68A';
+  ctx.strokeStyle = isCancelled ? '#FECACA' : isCompleted ? '#BFDBFE' : '#FDE68A';
   ctx.stroke();
 
-  ctx.fillStyle = isCompleted ? '#1E40AF' : '#92400E';
+  ctx.fillStyle = isCancelled ? '#991B1B' : isCompleted ? '#1E40AF' : '#92400E';
   ctx.font = 'bold 13px sans-serif';
   ctx.fillText(
-    isCompleted ? '✔ REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ' : '⏳ BORDEREAU OFFICIEL • EN ATTENTE',
+    isCancelled 
+      ? '✖ TRANSACTION OFFICIELLEMENT ANNULÉE' 
+      : isCompleted 
+      ? '✔ REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ' 
+      : '⏳ BORDEREAU OFFICIEL • EN ATTENTE',
     325,
     badgeY + 23
   );
@@ -235,6 +244,27 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   // Bas de page : Agent & Signature
   currentY += 185;
 
+  if (isCancelled) {
+    ctx.fillStyle = '#FEF2F2';
+    ctx.beginPath();
+    ctx.roundRect(40, currentY, 570, 75, 14);
+    ctx.fill();
+    ctx.strokeStyle = '#FECACA';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#991B1B';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('⚠ MOTIF OFFICIEL D\'ANNULATION :', 60, currentY + 24);
+
+    ctx.fillStyle = '#7F1D1D';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(tx.cancellationReason || "Annulé par l'administration", 60, currentY + 48);
+
+    currentY += 90;
+  }
+
   if (hasProof) {
     try {
       const img = new Image();
@@ -279,9 +309,9 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.fillText(`Noeud : ${tx.createdByNode || 'node-01'}`, 45, currentY + 22);
 
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#2563EB';
+  ctx.fillStyle = isCancelled ? '#DC2626' : '#2563EB';
   ctx.font = 'bold 13px sans-serif';
-  ctx.fillText('✔ TRANSACTION OFFICIELLE SÉCURISÉE', 605, currentY);
+  ctx.fillText(isCancelled ? '✖ TRANSACTION RÉVOQUÉE ET ANNULÉE' : '✔ TRANSACTION OFFICIELLE SÉCURISÉE', 605, currentY);
   ctx.fillStyle = '#94A3B8';
   ctx.font = '12px sans-serif';
   ctx.fillText("Plateforme D'Alexis Transferencia", 605, currentY + 22);
