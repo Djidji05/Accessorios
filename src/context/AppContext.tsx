@@ -190,7 +190,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return !!localStorage.getItem('dalexis_token') && !!localStorage.getItem('dalexis_user');
+    const token = localStorage.getItem('dalexis_token');
+    const user = localStorage.getItem('dalexis_user');
+    const lastActivity = localStorage.getItem('dalexis_last_activity');
+    if (!token || !user) return false;
+
+    // Déconnexion automatique après 60 minutes d'inactivité (ex: ordinateur fermé pendant 2 jours)
+    if (lastActivity) {
+      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      const MAX_INACTIVITY_MS = 60 * 60 * 1000; // 60 minutes
+      if (isNaN(elapsed) || elapsed > MAX_INACTIVITY_MS) {
+        localStorage.removeItem('dalexis_token');
+        localStorage.removeItem('dalexis_user');
+        localStorage.removeItem('dalexis_last_activity');
+        return false;
+      }
+    } else {
+      localStorage.setItem('dalexis_last_activity', Date.now().toString());
+    }
+    return true;
   });
 
   // Synchronisation continue du profil connecté dans localStorage
@@ -200,7 +218,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUser, isAuthenticated]);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  // Initialisation immédiate de l'onglet selon le rôle mémorisé (évite le flash de la vue PC sur mobile)
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    try {
+      const saved = localStorage.getItem('dalexis_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u.role === 'agent_rd') return 'guichet';
+        if (u.role === 'agent_haiti') return 'tasks';
+      }
+    } catch {}
+    return 'overview';
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const toggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -509,38 +538,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('dalexis_auth_unauthorized', handleUnauthorized);
   }, []);
 
-  // Déconnexion / Verrouillage automatique après 60 minutes (1 heure) sans utilisation
+  // Déconnexion / Verrouillage automatique après 60 minutes d'inactivité (persistant même avec PC fermé ou en veille)
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    let timeoutId: NodeJS.Timeout;
-    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes en millisecondes
+    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 
-    const resetInactivityTimer = () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        // Supprimer la session et forcer la redemande du mot de passe
-        localStorage.removeItem('dalexis_token');
-        localStorage.removeItem('dalexis_user');
-        setIsAuthenticated(false);
-        showToast("Session verrouillée après 60 minutes d'inactivité. Veuillez resaisir votre mot de passe.", 'info');
-      }, INACTIVITY_TIMEOUT_MS);
+    const checkInactivity = () => {
+      const lastActivity = localStorage.getItem('dalexis_last_activity');
+      if (lastActivity) {
+        const elapsed = Date.now() - parseInt(lastActivity, 10);
+        if (isNaN(elapsed) || elapsed > INACTIVITY_TIMEOUT_MS) {
+          localStorage.removeItem('dalexis_token');
+          localStorage.removeItem('dalexis_user');
+          localStorage.removeItem('dalexis_last_activity');
+          setIsAuthenticated(false);
+          showToast("Session expirée après inactivité. Veuillez vous reconnecter.", 'info');
+        }
+      }
+    };
+
+    // Mettre à jour l'horodatage d'activité utilisateur (throttlé à 15 secondes pour économiser les I/O)
+    let lastRecorded = Date.now();
+    const handleUserActivity = () => {
+      const now = Date.now();
+      if (now - lastRecorded > 15000) {
+        lastRecorded = now;
+        localStorage.setItem('dalexis_last_activity', now.toString());
+      }
     };
 
     // Événements détectant l'activité de l'utilisateur
     const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
     activityEvents.forEach((evt) => {
-      window.addEventListener(evt, resetInactivityTimer, { passive: true });
+      window.addEventListener(evt, handleUserActivity, { passive: true });
     });
 
-    // Démarrage initial du compte à rebours
-    resetInactivityTimer();
+    // Vérifier à la reprise (focus fenêtre, sortie de veille du PC, réouverture d'onglet)
+    const handleResume = () => {
+      checkInactivity();
+      handleUserActivity();
+    };
+
+    window.addEventListener('focus', handleResume);
+    window.addEventListener('pageshow', handleResume);
+    document.addEventListener('visibilitychange', handleResume);
+
+    // Vérification d'arrière-plan toutes les 30 secondes
+    const checkInterval = setInterval(checkInactivity, 30000);
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
       activityEvents.forEach((evt) => {
-        window.removeEventListener(evt, resetInactivityTimer);
+        window.removeEventListener(evt, handleUserActivity);
       });
+      window.removeEventListener('focus', handleResume);
+      window.removeEventListener('pageshow', handleResume);
+      document.removeEventListener('visibilitychange', handleResume);
+      clearInterval(checkInterval);
     };
   }, [isAuthenticated]);
 
@@ -549,24 +603,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let isMounted = true;
     let isSyncing = false;
 
-    const syncWithBackend = async () => {
+    // isSilent = true pour l'actualisation continue sans effet visuel clignotant ni badge "syncing"
+    const syncWithBackend = async (isSilent = false) => {
       if (isSyncing) return;
       if (typeof document !== 'undefined' && document.hidden) return;
       isSyncing = true;
       try {
-        setNodeConnectionStatus('syncing');
+        if (!isSilent) {
+          setNodeConnectionStatus('syncing');
+        }
 
         // 1. Données publiques (taux de change)
         const rateData = await api.rates.get().catch(() => null);
         if (rateData?.rate && isMounted) {
           const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
-          setDopToHtgRateState(r);
+          setDopToHtgRateState((prev) => (prev === r ? prev : r));
         }
 
         // 2. Vérification d'authentification avant d'appeler les routes privées
         const token = localStorage.getItem('dalexis_token');
         if (!token || !isAuthenticated) {
-          if (isMounted) setNodeConnectionStatus('connected');
+          if (isMounted && !isSilent) setNodeConnectionStatus('connected');
           return;
         }
 
@@ -581,53 +638,114 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!isMounted) return;
 
-        if (Array.isArray(txs) && txs.length > 0) {
-          setTransactions(txs as Transaction[]);
+        // Mise à jour silencieuse des transactions sans perturber l'interface
+        if (Array.isArray(txs)) {
+          setTransactions((prev) => {
+            if (prev.length === txs.length) {
+              let hasChanged = false;
+              for (let i = 0; i < txs.length; i++) {
+                const a = txs[i];
+                const b = prev[i];
+                if (
+                  !b ||
+                  a.id !== b.id ||
+                  a.status !== b.status ||
+                  a.completedAt !== b.completedAt ||
+                  a.cancelledAt !== b.cancelledAt ||
+                  a.cancellationReason !== b.cancellationReason ||
+                  a.proofUrl !== b.proofUrl ||
+                  a.assignedToName !== b.assignedToName
+                ) {
+                  hasChanged = true;
+                  break;
+                }
+              }
+              if (!hasChanged) return prev; // Ne déclenche aucun re-render React si identique
+            }
+            return txs as Transaction[];
+          });
         }
+
+        // Soldes de trésorerie avec stabilité de référence
         if (Array.isArray(bals) && bals.length > 0) {
-          setAccountBalances(bals as AccountBalance[]);
+          setAccountBalances((prev) => {
+            if (prev.length === bals.length) {
+              const changed = bals.some((b: any, idx: number) => {
+                const p = prev[idx];
+                return !p || p.id !== b.id || p.balance !== b.balance;
+              });
+              if (!changed) return prev;
+            }
+            return bals as AccountBalance[];
+          });
         }
+
+        // Kill Switch avec stabilité de référence
         if (Array.isArray(ks) && ks.length > 0) {
-          setKillSwitchList(ks as KillSwitchItem[]);
+          setKillSwitchList((prev) => {
+            if (prev.length === ks.length) {
+              const changed = ks.some((k: any, idx: number) => {
+                const p = prev[idx];
+                return !p || p.operator !== k.operator || p.enabled !== k.enabled;
+              });
+              if (!changed) return prev;
+            }
+            return ks as KillSwitchItem[];
+          });
         }
-        if (rateData?.rate) {
-          const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
-          setDopToHtgRateState(r);
-        }
+
+        // Utilisateurs et permissions
         if (usersData?.users && usersData.users.length > 0) {
-          setAvailableUsers(usersData.users);
+          setAvailableUsers((prev) => {
+            if (prev.length === usersData.users.length) {
+              const changed = usersData.users.some((u: any, idx: number) => {
+                const p = prev[idx];
+                return !p || p.id !== u.id || p.status !== u.status || p.role !== u.role;
+              });
+              if (!changed) return prev;
+            }
+            return usersData.users;
+          });
           if (usersData.permissions) {
             setPermissions(usersData.permissions);
           }
         }
+
+        // Journaux d'audit
         if (Array.isArray(logsData) && logsData.length > 0) {
-          setAuditLogs(logsData.map((l: any) => ({
-            ...l,
-            timestamp: typeof l.timestamp === 'string' ? l.timestamp : new Date(l.timestamp).toISOString(),
-          })));
+          setAuditLogs((prev) => {
+            if (prev.length === logsData.length && prev[0]?.id === logsData[0]?.id) {
+              return prev;
+            }
+            return logsData.map((l: any) => ({
+              ...l,
+              timestamp: typeof l.timestamp === 'string' ? l.timestamp : new Date(l.timestamp).toISOString(),
+            }));
+          });
         }
 
         setNodeConnectionStatus('connected');
       } catch (err) {
         console.warn('Backend API non joignable, maintien du mode local/mémoire:', err);
-        if (isMounted) setNodeConnectionStatus('offline');
+        if (isMounted && !isSilent) setNodeConnectionStatus('offline');
       } finally {
         isSyncing = false;
       }
     };
 
-    syncWithBackend();
+    // Synchronisation initiale
+    syncWithBackend(false);
 
-    // Synchronisation périodique raisonnable (20 secondes)
+    // Synchronisation périodique silencieuse toutes les 10 secondes (imperceptible pour l'utilisateur)
     const intervalId = setInterval(() => {
       if (isAuthenticated && typeof document !== 'undefined' && !document.hidden) {
-        syncWithBackend();
+        syncWithBackend(true);
       }
-    }, 20000);
+    }, 10000);
 
     const handleVisibilityChange = () => {
       if (typeof document !== 'undefined' && !document.hidden && isAuthenticated) {
-        syncWithBackend();
+        syncWithBackend(true);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -1267,9 +1385,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const res = await api.auth.login(identifierOrEmail, password);
       if (res.success && res.token) {
         localStorage.setItem('dalexis_token', res.token);
+        localStorage.setItem('dalexis_last_activity', Date.now().toString());
         if (res.user) {
           localStorage.setItem('dalexis_user', JSON.stringify(res.user));
           setCurrentUser(res.user);
+          // Redirection immédiate sur l'onglet adapté au rôle
+          const targetTab: ActiveTab = 
+            res.user.role === 'agent_rd' ? 'guichet' :
+            res.user.role === 'agent_haiti' ? 'tasks' :
+            'overview';
+          setActiveTab(targetTab);
         }
         setIsAuthenticated(true);
         // Synchroniser immédiatement la liste des utilisateurs du backend
@@ -1309,7 +1434,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (found && (password === 'dalexis123' || (savedPass && password === savedPass))) {
         localStorage.setItem('dalexis_token', `demo_token_${found.id}`);
         localStorage.setItem('dalexis_user', JSON.stringify(found));
+        localStorage.setItem('dalexis_last_activity', Date.now().toString());
         setCurrentUser(found);
+        const targetTab: ActiveTab = 
+          found.role === 'agent_rd' ? 'guichet' :
+          found.role === 'agent_haiti' ? 'tasks' :
+          'overview';
+        setActiveTab(targetTab);
         setIsAuthenticated(true);
         return { success: true, message: 'Connexion réussie !' };
       }
@@ -1320,8 +1451,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     localStorage.removeItem('dalexis_token');
     localStorage.removeItem('dalexis_user');
+    localStorage.removeItem('dalexis_last_activity');
     setIsAuthenticated(false);
     setCurrentUser(INITIAL_USERS[0]);
+    setActiveTab('overview');
   };
 
   return (

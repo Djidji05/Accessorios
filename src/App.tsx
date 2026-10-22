@@ -29,35 +29,37 @@ const AppContent: React.FC = () => {
   const isAgentHaiti = role === 'agent_haiti';
   const isGestionnaire = role === 'gestionnaire';
 
-  // Guarding automatique : redirection si tentative d'accès à un onglet interdit
-  React.useEffect(() => {
+  // Résolution synchrone immédiate de l'onglet effectif
+  // Évite tout clignotement ou rendu temporaire de la vue Dashboard PC sur mobile lors du login
+  const effectiveTab: typeof activeTab = React.useMemo(() => {
     if (isAgentRD) {
-      // Pour Agent RD : Guichet, Historique, Trésorerie, Mes Transactions, Notifications, Versements & Liquidations, Paramètres
       const allowedForRD: typeof activeTab[] = ['guichet', 'history', 'treasury', 'tasks', 'notifications', 'settlements', 'settings'];
-      if (!allowedForRD.includes(activeTab)) {
-        setActiveTab('guichet');
-      }
-    } else if (isAgentHaiti) {
-      // Pour Agent Haïti : Flux en Temps Réel, Historique, Notifications, Trésorerie, Paramètres
-      const allowedForHaiti: typeof activeTab[] = ['tasks', 'history', 'notifications', 'treasury', 'settings'];
-      if (!allowedForHaiti.includes(activeTab)) {
-        setActiveTab('tasks');
-      }
-    } else if (isGestionnaire) {
-      // Pour Gestionnaire : Tableau de bord, Tâches numériques, Notifications, Saisie Directe (guichet), Trésorerie, Historique, Versements, Paramètres
-      const allowedForGestionnaire: typeof activeTab[] = ['overview', 'tasks', 'notifications', 'guichet', 'treasury', 'history', 'settlements', 'settings'];
-      if (!allowedForGestionnaire.includes(activeTab)) {
-        setActiveTab('overview');
-      }
+      return allowedForRD.includes(activeTab) ? activeTab : 'guichet';
     }
-  }, [role, activeTab, setActiveTab, isAgentRD, isAgentHaiti, isGestionnaire]);
+    if (isAgentHaiti) {
+      const allowedForHaiti: typeof activeTab[] = ['tasks', 'history', 'notifications', 'treasury', 'settings'];
+      return allowedForHaiti.includes(activeTab) ? activeTab : 'tasks';
+    }
+    if (isGestionnaire) {
+      const allowedForGestionnaire: typeof activeTab[] = ['overview', 'tasks', 'notifications', 'guichet', 'treasury', 'history', 'settlements', 'settings'];
+      return allowedForGestionnaire.includes(activeTab) ? activeTab : 'overview';
+    }
+    return activeTab;
+  }, [isAgentRD, isAgentHaiti, isGestionnaire, activeTab]);
+
+  // Synchronisation d'état automatique en tâche de fond
+  React.useEffect(() => {
+    if (activeTab !== effectiveTab) {
+      setActiveTab(effectiveTab);
+    }
+  }, [activeTab, effectiveTab, setActiveTab]);
 
   if (!isAuthenticated) {
     return <LoginView />;
   }
 
   const renderActiveView = () => {
-    switch (activeTab) {
+    switch (effectiveTab) {
       case 'overview': 
         return isAgentHaiti ? <TaskQueueView /> : isAgentRD ? <OperationsGuichetView /> : <DashboardView />;
       case 'tasks': return <TaskQueueView />;
