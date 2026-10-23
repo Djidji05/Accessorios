@@ -18,6 +18,7 @@ import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/expor
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction } from '../types';
 import { compressImage } from '../utils/imageCompressor';
+import { Pagination } from '../components/Pagination';
 
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
@@ -26,6 +27,12 @@ export const HistoryView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>('all');
   const [operatorFilter, setOperatorFilter] = useState<string>('all');
+  const [historyPage, setHistoryPage] = useState<number>(1);
+  const HISTORY_PAGE_SIZE = 10;
+
+  React.useEffect(() => {
+    setHistoryPage(1);
+  }, [timeFilter, searchQuery, operatorFilter]);
   
   // Full-page inspection state
   const [inspectedTx, setInspectedTx] = useState<Transaction | null>(null);
@@ -104,6 +111,12 @@ export const HistoryView: React.FC = () => {
 
     return matchesTime && matchesSearch && matchesOperator;
   });
+
+  const historyTotalPages = Math.ceil(filteredTransactions.length / HISTORY_PAGE_SIZE) || 1;
+  const paginatedTransactions = filteredTransactions.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE
+  );
 
   /* -------------------------------------------------------------------------- */
   /* TRANSACTION DETAILS VIEW (STRUCTURED AS A CLEAN VERTICAL LIST)             */
@@ -561,7 +574,7 @@ export const HistoryView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-sans">
-                  {filteredTransactions.map((tx) => (
+                  {paginatedTransactions.map((tx) => (
                     <tr 
                       key={tx.id} 
                       className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group"
@@ -664,11 +677,24 @@ export const HistoryView: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Desktop Pagination */}
+            {filteredTransactions.length > HISTORY_PAGE_SIZE && (
+              <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <Pagination
+                  currentPage={historyPage}
+                  totalPages={historyTotalPages}
+                  onPageChange={setHistoryPage}
+                  totalItems={filteredTransactions.length}
+                  itemsPerPage={HISTORY_PAGE_SIZE}
+                />
+              </div>
+            )}
           </div>
 
           {/* 2. MOBILE VIEW: Stacked Responsive Cards (visible on mobile <md) */}
           <div className="md:hidden space-y-3">
-            {filteredTransactions.map((tx) => (
+            {paginatedTransactions.map((tx) => (
               <div
                 key={tx.id}
                 className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
@@ -752,6 +778,18 @@ export const HistoryView: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {/* Mobile Pagination */}
+            {filteredTransactions.length > HISTORY_PAGE_SIZE && (
+              <Pagination
+                currentPage={historyPage}
+                totalPages={historyTotalPages}
+                onPageChange={setHistoryPage}
+                totalItems={filteredTransactions.length}
+                itemsPerPage={HISTORY_PAGE_SIZE}
+                compact
+              />
+            )}
           </div>
         </>
       ) : (

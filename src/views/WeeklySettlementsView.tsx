@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { WeeklySettlement } from '../types';
+import { Pagination } from '../components/Pagination';
 
 export const WeeklySettlementsView: React.FC = () => {
   const { settlements, transactions, currentUser, recordAgentDeposit } = useApp();
@@ -41,6 +42,16 @@ export const WeeklySettlementsView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'partial' | 'pending'>('all');
   const [selectedWeekLabel, setSelectedWeekLabel] = useState<string>('all');
   const [showWeekCalendarDropdown, setShowWeekCalendarDropdown] = useState<boolean>(false);
+
+  // Pagination states
+  const [agentPage, setAgentPage] = useState<number>(1);
+  const [adminPage, setAdminPage] = useState<number>(1);
+  const SETTLEMENT_PAGE_SIZE = 10;
+
+  React.useEffect(() => {
+    setAgentPage(1);
+    setAdminPage(1);
+  }, [searchQuery, statusFilter, selectedWeekLabel]);
 
   // Modal state
   const [isDepositModalOpen, setIsDepositModalOpen] = useState<boolean>(false);
@@ -305,6 +316,18 @@ export const WeeklySettlementsView: React.FC = () => {
     }
     return true;
   });
+
+  const agentTotalPages = Math.ceil(filteredSettlements.length / SETTLEMENT_PAGE_SIZE) || 1;
+  const agentPaginatedSettlements = filteredSettlements.slice(
+    (agentPage - 1) * SETTLEMENT_PAGE_SIZE,
+    agentPage * SETTLEMENT_PAGE_SIZE
+  );
+
+  const adminTotalPages = Math.ceil(filteredSettlements.length / SETTLEMENT_PAGE_SIZE) || 1;
+  const adminPaginatedSettlements = filteredSettlements.slice(
+    (adminPage - 1) * SETTLEMENT_PAGE_SIZE,
+    adminPage * SETTLEMENT_PAGE_SIZE
+  );
 
   // Sorted settlements to distinguish current week from past weeks
   const sortedSettlements = [...roleScopedSettlements].sort((a, b) => b.startDate.localeCompare(a.startDate));
@@ -587,7 +610,7 @@ export const WeeklySettlementsView: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredSettlements.map((s) => {
+              {agentPaginatedSettlements.map((s) => {
                 const isPaid = s.remainingBalance === 0;
 
                 return (
@@ -651,6 +674,17 @@ export const WeeklySettlementsView: React.FC = () => {
                   </div>
                 );
               })}
+
+              {filteredSettlements.length > SETTLEMENT_PAGE_SIZE && (
+                <Pagination
+                  currentPage={agentPage}
+                  totalPages={agentTotalPages}
+                  onPageChange={setAgentPage}
+                  totalItems={filteredSettlements.length}
+                  itemsPerPage={SETTLEMENT_PAGE_SIZE}
+                  compact
+                />
+              )}
             </div>
           )}
         </div>
@@ -687,7 +721,7 @@ export const WeeklySettlementsView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
-                  {filteredSettlements.map((s) => {
+                  {adminPaginatedSettlements.map((s) => {
                     const isPaid = s.remainingBalance === 0;
 
                     return (
@@ -770,6 +804,19 @@ export const WeeklySettlementsView: React.FC = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Admin Table Pagination */}
+          {filteredSettlements.length > SETTLEMENT_PAGE_SIZE && (
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <Pagination
+                currentPage={adminPage}
+                totalPages={adminTotalPages}
+                onPageChange={setAdminPage}
+                totalItems={filteredSettlements.length}
+                itemsPerPage={SETTLEMENT_PAGE_SIZE}
+              />
             </div>
           )}
         </div>

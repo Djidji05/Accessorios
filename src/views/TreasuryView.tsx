@@ -34,6 +34,7 @@ import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { getOperatorLogo } from '../utils/operatorLogos';
 
 import { exportTreasuryReportToCSV, exportTreasuryReportToPDF } from '../utils/exportUtils';
+import { Pagination } from '../components/Pagination';
 
 // Mock recent treasury operations log
 const initialTreasuryLogs = [
@@ -55,6 +56,11 @@ export const TreasuryView: React.FC = () => {
     adminCommissionRate
   } = useApp();
   const [logs, setLogs] = useState(initialTreasuryLogs);
+  const [logPage, setLogPage] = useState<number>(1);
+  const LOG_PAGE_SIZE = 10;
+  const logTotalPages = Math.ceil(logs.length / LOG_PAGE_SIZE) || 1;
+  const paginatedLogs = logs.slice((logPage - 1) * LOG_PAGE_SIZE, logPage * LOG_PAGE_SIZE);
+
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('moncash');
   const [rechargeAmount, setRechargeAmount] = useState<number>(100000);
@@ -808,7 +814,7 @@ export const TreasuryView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
-              {logs.map((op) => (
+              {paginatedLogs.map((op) => (
                 <tr key={op.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">{op.id}</td>
                   <td className="py-3.5 px-4">
@@ -835,7 +841,7 @@ export const TreasuryView: React.FC = () => {
 
         {/* 2. VUE MOBILE : CARTES EMPILÉES TRÈS RESPONSIVES (< md) */}
         <div className="md:hidden space-y-2.5">
-          {logs.map((op) => (
+          {paginatedLogs.map((op) => (
             <div
               key={op.id}
               className="p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-2.5"
@@ -872,6 +878,18 @@ export const TreasuryView: React.FC = () => {
           ))}
         </div>
 
+        {/* Treasury Logs Pagination */}
+        {logs.length > LOG_PAGE_SIZE && (
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+            <Pagination
+              currentPage={logPage}
+              totalPages={logTotalPages}
+              onPageChange={setLogPage}
+              totalItems={logs.length}
+              itemsPerPage={LOG_PAGE_SIZE}
+            />
+          </div>
+        )}
       </div>
 
       {/* 6. MODAL RECHARGE FLOTTE (ADMIN) - TRÈS RESPONSIVE */}

@@ -23,6 +23,7 @@ import { useApp } from '../context/AppContext';
 import { AuditLog } from '../types';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { exportAuditLogsToCSV, exportAuditLogsToPDF } from '../utils/exportUtils';
+import { Pagination } from '../components/Pagination';
 
 export const AuditLogsView: React.FC = () => {
   const { auditLogs } = useApp();
@@ -40,6 +41,14 @@ export const AuditLogsView: React.FC = () => {
 
   // Full-page log inspection state (NO MODAL POPUP DIV)
   const [inspectedLog, setInspectedLog] = useState<AuditLog | null>(null);
+
+  // Pagination states
+  const [page, setPage] = useState<number>(1);
+  const LOGS_PAGE_SIZE = 15;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchQuery, selectedCategory, selectedPriority, selectedRange]);
 
   const getPriorityBadge = (p?: string, action?: string) => {
     let priority = p;
@@ -122,6 +131,9 @@ export const AuditLogsView: React.FC = () => {
 
     return matchesSearch && matchesCat && matchesPriority && matchesDate;
   });
+
+  const logsTotalPages = Math.ceil(filteredLogs.length / LOGS_PAGE_SIZE) || 1;
+  const paginatedLogs = filteredLogs.slice((page - 1) * LOGS_PAGE_SIZE, page * LOGS_PAGE_SIZE);
 
   /* -------------------------------------------------------------------------- */
   /* FULL-PAGE LOG INSPECTION VIEW                                              */
@@ -349,7 +361,7 @@ export const AuditLogsView: React.FC = () => {
 
         {/* Table Body Rows */}
         <div className="divide-y divide-slate-100 text-xs font-medium">
-          {filteredLogs.map((log) => (
+          {paginatedLogs.map((log) => (
             <div 
               key={log.id} 
               onClick={() => setInspectedLog(log)}
@@ -407,6 +419,18 @@ export const AuditLogsView: React.FC = () => {
           ))}
         </div>
 
+        {/* Pagination */}
+        {filteredLogs.length > LOGS_PAGE_SIZE && (
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+            <Pagination
+              currentPage={page}
+              totalPages={logsTotalPages}
+              onPageChange={setPage}
+              totalItems={filteredLogs.length}
+              itemsPerPage={LOGS_PAGE_SIZE}
+            />
+          </div>
+        )}
       </div>
 
     </div>

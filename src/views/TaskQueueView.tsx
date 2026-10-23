@@ -48,6 +48,7 @@ import { Transaction, ChannelType, OperatorCode, ServiceType } from '../types';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { compressImage } from '../utils/imageCompressor';
 import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/exportUtils';
+import { Pagination } from '../components/Pagination';
 
 export const TaskQueueView: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<DateRange>({
@@ -120,6 +121,12 @@ export const TaskQueueView: React.FC = () => {
   const [rdSearchQuery, setRdSearchQuery] = useState('');
   const [rdCopiedPhoneId, setRdCopiedPhoneId] = useState<string | null>(null);
 
+  // Pagination states
+  const [haitiPage, setHaitiPage] = useState<number>(1);
+  const [rdPage, setRdPage] = useState<number>(1);
+  const [gestionnairePage, setGestionnairePage] = useState<number>(1);
+  const [queuePage, setQueuePage] = useState<number>(1);
+
   // Form states inside full detail page
   const [proofNotes, setProofNotes] = useState('');
   const [proofCode, setProofCode] = useState('');
@@ -151,6 +158,23 @@ export const TaskQueueView: React.FC = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'in_progress' | 'completed' | 'cancelled'>('in_progress');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setHaitiPage(1);
+  }, [haitiOperatorFilter, haitiStatusFilter, searchQuery]);
+
+  useEffect(() => {
+    setRdPage(1);
+  }, [rdStatusFilter, rdOperatorFilter, rdSearchQuery]);
+
+  useEffect(() => {
+    setGestionnairePage(1);
+  }, [gestionnaireTimeFilter, gestionnaireStatusFilter, gestionnaireOperatorFilter, gestionnaireSearchQuery]);
+
+  useEffect(() => {
+    setQueuePage(1);
+  }, [selectedChannel, selectedOperatorFilter, selectedStatusFilter, searchQuery]);
 
   // Quick Add Transaction Modal (Gestionnaire / Admin direct execution)
   const [isAddTxModalOpen, setIsAddTxModalOpen] = useState(false);
@@ -511,6 +535,10 @@ export const TaskQueueView: React.FC = () => {
       return true;
     });
 
+    const HAITI_PAGE_SIZE = 10;
+    const haitiTotalPages = Math.ceil(haitiFilteredTasks.length / HAITI_PAGE_SIZE) || 1;
+    const haitiPaginatedTasks = haitiFilteredTasks.slice((haitiPage - 1) * HAITI_PAGE_SIZE, haitiPage * HAITI_PAGE_SIZE);
+
     const pendingTasks = haitiScopedTasks.filter((t) => t.status === 'in_progress');
     const haitiPendingCount = pendingTasks.length;
     const haitiTotalPendingHTG = pendingTasks.reduce((sum, t) => sum + t.amountHTG, 0);
@@ -762,7 +790,7 @@ export const TaskQueueView: React.FC = () => {
             </div>
           </header>
 
-          {/* MAIN LARGE BALANCE CARD (Natcash & Natcom) */}
+          {/* MAIN LARGE BALANCE CARD (Solde en Caisse) */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 text-white p-5 shadow-xl border border-slate-800/80 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
               <div className="flex items-center gap-2.5">
@@ -771,10 +799,10 @@ export const TaskQueueView: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-xs font-black uppercase text-slate-200 tracking-wider block leading-none">
-                    Soldes En Caisse
+                    Solde en Caisse
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium mt-0.5 block">
-                    Comptes Natcash & Natcom disponibles
+                    Fonds opérationnels disponibles
                   </span>
                 </div>
               </div>
@@ -789,26 +817,23 @@ export const TaskQueueView: React.FC = () => {
               </button>
             </div>
 
-            {/* Balance Card: Natcash & Natcom (Compte unique partagé - Recharges et Caisse décréditées ensemble) */}
+            {/* Balance Card: Solde en Caisse */}
             <div className="pt-1">
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
-                    <span>Solde Natcash & Natcom</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                      Compte Partagé HTG
-                    </span>
+                  <span className="text-xs font-black uppercase text-emerald-400 tracking-wider">
+                    Solde en Caisse
                   </span>
-                  <span className="text-[10px] text-slate-400 font-semibold">
-                    Caisse Mobile & Recharges
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    HTG
                   </span>
                 </div>
-                <p className="text-2xl font-black font-mono text-white tracking-tight">
-                  {showHaitiBalance ? natcashBalance.toLocaleString('fr-FR') : '••••••••'} <span className="text-xs font-bold text-slate-400">HTG</span>
-                </p>
-                <span className="text-[10px] text-slate-400 font-medium block">
-                  Les retraits Natcash et recharges Natcom se décréditent sur ce même compte.
-                </span>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-black font-mono text-white tracking-tight">
+                    {showHaitiBalance ? natcashBalance.toLocaleString('fr-FR') : '••••••••'}
+                  </p>
+                  <span className="text-xs font-extrabold text-emerald-400">HTG</span>
+                </div>
               </div>
             </div>
           </div>
@@ -873,8 +898,8 @@ export const TaskQueueView: React.FC = () => {
 
           {/* Tasks List Cards for Mobile */}
           <div className="space-y-3">
-            {haitiFilteredTasks.length > 0 ? (
-              haitiFilteredTasks.map((tx) => {
+            {haitiPaginatedTasks.length > 0 ? (
+              haitiPaginatedTasks.map((tx) => {
                 const isCompleted = tx.status === 'completed';
 
                 return (
@@ -968,6 +993,18 @@ export const TaskQueueView: React.FC = () => {
                 <p className="text-[11px] text-slate-400">Tous les décaissements Natcash et Natcom sont à jour.</p>
               </div>
             )}
+
+            {/* Mobile Pagination */}
+            {haitiFilteredTasks.length > HAITI_PAGE_SIZE && (
+              <Pagination
+                currentPage={haitiPage}
+                totalPages={haitiTotalPages}
+                onPageChange={setHaitiPage}
+                totalItems={haitiFilteredTasks.length}
+                itemsPerPage={HAITI_PAGE_SIZE}
+                compact
+              />
+            )}
           </div>
         </div>
 
@@ -979,10 +1016,10 @@ export const TaskQueueView: React.FC = () => {
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-xl font-black text-slate-900 tracking-tight">
-                Décaissements & Retraits Haïti
+                Décaissements & Opérations Haïti
               </h1>
               <p className="text-xs text-slate-500 font-medium mt-1">
-                File des retraits Natcash et recharges Natcom à exécuter en Haïti.
+                File des opérations et décaissements à exécuter en Haïti.
               </p>
             </div>
             <DateRangePicker value={selectedRange} onChange={setSelectedRange} />
@@ -992,9 +1029,9 @@ export const TaskQueueView: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde Natcash & Natcom</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Solde en Caisse</p>
                 <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{natcashBalance.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-500 font-bold mt-0.5">Gourdes (HTG) en Caisse & Recharges</p>
+                <p className="text-[10px] text-slate-500 font-bold mt-0.5">Gourdes (HTG) en Caisse</p>
               </div>
               <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-black text-xs">
                 NC / NAT
@@ -1181,7 +1218,7 @@ export const TaskQueueView: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {haitiFilteredTasks.map((tx) => {
+              {haitiPaginatedTasks.map((tx) => {
                 const elapsed = getElapsedInfo(tx.createdAt);
                 const isPending = tx.status === 'in_progress';
                 const isCompleted = tx.status === 'completed';
@@ -1302,6 +1339,19 @@ export const TaskQueueView: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Desktop Pagination */}
+          {haitiFilteredTasks.length > HAITI_PAGE_SIZE && (
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+              <Pagination
+                currentPage={haitiPage}
+                totalPages={haitiTotalPages}
+                onPageChange={setHaitiPage}
+                totalItems={haitiFilteredTasks.length}
+                itemsPerPage={HAITI_PAGE_SIZE}
+              />
             </div>
           )}
               </div>
@@ -1741,6 +1791,10 @@ export const TaskQueueView: React.FC = () => {
     const totalDopEncashed = rdScopedTasks.reduce((acc, t) => acc + t.amountDOP, 0);
     const totalHtgDisbursed = rdCompletedTasks.reduce((acc, t) => acc + t.amountHTG, 0);
 
+    const RD_PAGE_SIZE = 10;
+    const rdTotalPages = Math.ceil(rdFilteredTasks.length / RD_PAGE_SIZE) || 1;
+    const rdPaginatedTasks = rdFilteredTasks.slice((rdPage - 1) * RD_PAGE_SIZE, rdPage * RD_PAGE_SIZE);
+
     const copyRdPhone = (e: React.MouseEvent, phone: string, id: string) => {
       e.stopPropagation();
       navigator.clipboard.writeText(phone);
@@ -1969,7 +2023,7 @@ export const TaskQueueView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {rdFilteredTasks.map((tx) => {
+                  {rdPaginatedTasks.map((tx) => {
                     const isCompleted = tx.status === 'completed';
                     return (
                       <tr 
@@ -2076,6 +2130,19 @@ export const TaskQueueView: React.FC = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* RD Agent Pagination */}
+          {rdFilteredTasks.length > RD_PAGE_SIZE && (
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+              <Pagination
+                currentPage={rdPage}
+                totalPages={rdTotalPages}
+                onPageChange={setRdPage}
+                totalItems={rdFilteredTasks.length}
+                itemsPerPage={RD_PAGE_SIZE}
+              />
             </div>
           )}
         </div>
@@ -3047,6 +3114,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
       (t) => t.status === 'completed'
     ).length;
 
+    const GESTIONNAIRE_PAGE_SIZE = 10;
+    const gestionnaireTotalPages = Math.ceil(gestionnaireFilteredTasks.length / GESTIONNAIRE_PAGE_SIZE) || 1;
+    const gestionnairePaginatedTasks = gestionnaireFilteredTasks.slice((gestionnairePage - 1) * GESTIONNAIRE_PAGE_SIZE, gestionnairePage * GESTIONNAIRE_PAGE_SIZE);
+
     // A. VUE DÉTAILS PLEIN ÉCRAN (STRUCTURE LISTE VERTICALE IDENTIQUE À HISTORYVIEW)
     if (gestionnaireDetailTx) {
       const tx = transactions.find((t) => t.id === gestionnaireDetailTx.id) || gestionnaireDetailTx;
@@ -3451,7 +3522,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-sans">
-                    {gestionnaireFilteredTasks.map((tx) => (
+                    {gestionnairePaginatedTasks.map((tx) => (
                       <tr key={tx.id} className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="py-3.5 px-5 font-mono font-black text-slate-900 dark:text-white text-xs">
                           <span className="bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -3545,11 +3616,24 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   </tbody>
                 </table>
               </div>
+
+              {/* Gestionnaire Desktop Pagination */}
+              {gestionnaireFilteredTasks.length > GESTIONNAIRE_PAGE_SIZE && (
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                  <Pagination
+                    currentPage={gestionnairePage}
+                    totalPages={gestionnaireTotalPages}
+                    onPageChange={setGestionnairePage}
+                    totalItems={gestionnaireFilteredTasks.length}
+                    itemsPerPage={GESTIONNAIRE_PAGE_SIZE}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Mobile Stacked Responsive Cards (<md) - EXACTEMENT comme l'historique mobile des agents */}
             <div className="md:hidden space-y-3">
-              {gestionnaireFilteredTasks.map((tx) => (
+              {gestionnairePaginatedTasks.map((tx) => (
                 <div
                   key={tx.id}
                   className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
@@ -3657,6 +3741,18 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   </div>
                 </div>
               ))}
+
+              {/* Gestionnaire Mobile Pagination */}
+              {gestionnaireFilteredTasks.length > GESTIONNAIRE_PAGE_SIZE && (
+                <Pagination
+                  currentPage={gestionnairePage}
+                  totalPages={gestionnaireTotalPages}
+                  onPageChange={setGestionnairePage}
+                  totalItems={gestionnaireFilteredTasks.length}
+                  itemsPerPage={GESTIONNAIRE_PAGE_SIZE}
+                  compact
+                />
+              )}
             </div>
           </>
         ) : (
@@ -3696,6 +3792,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
   }
 
   // DEFAULT VIEW: LIST OF TRANSACTIONS IN CLEAN OVERFLOW-FREE ROW LIST
+  const QUEUE_PAGE_SIZE = 10;
+  const queueTotalPages = Math.ceil(filteredTasks.length / QUEUE_PAGE_SIZE) || 1;
+  const queuePaginatedTasks = filteredTasks.slice((queuePage - 1) * QUEUE_PAGE_SIZE, queuePage * QUEUE_PAGE_SIZE);
+
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto font-sans">
       
@@ -3872,7 +3972,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filteredTasks.map((tx) => {
+            {queuePaginatedTasks.map((tx) => {
               const elapsed = getElapsedInfo(tx.createdAt);
               const isCompleted = tx.status === 'completed';
               const isCancelled = tx.status === 'cancelled';
@@ -3975,6 +4075,19 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
           </div>
         </div>
+
+        {/* General Queue Pagination */}
+        {filteredTasks.length > QUEUE_PAGE_SIZE && (
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+            <Pagination
+              currentPage={queuePage}
+              totalPages={queueTotalPages}
+              onPageChange={setQueuePage}
+              totalItems={filteredTasks.length}
+              itemsPerPage={QUEUE_PAGE_SIZE}
+            />
+          </div>
+        )}
       </div>
 
       {/* MODAL: AJOUTER UNE NOUVELLE TRANSACTION (GESTIONNAIRE / ADMIN) */}

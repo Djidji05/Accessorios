@@ -17,6 +17,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction } from '../types';
+import { Pagination } from '../components/Pagination';
 
 export type NotificationFilterType = 'all' | 'transactions' | 'rate' | 'security';
 
@@ -34,6 +35,12 @@ export const NotificationsView: React.FC = () => {
   } = useApp();
 
   const [activeFilter, setActiveFilter] = useState<NotificationFilterType>('all');
+  const [page, setPage] = useState<number>(1);
+  const NOTIF_PAGE_SIZE = 10;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [activeFilter]);
 
   const isAgentRD = currentUser.role === 'agent_rd';
   const isAgentHaiti = currentUser.role === 'agent_haiti';
@@ -166,6 +173,12 @@ export const NotificationsView: React.FC = () => {
     return n.category === activeFilter;
   });
 
+  const notifTotalPages = Math.ceil(filteredNotifications.length / NOTIF_PAGE_SIZE) || 1;
+  const paginatedNotifications = filteredNotifications.slice(
+    (page - 1) * NOTIF_PAGE_SIZE,
+    page * NOTIF_PAGE_SIZE
+  );
+
   return (
     <div className="p-4 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in pb-28">
       
@@ -222,8 +235,8 @@ export const NotificationsView: React.FC = () => {
 
       {/* 3. Notifications Cards List */}
       <div className="space-y-3">
-        {filteredNotifications.length > 0 ? (
-          filteredNotifications.map((notif) => {
+        {paginatedNotifications.length > 0 ? (
+          paginatedNotifications.map((notif) => {
             const IconComp = notif.icon;
             const isUnread = !readNotificationIds.includes(notif.id);
 
@@ -291,6 +304,17 @@ export const NotificationsView: React.FC = () => {
               Toutes vos alertes et activités apparaîtront directement ici en temps réel.
             </p>
           </div>
+        )}
+
+        {/* Pagination */}
+        {filteredNotifications.length > NOTIF_PAGE_SIZE && (
+          <Pagination
+            currentPage={page}
+            totalPages={notifTotalPages}
+            onPageChange={setPage}
+            totalItems={filteredNotifications.length}
+            itemsPerPage={NOTIF_PAGE_SIZE}
+          />
         )}
       </div>
     </div>

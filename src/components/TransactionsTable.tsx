@@ -3,6 +3,7 @@ import { Search, Clock, CheckCircle2, FileText, AlertTriangle, XCircle } from 'l
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
 import { DateRange } from './DateRangePicker';
+import { Pagination } from './Pagination';
 
 interface TransactionsTableProps {
   dateRange?: DateRange;
@@ -12,6 +13,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
   const { setSelectedReceiptTx, transactions, serviceCommissionRates, adminCommissionRate } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState<number>(1);
+  const PAGE_SIZE = 10;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, dateRange]);
 
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch = 
@@ -35,6 +42,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
 
     return matchesSearch && matchesStatus && matchesDate;
   });
+
+  const totalPages = Math.ceil(filteredTransactions.length / PAGE_SIZE) || 1;
+  const paginatedTransactions = filteredTransactions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const getSlaStatus = (createdAtIso: string, status: string) => {
     if (status === 'cancelled') {
@@ -131,7 +141,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-sans">
-            {filteredTransactions.map((tx) => {
+            {paginatedTransactions.map((tx) => {
               const commRate = serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0;
               const opCommDOP = tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
 
@@ -203,6 +213,19 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {filteredTransactions.length > PAGE_SIZE && (
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={filteredTransactions.length}
+            itemsPerPage={PAGE_SIZE}
+          />
+        </div>
+      )}
     </div>
   );
 };

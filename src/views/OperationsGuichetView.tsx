@@ -28,6 +28,7 @@ import { OperatorCode, ServiceType, Transaction } from '../types';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { MobileAgentHome } from '../components/MobileAgentHome';
 import { getOperatorLogo } from '../utils/operatorLogos';
+import { Pagination } from '../components/Pagination';
 
 const OPERATOR_VISUAL_CARDS: Record<
   OperatorCode,
@@ -197,8 +198,12 @@ export const OperationsGuichetView: React.FC = () => {
       }
 
       return createdByName === currentName;
-    })
-    .slice(0, 8);
+    });
+
+  const [guichetPage, setGuichetPage] = useState<number>(1);
+  const GUICHET_PAGE_SIZE = 10;
+  const guichetTotalPages = Math.ceil(recentCashierTx.length / GUICHET_PAGE_SIZE) || 1;
+  const paginatedCashierTx = recentCashierTx.slice((guichetPage - 1) * GUICHET_PAGE_SIZE, guichetPage * GUICHET_PAGE_SIZE);
 
   const handleUpdateRateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -742,7 +747,7 @@ export const OperationsGuichetView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                recentCashierTx.map((tx) => {
+                paginatedCashierTx.map((tx) => {
                   const isCompleted = tx.status === 'completed';
                 return (
                   <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
@@ -818,6 +823,19 @@ export const OperationsGuichetView: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Guichet Recent Transactions Pagination */}
+        {recentCashierTx.length > GUICHET_PAGE_SIZE && (
+          <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+            <Pagination
+              currentPage={guichetPage}
+              totalPages={guichetTotalPages}
+              onPageChange={setGuichetPage}
+              totalItems={recentCashierTx.length}
+              itemsPerPage={GUICHET_PAGE_SIZE}
+            />
+          </div>
+        )}
       </div>
 
       </div>

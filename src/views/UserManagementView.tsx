@@ -44,6 +44,7 @@ import {
 import { jsPDF } from 'jspdf';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, Role, User } from '../types';
+import { Pagination } from '../components/Pagination';
 
 export const UserManagementView: React.FC = () => {
   const { 
@@ -69,6 +70,8 @@ export const UserManagementView: React.FC = () => {
   );
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [userPage, setUserPage] = useState<number>(1);
+  const USERS_PAGE_SIZE = 10;
   
   // Full-page User Inspection State (NO POPUP DIV MODAL)
   const [inspectedUser, setInspectedUser] = useState<User | null>(null);
@@ -396,6 +399,13 @@ export const UserManagementView: React.FC = () => {
       u.location.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
+
+  const userTotalPages = Math.ceil(filteredUsers.length / USERS_PAGE_SIZE) || 1;
+  const paginatedUsers = filteredUsers.slice((userPage - 1) * USERS_PAGE_SIZE, userPage * USERS_PAGE_SIZE);
+
+  React.useEffect(() => {
+    setUserPage(1);
+  }, [searchQuery, inspectionPeriod]);
 
   const toggleOperatorPermission = (userId: string, operator: OperatorCode) => {
     const userPerm = permissions.find(p => p.userId === userId);
@@ -1868,7 +1878,7 @@ export const UserManagementView: React.FC = () => {
 
           {/* 📱 MOBILE CARD VIEW (md:hidden) */}
           <div className="space-y-3 md:hidden">
-            {filteredUsers.map((user) => {
+            {paginatedUsers.map((user) => {
               const isOffline = user.status === 'offline';
               const userStats = getUserPeriodStats(user);
 
@@ -1993,6 +2003,18 @@ export const UserManagementView: React.FC = () => {
                 </div>
               );
             })}
+
+            {/* Mobile Users Pagination */}
+            {filteredUsers.length > USERS_PAGE_SIZE && (
+              <Pagination
+                currentPage={userPage}
+                totalPages={userTotalPages}
+                onPageChange={setUserPage}
+                totalItems={filteredUsers.length}
+                itemsPerPage={USERS_PAGE_SIZE}
+                compact
+              />
+            )}
           </div>
 
           {/* 💻 DESKTOP TABLE VIEW (hidden md:block) */}
@@ -2023,7 +2045,7 @@ export const UserManagementView: React.FC = () => {
 
                 {/* Table Body Rows */}
                 <div className="divide-y divide-slate-100 text-xs font-medium">
-                  {filteredUsers.map((user) => {
+                  {paginatedUsers.map((user) => {
                     const isOffline = user.status === 'offline';
                     const userStats = getUserPeriodStats(user);
 
@@ -2154,6 +2176,19 @@ export const UserManagementView: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Desktop Users Pagination */}
+            {filteredUsers.length > USERS_PAGE_SIZE && (
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                <Pagination
+                  currentPage={userPage}
+                  totalPages={userTotalPages}
+                  onPageChange={setUserPage}
+                  totalItems={filteredUsers.length}
+                  itemsPerPage={USERS_PAGE_SIZE}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
