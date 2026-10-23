@@ -709,9 +709,8 @@ export const TaskQueueView: React.FC = () => {
                       </div>
 
                       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        {haitiNotifications.length > 0 ? (
-                          haitiNotifications.map((notif) => {
-                            const isUnread = !readNotificationIds.includes(notif.id);
+                        {unreadHaitiNotifs.length > 0 ? (
+                          unreadHaitiNotifs.map((notif) => {
                             return (
                               <div
                                 key={notif.id}
@@ -720,11 +719,7 @@ export const TaskQueueView: React.FC = () => {
                                   handleOpenHaitiDetails(notif.tx);
                                   setIsNotificationsOpen(false);
                                 }}
-                                className={`p-2.5 rounded-2xl transition-colors cursor-pointer border flex items-start gap-2.5 ${
-                                  isUnread
-                                    ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/50 hover:bg-rose-50/80'
-                                    : 'bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-100 dark:border-slate-800/80 opacity-80'
-                                }`}
+                                className="p-2.5 rounded-2xl transition-colors cursor-pointer border flex items-start gap-2.5 bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/50 hover:bg-rose-50/80"
                               >
                                 <div className={`p-1.5 rounded-xl flex-shrink-0 mt-0.5 ${
                                   notif.status === 'completed'
@@ -739,9 +734,7 @@ export const TaskQueueView: React.FC = () => {
                                       <p className="text-xs font-black text-slate-900 dark:text-white truncate">
                                         {notif.title}
                                       </p>
-                                      {isUnread && (
-                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                                      )}
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                                     </div>
                                     <span className="text-[10px] text-slate-400 font-mono font-medium flex-shrink-0">
                                       {notif.time}

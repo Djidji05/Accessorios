@@ -9,6 +9,8 @@ import killSwitchRoutes from './routes/killSwitchRoutes';
 import ratesRoutes from './routes/ratesRoutes';
 import auditRoutes from './routes/auditRoutes';
 import userRoutes from './routes/userRoutes';
+import emailRoutes from './routes/emailRoutes';
+import { startSlaReminderEngine } from './services/slaReminderService';
 
 dotenv.config();
 
@@ -43,6 +45,7 @@ app.use('/api/kill-switch', killSwitchRoutes);
 app.use('/api/rates', ratesRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/email', emailRoutes);
 
 // 404 handler
 app.use((_req, res) => {
@@ -55,4 +58,6 @@ import { bootstrapDatabase } from './bootstrap';
 app.listen(PORT, async () => {
   console.log(`🚀 Serveur Backend Accessorio opérationnel sur http://localhost:${PORT}`);
   await bootstrapDatabase();
+  // Démarrer le moteur de rappel SLA automatique toutes les 60 secondes (alertes récurrentes 30m, 60m, 90m...)
+  startSlaReminderEngine(60 * 1000);
 });

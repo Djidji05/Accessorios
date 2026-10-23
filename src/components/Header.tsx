@@ -287,12 +287,11 @@ export const Header: React.FC = () => {
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {notifications.length === 0 ? (
+                {unreadNotifications.length === 0 ? (
                   <p className="text-center py-6 text-xs text-slate-400">Aucune notification</p>
                 ) : (
-                  notifications.map((notif) => {
+                  unreadNotifications.map((notif) => {
                     const IconComp = notif.icon;
-                    const isUnread = !readNotificationIds.includes(notif.id);
                     return (
                       <div 
                         key={notif.id}
@@ -305,11 +304,7 @@ export const Header: React.FC = () => {
                           if (notif.actionTab) setActiveTab(notif.actionTab);
                           setIsNotificationsOpen(false);
                         }}
-                        className={`flex items-start gap-2.5 p-2 rounded-xl transition-colors cursor-pointer border ${
-                          isUnread
-                            ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/40 hover:bg-rose-50/80'
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 border-transparent hover:border-slate-200/80 dark:hover:border-slate-700 opacity-80'
-                        }`}
+                        className="flex items-start gap-2.5 p-2 rounded-xl transition-colors cursor-pointer border bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/40 hover:bg-rose-50/80"
                       >
                         <div className={`w-7 h-7 rounded-lg border flex items-center justify-center flex-shrink-0 ${notif.color}`}>
                           <IconComp className="w-3.5 h-3.5" />
@@ -318,9 +313,7 @@ export const Header: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                               <p className="font-bold text-slate-900 dark:text-slate-100">{notif.title}</p>
-                              {isUnread && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                              )}
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                             </div>
                             <span className="text-[10px] text-slate-400 font-normal">{notif.time}</span>
                           </div>

@@ -12,7 +12,8 @@ import {
   CheckCheck,
   Zap,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from '../components/OperatorBadge';
@@ -167,8 +168,9 @@ export const NotificationsView: React.FC = () => {
     return list;
   }, [roleScopedTxs, dopToHtgRate, activeKillCount]);
 
-  // Filtering based on tab tab activeFilter
+  // Filtering based on tab tab activeFilter : seules les notifications non lues sont conservées (une notification lue est immédiatement effacée)
   const filteredNotifications = allNotifications.filter((n) => {
+    if (readNotificationIds.includes(n.id)) return false;
     if (activeFilter === 'all') return true;
     return n.category === activeFilter;
   });
@@ -193,13 +195,16 @@ export const NotificationsView: React.FC = () => {
           <span>Retour</span>
         </button>
 
-        <button
-          onClick={() => markAllNotificationsAsRead(allNotifications.map(n => n.id))}
-          className="px-3 py-1.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-        >
-          <CheckCheck className="w-4 h-4 text-emerald-500" />
-          <span>Tout marquer lu</span>
-        </button>
+        {filteredNotifications.length > 0 && (
+          <button
+            onClick={() => markAllNotificationsAsRead(filteredNotifications.map(n => n.id))}
+            className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-rose-200/60 dark:border-rose-900/40"
+            title="Effacer toutes les notifications affichées"
+          >
+            <CheckCheck className="w-4 h-4 text-rose-500" />
+            <span>Tout effacer</span>
+          </button>
+        )}
       </header>
 
       {/* 1. Header Banner */}
@@ -238,7 +243,6 @@ export const NotificationsView: React.FC = () => {
         {paginatedNotifications.length > 0 ? (
           paginatedNotifications.map((notif) => {
             const IconComp = notif.icon;
-            const isUnread = !readNotificationIds.includes(notif.id);
 
             return (
               <div
@@ -250,11 +254,7 @@ export const NotificationsView: React.FC = () => {
                     setSelectedReceiptTx(freshTx);
                   }
                 }}
-                className={`p-4 sm:p-5 rounded-3xl border transition-all cursor-pointer space-y-3 ${
-                  isUnread
-                    ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 shadow-xs'
-                    : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs opacity-85'
-                }`}
+                className="p-4 sm:p-5 rounded-3xl border transition-all cursor-pointer space-y-3 bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs hover:shadow-xs group"
               >
                 {/* Top Row: Icon, Title, Badge, Time */}
                 <div className="flex items-start justify-between gap-3">
@@ -267,9 +267,6 @@ export const NotificationsView: React.FC = () => {
                         <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
                           {notif.title}
                         </h4>
-                        {isUnread && (
-                          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                        )}
                         <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${notif.badgeColor}`}>
                           {notif.badgeText}
                         </span>
@@ -280,9 +277,22 @@ export const NotificationsView: React.FC = () => {
                     </div>
                   </div>
 
-                  {notif.tx && (
-                    <OperatorBadge operator={notif.tx.operator} size="sm" />
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {notif.tx && (
+                      <OperatorBadge operator={notif.tx.operator} size="sm" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markNotificationAsRead(notif.id);
+                      }}
+                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="Effacer cette notification"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Body Message */}
