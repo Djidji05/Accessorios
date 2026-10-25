@@ -7,13 +7,14 @@ import { authMiddleware, getJwtSecret } from '../middleware/auth';
 
 const router = Router();
 
-// Rate limiting strict pour bloquer les attaques par force brute (10 tentatives par 15 min par IP)
+// Rate limiting strict pour bloquer les attaques par force brute (15 tentatives par 15 min par IP)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 15,
   message: { error: 'Trop de tentatives de connexion infructueuses. Veuillez réessayer dans 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // 1. Connexion (Login avec Email ou Nom d'utilisateur) avec limitation de débit
@@ -69,6 +70,10 @@ router.post('/login', loginLimiter, async (req, res) => {
       getJwtSecret(),
       { expiresIn: '24h' }
     );
+
+    const permissions = await prisma.userPermission.findUnique({
+      where: { userId: user.id }
+    });
 
     let servicesAllowedList: string[] = [];
     if (permissions?.servicesAllowed) {
