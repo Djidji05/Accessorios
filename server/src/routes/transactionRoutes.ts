@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { authMiddleware, requireRole } from '../middleware/auth';
+import { realtimeService } from '../services/realtimeService';
 
 const router = Router();
 
@@ -236,10 +237,20 @@ router.post('/', authMiddleware, async (req, res) => {
       return newTx;
     });
 
+    // Diffusion en temps réel pur (0 délai) à tous les agents connectés
+    const lightweightNewTx = {
+      ...result,
+      proofUrl: result.proofUrl && result.proofUrl.startsWith('data:')
+        ? `/api/transactions/${result.id}/proof`
+        : result.proofUrl,
+    };
+    realtimeService.broadcast('TRANSACTION_CREATED', lightweightNewTx);
+    realtimeService.broadcast('BALANCE_UPDATED', { operator });
+
     return res.status(201).json({
       success: true,
       message: `Transaction ${referenceNumber} enregistrée avec succès.`,
-      transaction: result,
+      transaction: lightweightNewTx,
     });
   } catch (error) {
     console.error('Erreur create transaction:', error);
@@ -293,6 +304,8 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
           : updated.proofUrl
         : null,
     };
+
+    realtimeService.broadcast('TRANSACTION_COMPLETED', lightweightTx);
 
     return res.json({ success: true, message: 'Tâche clôturée avec succès.', transaction: lightweightTx });
   } catch (error) {
@@ -356,6 +369,9 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
       return cancelledTx;
     });
 
+    realtimeService.broadcast('TRANSACTION_CANCELLED', updated);
+    realtimeService.broadcast('BALANCE_UPDATED', { operator: existing.operator });
+
     return res.json({ success: true, message: 'Transaction annulée et solde restitué.', transaction: updated });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors de l\'annulation de la transaction.' });
@@ -386,6 +402,8 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
       where: { id },
       data: allowedUpdates,
     });
+
+    realtimeService.broadcast('TRANSACTION_UPDATED', updated);
 
     return res.json({ success: true, message: 'Transaction mise à jour.', transaction: updated });
   } catch (error) {

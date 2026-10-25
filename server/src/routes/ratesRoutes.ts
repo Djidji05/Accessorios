@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { authMiddleware, requireRole } from '../middleware/auth';
+import { realtimeService } from '../services/realtimeService';
 
 const router = Router();
 
@@ -57,6 +58,8 @@ router.put('/', authMiddleware, requireRole('admin'), async (req, res) => {
         priority: 'Medium',
       }
     });
+
+    realtimeService.broadcast('RATE_UPDATED', updated);
 
     return res.json({
       success: true,

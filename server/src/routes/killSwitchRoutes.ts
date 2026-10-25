@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { authMiddleware, requireRole } from '../middleware/auth';
+import { realtimeService } from '../services/realtimeService';
 
 const router = Router();
 
@@ -55,6 +56,8 @@ router.post('/toggle', authMiddleware, requireRole('admin'), async (req, res) =>
         priority: 'Critical',
       }
     });
+
+    realtimeService.broadcast('KILL_SWITCH_UPDATED', updated);
 
     return res.json({
       success: true,

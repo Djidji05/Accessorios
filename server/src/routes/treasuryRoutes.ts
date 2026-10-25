@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { authMiddleware, requireRole } from '../middleware/auth';
+import { realtimeService } from '../services/realtimeService';
 
 const router = Router();
 
@@ -75,6 +76,8 @@ router.post('/recharge', authMiddleware, requireRole('admin', 'gestionnaire'), a
 
       return updatedBalance;
     });
+
+    realtimeService.broadcast('BALANCE_UPDATED', updated);
 
     return res.json({
       success: true,

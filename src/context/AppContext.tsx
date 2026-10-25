@@ -748,12 +748,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Synchronisation initiale
     syncWithBackend(false);
 
-    // Synchronisation périodique silencieuse toutes les 10 secondes (imperceptible pour l'utilisateur)
+    // Synchronisation périodique de sécurité en arrière-plan (filet de sécurité à 30s)
     const intervalId = setInterval(() => {
       if (isAuthenticated && typeof document !== 'undefined' && !document.hidden) {
         syncWithBackend(true);
       }
-    }, 10000);
+    }, 30000);
 
     const handleVisibilityChange = () => {
       if (typeof document !== 'undefined' && !document.hidden && isAuthenticated) {
@@ -768,6 +768,160 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated]);
+
+  // =========================================================================
+  // Flux Temps Réel SSE (Server-Sent Events) - 0 délai pour les transferts
+  // =========================================================================
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const token = localStorage.getItem('dalexis_token');
+    if (!token) return;
+
+    const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
+    const sseUrl = `${API_BASE_URL}/realtime/events?token=${encodeURIComponent(token)}`;
+
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource(sseUrl);
+
+        eventSource.onopen = () => {
+          console.log('⚡ [SSE CLIENT] Connexion temps réel établie avec le serveur.');
+          setNodeConnectionStatus('connected');
+        };
+
+        // 1. Réception instantanée d'un nouveau transfert créé (0 délai)
+        eventSource.addEventListener('TRANSACTION_CREATED', (e: MessageEvent) => {
+          try {
+            const newTx = JSON.parse(e.data) as Transaction;
+            console.log('⚡ [SSE] Nouveau transfert reçu en direct (0s) :', newTx.referenceNumber);
+
+            setTransactions((prev) => {
+              if (prev.some(t => t.id === newTx.id || t.referenceNumber === newTx.referenceNumber)) {
+                return prev;
+              }
+              return [newTx, ...prev];
+            });
+
+            // Notification sonore et toast adaptées au rôle de l'agent
+            const userRole = currentUser?.role;
+            if (userRole === 'agent_haiti' && newTx.channel === 'haiti_cash') {
+              showToast(`🚨 Nouveau transfert Haïti reçu : ${newTx.amountHTG.toLocaleString()} HTG (#${newTx.referenceNumber})`, 'success');
+            } else if (userRole === 'gestionnaire' && newTx.channel === 'digital_telecom') {
+              showToast(`⚡ Nouvelle recharge reçue : ${newTx.operator.toUpperCase()} (#${newTx.referenceNumber})`, 'info');
+            } else if (userRole === 'admin') {
+              showToast(`⚡ Nouveau transfert émis : ${newTx.referenceNumber} (${newTx.operator.toUpperCase()})`, 'info');
+            }
+          } catch (err) {
+            console.error('Erreur parsing TRANSACTION_CREATED SSE:', err);
+          }
+        });
+
+        // 2. Clôture de tâche / Preuve validée
+        eventSource.addEventListener('TRANSACTION_COMPLETED', (e: MessageEvent) => {
+          try {
+            const completedTx = JSON.parse(e.data) as Transaction;
+            setTransactions((prev) =>
+              prev.map(t => (t.id === completedTx.id || t.referenceNumber === completedTx.referenceNumber ? { ...t, ...completedTx } : t))
+            );
+            showToast(`✅ Transfert #${completedTx.referenceNumber} clôturé avec succès par ${completedTx.assignedToName || 'l\'agent'}.`, 'success');
+          } catch (err) {
+            console.error('Erreur parsing TRANSACTION_COMPLETED SSE:', err);
+          }
+        });
+
+        // 3. Annulation de transaction
+        eventSource.addEventListener('TRANSACTION_CANCELLED', (e: MessageEvent) => {
+          try {
+            const cancelledTx = JSON.parse(e.data) as Transaction;
+            setTransactions((prev) =>
+              prev.map(t => (t.id === cancelledTx.id || t.referenceNumber === cancelledTx.referenceNumber ? { ...t, ...cancelledTx } : t))
+            );
+            showToast(`⚠️ Transfert #${cancelledTx.referenceNumber} annulé.`, 'info');
+          } catch (err) {
+            console.error('Erreur parsing TRANSACTION_CANCELLED SSE:', err);
+          }
+        });
+
+        // 4. Mise à jour de transaction
+        eventSource.addEventListener('TRANSACTION_UPDATED', (e: MessageEvent) => {
+          try {
+            const updatedTx = JSON.parse(e.data) as Transaction;
+            setTransactions((prev) =>
+              prev.map(t => (t.id === updatedTx.id || t.referenceNumber === updatedTx.referenceNumber ? { ...t, ...updatedTx } : t))
+            );
+          } catch (err) {
+            console.error('Erreur parsing TRANSACTION_UPDATED SSE:', err);
+          }
+        });
+
+        // 5. Mise à jour du taux officiel
+        eventSource.addEventListener('RATE_UPDATED', (e: MessageEvent) => {
+          try {
+            const rateObj = JSON.parse(e.data);
+            if (rateObj?.rate) {
+              const r = rateObj.rate > 10 ? rateObj.rate / 100 : rateObj.rate;
+              setDopToHtgRateState(r);
+              showToast(`📈 Taux de change officiel actualisé en direct : 100 DOP = ${Math.round(r * 100)} HTG`, 'info');
+            }
+          } catch (err) {
+            console.error('Erreur parsing RATE_UPDATED SSE:', err);
+          }
+        });
+
+        // 6. Bascule Kill-Switch
+        eventSource.addEventListener('KILL_SWITCH_UPDATED', (e: MessageEvent) => {
+          try {
+            const ksItem = JSON.parse(e.data) as KillSwitchItem;
+            setKillSwitchList((prev) =>
+              prev.map(k => (k.operator === ksItem.operator ? ksItem : k))
+            );
+            if (!ksItem.enabled) {
+              showToast(`⛔ ALERTE : Le service ${ksItem.operator.toUpperCase()} a été verrouillé d'urgence.`, 'error');
+            } else {
+              showToast(`✅ Le service ${ksItem.operator.toUpperCase()} a été rétabli.`, 'success');
+            }
+          } catch (err) {
+            console.error('Erreur parsing KILL_SWITCH_UPDATED SSE:', err);
+          }
+        });
+
+        // 7. Mise à jour des soldes de trésorerie
+        eventSource.addEventListener('BALANCE_UPDATED', () => {
+          api.treasury.getBalances().then((bals) => {
+            if (Array.isArray(bals)) {
+              setAccountBalances(bals);
+            }
+          }).catch(() => null);
+        });
+
+        eventSource.onerror = () => {
+          console.warn('⚠️ [SSE] Connexion temps réel interrompue, reconnexion automatique...');
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          // Reconnexion dans 5 secondes
+          reconnectTimeout = setTimeout(connectSSE, 5000);
+        };
+      } catch (err) {
+        console.error('Erreur initialisation SSE:', err);
+        reconnectTimeout = setTimeout(connectSSE, 5000);
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [isAuthenticated, currentUser?.role]);
 
   const setDopToHtgRate = (rate: number) => {
     // Si l'utilisateur entre 230 (pour 100 Pesos), on divise par 100 pour obtenir le taux unitaire (2.30)

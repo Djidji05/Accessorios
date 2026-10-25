@@ -12,6 +12,7 @@ import ratesRoutes from './routes/ratesRoutes';
 import auditRoutes from './routes/auditRoutes';
 import userRoutes from './routes/userRoutes';
 import emailRoutes from './routes/emailRoutes';
+import realtimeRoutes from './routes/realtimeRoutes';
 import { startSlaReminderEngine } from './services/slaReminderService';
 
 dotenv.config();
@@ -75,6 +76,7 @@ app.use('/api/rates', ratesRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/realtime', realtimeRoutes);
 
 // 404 handler
 app.use((_req, res) => {
