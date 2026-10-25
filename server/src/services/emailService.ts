@@ -6,20 +6,28 @@ dotenv.config();
 
 export type SupportedLanguage = 'FR' | 'HT' | 'ES';
 
-// Configuration SMTP
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+// Configuration Resend API
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const RESEND_FROM = process.env.RESEND_FROM || process.env.SMTP_FROM || "D'Alexis Transferencia <notifications@dalexistransferencia.com>";
+export const isResendConfigured = Boolean(RESEND_API_KEY && RESEND_API_KEY.trim() !== '');
+
+// Configuration SMTP (Alternative standard ou Resend SMTP)
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.resend.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || "D'Alexis Transferencia <notifications@dalexistransferencia.com>";
+const SMTP_FROM = process.env.SMTP_FROM || RESEND_FROM;
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173';
 
-const isSmtpConfigured = Boolean(SMTP_USER && SMTP_PASS);
+export const isSmtpConfigured = Boolean(SMTP_USER && SMTP_PASS);
+export const isEmailConfigured = Boolean(isResendConfigured || isSmtpConfigured);
 
 let transporter: Transporter | null = null;
 
-if (isSmtpConfigured) {
+if (isResendConfigured) {
+  console.log(`📧 Service Email configuré via RESEND API (HTTPS) - Émetteur: ${RESEND_FROM}`);
+} else if (isSmtpConfigured) {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
@@ -34,7 +42,7 @@ if (isSmtpConfigured) {
   });
   console.log(`📧 Service Email configuré via SMTP (${SMTP_HOST}:${SMTP_PORT}) - Émetteur: ${SMTP_FROM}`);
 } else {
-  console.log('ℹ️ Service Email en mode simulation (Identifiants SMTP_USER / SMTP_PASS non renseignés dans .env). Les e-mails seront prévisualisés dans les logs.');
+  console.log('ℹ️ Service Email en mode simulation (Ni RESEND_API_KEY ni SMTP_USER/PASS renseignés dans .env). Les e-mails seront prévisualisés dans les logs.');
 }
 
 export interface SendEmailOptions {
@@ -45,9 +53,9 @@ export interface SendEmailOptions {
 }
 
 /**
- * Envoie un email réel si SMTP est configuré, sinon affiche la prévisualisation dans la console
+ * Envoie un email réel via Resend API ou SMTP si configuré, sinon affiche la prévisualisation dans la console
  */
-export async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+export async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise<{ success: boolean; messageId?: string; simulated?: boolean; error?: string }> {
   const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
   if (recipients.length === 0) {
     return { success: false };
@@ -55,29 +63,64 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
 
   const toHeader = recipients.join(', ');
 
-  if (!isSmtpConfigured || !transporter) {
-    console.log(`\n======================================================`);
-    console.log(`📨 [SIMULATION EMAIL] Vers: ${toHeader}`);
-    console.log(`📌 Objet: ${subject}`);
-    console.log(`📄 Texte brut:\n${text || 'Voir version HTML'}`);
-    console.log(`======================================================\n`);
-    return { success: true, simulated: true };
+  // 1. Envoi via Resend API (HTTPS port 443 - résiste aux blocages des ports SMTP par les hébergeurs VPS)
+  if (isResendConfigured) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: RESEND_FROM,
+          to: recipients,
+          subject,
+          html,
+          text: text || subject,
+        }),
+      });
+
+      const data = await response.json() as any;
+
+      if (!response.ok) {
+        console.error(`❌ [RESEND ERREUR] Statut ${response.status}:`, data);
+        return { success: false, error: data.message || JSON.stringify(data) };
+      }
+
+      console.log(`✅ [RESEND EMAIL ENVOYÉ] ID: ${data.id} | Vers: ${toHeader} | Sujet: "${subject}"`);
+      return { success: true, messageId: data.id, simulated: false };
+    } catch (error: any) {
+      console.error(`❌ [RESEND EXCEPTION] Vers ${toHeader}:`, error);
+      return { success: false, error: error.message };
+    }
   }
 
-  try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to: toHeader,
-      subject,
-      html,
-      text: text || subject,
-    });
-    console.log(`✅ [EMAIL ENVOYÉ] ID: ${info.messageId} | Vers: ${toHeader} | Sujet: "${subject}"`);
-    return { success: true, messageId: info.messageId, simulated: false };
-  } catch (error) {
-    console.error(`❌ [ERREUR EMAIL] Échec d'envoi vers ${toHeader}:`, error);
-    return { success: false };
+  // 2. Envoi via SMTP classique ou relais Resend SMTP
+  if (isSmtpConfigured && transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: SMTP_FROM,
+        to: toHeader,
+        subject,
+        html,
+        text: text || subject,
+      });
+      console.log(`✅ [EMAIL SMTP ENVOYÉ] ID: ${info.messageId} | Vers: ${toHeader} | Sujet: "${subject}"`);
+      return { success: true, messageId: info.messageId, simulated: false };
+    } catch (error: any) {
+      console.error(`❌ [ERREUR EMAIL SMTP] Échec d'envoi vers ${toHeader}:`, error);
+      return { success: false, error: error.message };
+    }
   }
+
+  // 3. Mode Simulation (Logs)
+  console.log(`\n======================================================`);
+  console.log(`📨 [SIMULATION EMAIL] Vers: ${toHeader}`);
+  console.log(`📌 Objet: ${subject}`);
+  console.log(`📄 Texte brut:\n${text || 'Voir version HTML'}`);
+  console.log(`======================================================\n`);
+  return { success: true, simulated: true };
 }
 
 /**

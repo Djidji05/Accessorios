@@ -1,20 +1,22 @@
 import { Router } from 'express';
 import { authMiddleware, requireRole } from '../middleware/auth';
-import { sendEmail, resolveLanguage, EMAIL_TRANSLATIONS, SupportedLanguage } from '../services/emailService';
+import { sendEmail, resolveLanguage, EMAIL_TRANSLATIONS, SupportedLanguage, isResendConfigured, isSmtpConfigured, isEmailConfigured } from '../services/emailService';
 import { checkPendingTransactionsSla, getSlaEngineStatus } from '../services/slaReminderService';
 
 const router = Router();
 
 // 1. Statut du service d'emails et du moteur SLA
 router.get('/status', authMiddleware, (_req, res) => {
-  const isSmtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
   const slaStatus = getSlaEngineStatus();
 
   return res.json({
+    emailConfigured: isEmailConfigured,
+    provider: isResendConfigured ? 'Resend (HTTPS API)' : (isSmtpConfigured ? 'SMTP' : 'Simulation (Logs)'),
+    resendConfigured: isResendConfigured,
     smtpConfigured: isSmtpConfigured,
-    smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+    smtpHost: process.env.SMTP_HOST || 'smtp.resend.com',
     smtpPort: process.env.SMTP_PORT || '587',
-    smtpFrom: process.env.SMTP_FROM || "D'Alexis Transferencia <notifications@dalexistransferencia.com>",
+    from: process.env.RESEND_FROM || process.env.SMTP_FROM || "D'Alexis Transferencia <notifications@dalexistransferencia.com>",
     adminNotificationEmails: process.env.ADMIN_NOTIFICATION_EMAILS || '',
     slaEngine: slaStatus,
     supportedLanguages: ['FR', 'HT', 'ES'],

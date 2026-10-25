@@ -33,6 +33,15 @@ services:
       DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-DalexisSecureRoot2026!}@mysql:3306/accessorio_db?connection_limit=30&pool_timeout=15
       JWT_SECRET: ${JWT_SECRET:-dalexis_production_super_secret_jwt_key_2026_xyz}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://alexistransferencia.app}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.resend.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ADMIN_NOTIFICATION_EMAILS: ${ADMIN_NOTIFICATION_EMAILS:-}
     networks:
       - accessorio_net
 
