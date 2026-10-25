@@ -70,9 +70,16 @@ router.post('/login', loginLimiter, async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    const permissions = await prisma.userPermission.findUnique({
-      where: { userId: user.id }
-    });
+    let servicesAllowedList: string[] = [];
+    if (permissions?.servicesAllowed) {
+      try {
+        servicesAllowedList = typeof permissions.servicesAllowed === 'string'
+          ? JSON.parse(permissions.servicesAllowed)
+          : (Array.isArray(permissions.servicesAllowed) ? permissions.servicesAllowed : []);
+      } catch {
+        servicesAllowedList = [];
+      }
+    }
 
     return res.json({
       success: true,
@@ -90,12 +97,15 @@ router.post('/login', loginLimiter, async (req, res) => {
       },
       permissions: permissions ? {
         ...permissions,
-        servicesAllowed: JSON.parse(permissions.servicesAllowed)
+        servicesAllowed: servicesAllowedList
       } : null
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur Login:', error);
-    return res.status(500).json({ error: 'Erreur interne du serveur lors de la connexion.' });
+    return res.status(500).json({ 
+      error: error?.message || 'Erreur interne du serveur lors de la connexion.',
+      code: error?.code
+    });
   }
 });
 
