@@ -7,7 +7,7 @@ const router = Router();
 // 1. Liste des transactions (Authentifié)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { status, operator, search, limit } = req.query;
+    const { status, operator, search, limit, page } = req.query;
 
     const where: any = {};
     if (status && status !== 'all') {
@@ -27,14 +27,20 @@ router.get('/', authMiddleware, async (req, res) => {
       ];
     }
 
-    // Default take of 250 items to keep response time under 100ms
+    // Pagination haute performance : supporte limit et page
     const take = limit ? Math.min(Math.max(1, parseInt(String(limit), 10)), 1000) : 250;
+    const pageNum = page ? Math.max(1, parseInt(String(page), 10)) : 1;
+    const skip = (pageNum - 1) * take;
 
-    const transactions = await prisma.transaction.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take,
-    });
+    const [totalCount, transactions] = await Promise.all([
+      prisma.transaction.count({ where }),
+      prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
 
     // Allègement drastique du payload JSON : les chaînes base64 massives sont transformées
     // en URLs dédiées /api/transactions/:id/proof pour préserver la mémoire et éliminer
@@ -47,6 +53,11 @@ router.get('/', authMiddleware, async (req, res) => {
           : t.proofUrl
         : null,
     }));
+
+    // En-têtes de pagination standard pour les applications et intégrations
+    res.setHeader('X-Total-Count', String(totalCount));
+    res.setHeader('X-Total-Pages', String(Math.ceil(totalCount / take)));
+    res.setHeader('X-Current-Page', String(pageNum));
 
     return res.json(lightweightTxs);
   } catch (error) {
@@ -195,14 +206,14 @@ router.post('/', authMiddleware, async (req, res) => {
         },
       });
 
-      // 2. Débit de la balance du compte correspondant
+      // 2. Débit atomique de la balance du compte correspondant (Prévention absolue des courses critiques)
       const targetBalance = await tx.accountBalance.findFirst({ where: { operator } });
       if (targetBalance) {
         const deduction = targetBalance.currency === 'HTG' ? amountHTG : amountDOP;
         await tx.accountBalance.update({
           where: { id: targetBalance.id },
           data: {
-            balance: Math.max(0, targetBalance.balance - deduction),
+            balance: { decrement: deduction },
             lastUpdated: new Date()
           }
         });
@@ -315,14 +326,14 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
         },
       });
 
-      // 2. Remboursement automatique du solde sur le compte flotte
+      // 2. Remboursement atomique du solde sur le compte flotte
       const targetBalance = await tx.accountBalance.findFirst({ where: { operator: existing.operator } });
       if (targetBalance) {
         const refundAmount = targetBalance.currency === 'HTG' ? existing.amountHTG : existing.amountDOP;
         await tx.accountBalance.update({
           where: { id: targetBalance.id },
           data: {
-            balance: targetBalance.balance + refundAmount,
+            balance: { increment: refundAmount },
             lastUpdated: new Date()
           }
         });

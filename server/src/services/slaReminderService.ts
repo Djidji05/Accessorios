@@ -70,10 +70,28 @@ export async function checkPendingTransactionsSla(): Promise<{
       if (elapsedMinutes >= 30) {
         // Jalon de 30 minutes atteint (30, 60, 90, 120...)
         const currentMilestone = Math.floor(elapsedMinutes / 30) * 30;
-        const lastSentMilestone = alertTracker.get(tx.id) || 0;
+        let lastSentMilestone = alertTracker.get(tx.id);
+
+        // Si le serveur vient de redémarrer, vérifier la table AuditLog pour éviter les doublons d'e-mails
+        if (lastSentMilestone === undefined) {
+          const existingAudit = await prisma.auditLog.findFirst({
+            where: {
+              action: `TRANSACTION_SLA_ALERT_${currentMilestone}M`,
+              details: { contains: tx.referenceNumber },
+            },
+            select: { id: true },
+          }).catch(() => null);
+
+          if (existingAudit) {
+            alertTracker.set(tx.id, currentMilestone);
+            lastSentMilestone = currentMilestone;
+          } else {
+            lastSentMilestone = 0;
+          }
+        }
 
         // Si l'alerte pour ce jalon de 30 minutes n'a pas encore été envoyée
-        if (currentMilestone > lastSentMilestone) {
+        if (currentMilestone > (lastSentMilestone || 0)) {
           console.log(`⏱️ [SLA ESCALATION] Transaction #${tx.referenceNumber} dépasse ${elapsedMinutes}m (Jalon: ${currentMilestone}m). Envoi des e-mails aux personnes concernées...`);
 
           const result = await sendSlaAlertToStakeholders(tx, elapsedMinutes);

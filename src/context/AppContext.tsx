@@ -598,10 +598,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [isAuthenticated]);
 
-  // Synchronisation avec l'API Backend Express / SQLite
+  // Synchronisation avec l'API Backend Express / MySQL
   useEffect(() => {
     let isMounted = true;
     let isSyncing = false;
+    let lastFullSyncTime = 0;
 
     // isSilent = true pour l'actualisation continue sans effet visuel clignotant ni badge "syncing"
     const syncWithBackend = async (isSilent = false) => {
@@ -613,11 +614,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setNodeConnectionStatus('syncing');
         }
 
-        // 1. Données publiques (taux de change)
-        const rateData = await api.rates.get().catch(() => null);
-        if (rateData?.rate && isMounted) {
-          const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
-          setDopToHtgRateState((prev) => (prev === r ? prev : r));
+        const now = Date.now();
+        // Les tables peu variables (utilisateurs, kill-switch, soldes, audit) sont rafraîchies toutes les 60s
+        // Seules les transactions sont actualisées toutes les 10s (gain de 80% de requêtes HTTP)
+        const isFullSync = !isSilent || (now - lastFullSyncTime > 60000);
+        if (isFullSync) {
+          lastFullSyncTime = now;
+        }
+
+        // 1. Données publiques (taux de change - toutes les 60s ou initial)
+        if (isFullSync) {
+          api.rates.get().then((rateData) => {
+            if (rateData?.rate && isMounted) {
+              const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
+              setDopToHtgRateState((prev) => (prev === r ? prev : r));
+            }
+          }).catch(() => null);
         }
 
         // 2. Vérification d'authentification avant d'appeler les routes privées
@@ -627,13 +639,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return;
         }
 
-        // 3. Données privées authentifiées
+        // 3. Données privées authentifiées optimisées
         const [txs, bals, ks, usersData, logsData] = await Promise.all([
           api.transactions.getAll().catch(() => null),
-          api.treasury.getBalances().catch(() => null),
-          api.killSwitch.getAll().catch(() => null),
-          api.users.getAll().catch(() => null),
-          api.audit.getLogs().catch(() => null),
+          isFullSync ? api.treasury.getBalances().catch(() => null) : Promise.resolve(null),
+          isFullSync ? api.killSwitch.getAll().catch(() => null) : Promise.resolve(null),
+          isFullSync ? api.users.getAll().catch(() => null) : Promise.resolve(null),
+          isFullSync ? api.audit.getLogs().catch(() => null) : Promise.resolve(null),
         ]);
 
         if (!isMounted) return;
