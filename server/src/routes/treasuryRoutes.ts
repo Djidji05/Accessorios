@@ -46,6 +46,10 @@ router.post('/recharge', authMiddleware, requireRole('admin', 'gestionnaire'), a
 
     const newBalance = acc.balance + amount;
 
+    const effectiveActorName = req.user?.name || 'Alexis D\'Alexis (Admin)';
+    const effectiveNodeId = req.user?.nodeId || 'node-admin-01';
+    const effectiveRole = req.user?.role || 'admin';
+
     const updated = await prisma.$transaction(async (tx) => {
       const updatedBalance = await tx.accountBalance.update({
         where: { id: accountId },
@@ -58,9 +62,9 @@ router.post('/recharge', authMiddleware, requireRole('admin', 'gestionnaire'), a
 
       await tx.auditLog.create({
         data: {
-          nodeId: 'node-admin-01',
-          actorName: actorName || 'Alexis D\'Alexis (Admin)',
-          actorRole: 'admin',
+          nodeId: effectiveNodeId,
+          actorName: effectiveActorName,
+          actorRole: effectiveRole,
           action: 'RECHARGE_FLOTTE',
           targetType: 'treasury',
           details: `Injection de liquidités : +${amount.toLocaleString()} ${acc.currency} sur le compte ${acc.name}. Note : ${note || 'Réapprovisionnement'}.`,
@@ -82,7 +86,7 @@ router.post('/recharge', authMiddleware, requireRole('admin', 'gestionnaire'), a
   }
 });
 
-// 3. Métriques de volumes sur période (Authentifié)
+// 3. Métriques de volumes agrégées en base de données (Protection DoS mémoire)
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -95,17 +99,23 @@ router.get('/stats', authMiddleware, async (req, res) => {
       };
     }
 
-    const completed = await prisma.transaction.findMany({ where });
-
-    const totalVolumeDOP = completed.reduce((sum, t) => sum + t.amountDOP, 0);
-    const totalVolumeHTG = completed.reduce((sum, t) => sum + t.amountHTG, 0);
-    const totalFeesDOP = completed.reduce((sum, t) => sum + t.feeDOP, 0);
+    const [aggregates, count] = await Promise.all([
+      prisma.transaction.aggregate({
+        where,
+        _sum: {
+          amountDOP: true,
+          amountHTG: true,
+          feeDOP: true,
+        },
+      }),
+      prisma.transaction.count({ where }),
+    ]);
 
     return res.json({
-      count: completed.length,
-      totalVolumeDOP,
-      totalVolumeHTG,
-      totalFeesDOP,
+      count,
+      totalVolumeDOP: aggregates._sum.amountDOP || 0,
+      totalVolumeHTG: aggregates._sum.amountHTG || 0,
+      totalFeesDOP: aggregates._sum.feeDOP || 0,
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors du calcul des statistiques.' });

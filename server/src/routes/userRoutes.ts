@@ -219,6 +219,12 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
 router.patch('/:id/status', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Protection BOLA/IDOR : seul l'utilisateur concerné ou un administrateur peut modifier le statut
+    if (req.user?.id !== id && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Vous ne pouvez modifier que votre propre statut.' });
+    }
+
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
       return res.status(404).json({ error: 'Utilisateur introuvable.' });

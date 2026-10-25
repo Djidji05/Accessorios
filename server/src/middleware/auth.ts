@@ -17,34 +17,38 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dalexis_transferencia_super_secret_jwt_key_2026';
+export const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('FATAL: JWT_SECRET environment variable is not defined!');
+      process.exit(1);
+    }
+    return 'dalexis_transferencia_super_secret_jwt_key_2026';
+  }
+  return secret;
+};
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  let token: string | undefined;
+
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query && typeof req.query.token === 'string') {
+    // Support pour les éléments médias (images <img>, <a>)
+    token = req.query.token;
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'Accès non autorisé : Token manquant.' });
   }
 
-  const token = authHeader.split(' ')[1];
-
-  // 1. Support des sessions locales / tokens de secours (demo_token_...)
-  if (token && token.startsWith('demo_token_')) {
-    const userId = token.replace('demo_token_', '');
-    req.user = {
-      id: userId || 'cmtyvnlg40000d2uvmaf3szds',
-      email: 'ndjivensly@gmail.com',
-      role: 'admin',
-      name: 'Noel Djivensly',
-      nodeId: 'node-admin-01',
-    };
-    return next();
-  }
-
-  // 2. Vérification cryptographique JWT
+  // Vérification cryptographique JWT stricte (aucune porte dérobée ni bypass)
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    const decoded = jwt.verify(token, getJwtSecret()) as AuthUser;
     req.user = decoded;
-    next();
+    return next();
   } catch (err) {
     return res.status(401).json({ error: 'Token invalide ou expiré.' });
   }
@@ -58,3 +62,4 @@ export const requireRole = (...roles: string[]) => {
     next();
   };
 };
+

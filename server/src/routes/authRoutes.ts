@@ -1,14 +1,23 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../prisma';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, getJwtSecret } from '../middleware/auth';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'dalexis_transferencia_super_secret_jwt_key_2026';
 
-// 1. Connexion (Login avec Email ou Nom d'utilisateur)
-router.post('/login', async (req, res) => {
+// Rate limiting strict pour bloquer les attaques par force brute (10 tentatives par 15 min par IP)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Trop de tentatives de connexion infructueuses. Veuillez réessayer dans 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 1. Connexion (Login avec Email ou Nom d'utilisateur) avec limitation de débit
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const rawIdentifier = req.body.email || req.body.username || req.body.identifier || '';
     const password = req.body.password;
@@ -57,8 +66,8 @@ router.post('/login', async (req, res) => {
         role: user.role,
         nodeId: user.nodeId,
       },
-      JWT_SECRET,
-      { expiresIn: '7d' }
+      getJwtSecret(),
+      { expiresIn: '24h' }
     );
 
     const permissions = await prisma.userPermission.findUnique({

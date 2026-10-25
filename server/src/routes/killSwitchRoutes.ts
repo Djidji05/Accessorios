@@ -27,22 +27,25 @@ router.post('/toggle', authMiddleware, requireRole('admin'), async (req, res) =>
       return res.status(404).json({ error: 'Opérateur introuvable dans le Kill-Switch.' });
     }
 
+    const effectiveActorName = req.user?.name || 'Alexis D\'Alexis (Admin)';
+    const effectiveNodeId = req.user?.nodeId || 'node-admin-01';
+
     const updated = await prisma.killSwitch.update({
       where: { operator },
       data: {
         enabled: !current.enabled,
         reason: !current.enabled ? null : (reason || 'Verrouillage d\'urgence administrateur'),
-        updatedBy: actorName || 'Alexis D\'Alexis (Admin)',
+        updatedBy: effectiveActorName,
         updatedAt: new Date(),
       }
     });
 
-    // Tracé d'audit de haute priorité
+    // Tracé d'audit certifié avec identité JWT authentifiée
     await prisma.auditLog.create({
       data: {
-        nodeId: 'node-admin-01',
-        actorName: actorName || 'Alexis D\'Alexis (Admin)',
-        actorRole: 'admin',
+        nodeId: effectiveNodeId,
+        actorName: effectiveActorName,
+        actorRole: req.user?.role || 'admin',
         action: updated.enabled ? 'KILL_SWITCH_UNLOCKED' : 'KILL_SWITCH_LOCKED',
         targetType: 'kill_switch',
         details: updated.enabled 

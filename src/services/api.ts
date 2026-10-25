@@ -72,14 +72,24 @@ export const api = {
 
   // 3. Transactions & Guichet
   transactions: {
-    getAll: (params?: { status?: string; operator?: string; search?: string; limit?: number }) => {
+    getAll: async (params?: { status?: string; operator?: string; search?: string; limit?: number }) => {
       const query = new URLSearchParams();
       if (params?.status) query.append('status', params.status);
       if (params?.operator) query.append('operator', params.operator);
       if (params?.search) query.append('search', params.search);
       if (params?.limit) query.append('limit', String(params.limit));
       const qs = query.toString();
-      return request<Transaction[]>(`/transactions${qs ? `?${qs}` : ''}`);
+      const txs = await request<Transaction[]>(`/transactions${qs ? `?${qs}` : ''}`);
+      const token = localStorage.getItem('dalexis_token');
+      if (token && Array.isArray(txs)) {
+        return txs.map(t => ({
+          ...t,
+          proofUrl: t.proofUrl && t.proofUrl.startsWith('/api/') && !t.proofUrl.includes('token=')
+            ? `${t.proofUrl}?token=${encodeURIComponent(token)}`
+            : t.proofUrl
+        }));
+      }
+      return txs;
     },
     create: (data: {
       senderName: string;
@@ -96,11 +106,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-    complete: (id: string, proofNotes: string, proofUrl?: string, actorName?: string) =>
-      request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/complete`, {
+    complete: async (id: string, proofNotes: string, proofUrl?: string, actorName?: string) => {
+      const res = await request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/complete`, {
         method: 'PATCH',
         body: JSON.stringify({ proofNotes, proofUrl, actorName }),
-      }),
+      });
+      const token = localStorage.getItem('dalexis_token');
+      if (token && res?.transaction?.proofUrl && res.transaction.proofUrl.startsWith('/api/') && !res.transaction.proofUrl.includes('token=')) {
+        res.transaction.proofUrl = `${res.transaction.proofUrl}?token=${encodeURIComponent(token)}`;
+      }
+      return res;
+    },
     cancel: (id: string, reason: string, actorName?: string) =>
       request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/cancel`, {
         method: 'PATCH',

@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/authRoutes';
@@ -16,17 +18,44 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const allowedOrigins = [
+  process.env.CORS_ORIGIN || 'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+];
 
-// Middlewares
+// En-têtes HTTP de sécurité avec Helmet
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Permet le chargement des images/preuves
+  crossOriginEmbedderPolicy: false,
+}));
+
+// Limitation globale contre les attaques par déni de service (DDoS)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api', globalLimiter);
+
+// Middlewares CORS stricts avec liste blanche
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origine non autorisée par la politique CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ limit: '25mb', extended: true }));
+
+// Payload JSON limité à 10mb pour prévenir les attaques DoS par saturation mémoire
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Healthcheck
 app.get('/api/health', (_req, res) => {

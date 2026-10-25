@@ -25,11 +25,14 @@ router.put('/', authMiddleware, requireRole('admin'), async (req, res) => {
       return res.status(400).json({ error: 'Taux de change invalide.' });
     }
 
+    const effectiveActorName = req.user?.name || 'Alexis D\'Alexis (Admin)';
+    const effectiveNodeId = req.user?.nodeId || 'node-admin-01';
+
     const updated = await prisma.exchangeRate.upsert({
       where: { id: 'rate_official' },
       update: {
         rate: numRate,
-        updatedBy: actorName || 'Alexis D\'Alexis (Admin)',
+        updatedBy: effectiveActorName,
         updatedAt: new Date(),
       },
       create: {
@@ -37,16 +40,16 @@ router.put('/', authMiddleware, requireRole('admin'), async (req, res) => {
         baseCurrency: 'DOP',
         targetCurrency: 'HTG',
         rate: numRate,
-        updatedBy: actorName || 'Alexis D\'Alexis (Admin)',
+        updatedBy: effectiveActorName,
       }
     });
 
-    // Tracé d'audit
+    // Tracé d'audit authentifié
     await prisma.auditLog.create({
       data: {
-        nodeId: 'node-admin-01',
-        actorName: actorName || 'Alexis D\'Alexis (Admin)',
-        actorRole: 'admin',
+        nodeId: effectiveNodeId,
+        actorName: effectiveActorName,
+        actorRole: req.user?.role || 'admin',
         action: 'TAUX_CHANGE_MAJ',
         targetType: 'system',
         details: `Mise à jour du taux officiel : 1 Peso = ${numRate} HTG.`,

@@ -55,8 +55,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 1.1 Récupération de l'image de preuve (Servie directement en binaire optimisé avec cache)
-router.get('/:id/proof', async (req, res) => {
+// 1.1 Récupération de l'image de preuve (Sécurisé par authentification)
+router.get('/:id/proof', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const tx = await prisma.transaction.findUnique({
@@ -142,9 +142,10 @@ router.post('/', authMiddleware, async (req, res) => {
     const exchangeRate = officialRateObj?.rate || 2.35;
     const amountHTG = Math.round(amountDOP * exchangeRate);
 
-    // 2.3 Récupération de l'agent émetteur
-    const actor = currentUserId 
-      ? await prisma.user.findUnique({ where: { id: currentUserId } })
+    // 2.3 Récupération de l'agent émetteur authentifié
+    const userId = req.user?.id || currentUserId;
+    const actor = userId 
+      ? await prisma.user.findUnique({ where: { id: userId } })
       : await prisma.user.findFirst({ where: { role: 'admin' } });
 
     // 2.4 Détermination du canal et routage vers le bon agent
@@ -235,11 +236,11 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 3. Clôture de tâche / Preuve SMS (Agent Haïti ou Gestionnaire authentifié)
-router.patch('/:id/complete', authMiddleware, async (req, res) => {
+// 3. Clôture de tâche / Preuve SMS (Agent Haïti, Gestionnaire ou Admin authentifié)
+router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestionnaire', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { proofNotes, proofUrl, actorName } = req.body;
+    const { proofNotes, proofUrl } = req.body;
 
     const existing = await prisma.transaction.findUnique({ where: { id } });
     if (!existing) {
@@ -259,9 +260,9 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
 
       await tx.auditLog.create({
         data: {
-          nodeId: 'node-agent-haiti-01',
-          actorName: actorName || 'Agent Haïti',
-          actorRole: 'agent_haiti',
+          nodeId: req.user?.nodeId || 'node-agent-haiti-01',
+          actorName: req.user?.name || 'Agent Haïti',
+          actorRole: req.user?.role || 'agent_haiti',
           action: 'CLOTURE_TACHE',
           targetType: 'transaction',
           details: `Clôture certifiée de la transaction ${existing.referenceNumber}. Preuve : ${proofNotes || 'SMS confirmé'}.`,
@@ -292,7 +293,7 @@ router.patch('/:id/complete', authMiddleware, async (req, res) => {
 router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { reason, actorName } = req.body;
+    const { reason } = req.body;
 
     const existing = await prisma.transaction.findUnique({ where: { id } });
     if (!existing) {
@@ -327,12 +328,12 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
         });
       }
 
-      // 3. Tracé d'audit
+      // 3. Tracé d'audit certifié avec identité JWT
       await tx.auditLog.create({
         data: {
-          nodeId: 'node-admin-01',
-          actorName: actorName || 'Alexis D\'Alexis (Admin)',
-          actorRole: 'admin',
+          nodeId: req.user?.nodeId || 'node-admin-01',
+          actorName: req.user?.name || 'Alexis D\'Alexis (Admin)',
+          actorRole: req.user?.role || 'admin',
           action: 'ANNULATION_TRANSACTION',
           targetType: 'transaction',
           details: `Annulation et restitution du solde pour la transaction ${existing.referenceNumber}. Motif : ${reason || 'Non spécifié'}.`,
@@ -350,20 +351,29 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
   }
 });
 
-// 5. Modification administrative (Admin uniquement)
+// 5. Modification administrative avec liste blanche de champs (Admin uniquement)
 router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedFields = req.body;
+    const { senderName, senderPhone, receiverName, receiverPhone, operator, status, notes } = req.body;
 
     const existing = await prisma.transaction.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: 'Transaction introuvable.' });
     }
 
+    const allowedUpdates: any = {};
+    if (typeof senderName === 'string') allowedUpdates.senderName = senderName.trim();
+    if (typeof senderPhone === 'string') allowedUpdates.senderPhone = senderPhone.trim();
+    if (typeof receiverName === 'string') allowedUpdates.receiverName = receiverName.trim();
+    if (typeof receiverPhone === 'string') allowedUpdates.receiverPhone = receiverPhone.trim();
+    if (typeof operator === 'string') allowedUpdates.operator = operator.trim();
+    if (typeof status === 'string') allowedUpdates.status = status.trim();
+    if (typeof notes === 'string') allowedUpdates.proofNotes = notes.trim();
+
     const updated = await prisma.transaction.update({
       where: { id },
-      data: updatedFields,
+      data: allowedUpdates,
     });
 
     return res.json({ success: true, message: 'Transaction mise à jour.', transaction: updated });
