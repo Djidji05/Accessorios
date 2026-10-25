@@ -53,7 +53,9 @@ export const TreasuryView: React.FC = () => {
     dopToHtgRate,
     usdToHtgRate,
     serviceCommissionRates,
-    adminCommissionRate
+    adminCommissionRate,
+    t,
+    currentLang
   } = useApp();
   const [logs, setLogs] = useState(initialTreasuryLogs);
   const [logPage, setLogPage] = useState<number>(1);
@@ -291,10 +293,10 @@ export const TreasuryView: React.FC = () => {
         <div>
           <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-slate-800 dark:text-slate-200" />
-            <span>Trésorerie & Solde des Comptes</span>
+            <span>{t('treasury_title', 'Trésorerie & Solde des Comptes')}</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-            Suivi des réserves bancaires en Pesos (RD), Gourdes (Haïti) et Dollars (Zelle).
+            {t('treasury_subtitle', 'Suivi des réserves bancaires en Pesos (RD), Gourdes (Haïti) et Dollars (Zelle).')}
           </p>
         </div>
 
@@ -305,10 +307,10 @@ export const TreasuryView: React.FC = () => {
             <button
               onClick={() => setShowRechargeModal(true)}
               className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
-              title="Réapprovisionner une Flotte"
+              title={t('inject_float', 'Réapprovisionner une Flotte')}
             >
               <PlusCircle className="w-4 h-4" />
-              <span>Injecter Flotte</span>
+              <span>{t('inject_float', 'Injecter Flotte')}</span>
             </button>
           )}
 
@@ -316,7 +318,7 @@ export const TreasuryView: React.FC = () => {
             <button
               onClick={() => exportTreasuryReportToCSV(accountBalances, validPeriodTxs, `Alexis_Transferencia_Tresorerie_${selectedDateRange.preset || 'export'}`, logs)}
               className="px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs"
-              title="Exporter Rapport CSV Financier avec Journal des Opérations"
+              title="Exporter Rapport CSV Financier"
             >
               <Download className="w-3.5 h-3.5 text-slate-400" />
               <span>CSV</span>
@@ -325,7 +327,7 @@ export const TreasuryView: React.FC = () => {
             <button
               onClick={() => exportTreasuryReportToPDF(accountBalances, validPeriodTxs, `Rapport Financier & Trésorerie (${selectedDateRange.label})`, logs)}
               className="px-3 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-900 dark:border-slate-700 cursor-pointer shadow-2xs"
-              title="Générer & Télécharger le Rapport PDF Financier avec Journal des Opérations"
+              title="Générer & Télécharger le Rapport PDF Financier"
             >
               <Download className="w-3.5 h-3.5 text-emerald-400" />
               <span>PDF</span>
@@ -341,11 +343,11 @@ export const TreasuryView: React.FC = () => {
             💡
           </div>
           <div>
-            <p className="font-bold text-slate-900 dark:text-emerald-300">Comment lire cette page facilement ?</p>
+            <p className="font-bold text-slate-900 dark:text-emerald-300">{t('how_to_read', 'Comment lire cette page facilement ?')}</p>
             <p className="text-slate-600 dark:text-slate-400 mt-0.5 text-[11px] sm:text-xs">
-              <strong className="text-slate-900 dark:text-white">1. Soldes Réels :</strong> L'argent disponible pour payer les clients. &nbsp;•&nbsp; 
-              <strong className="text-slate-900 dark:text-white">2. Badges Vert/Rouge :</strong> Indiquent si le portefeuille est suffisant ou doit être rechargé. &nbsp;•&nbsp; 
-              <strong className="text-slate-900 dark:text-white">3. Devises :</strong> DOP = Pesos Dominicains, HTG = Gourdes Haïtiennes, USD = Dollars US.
+              <strong className="text-slate-900 dark:text-white">1. {currentLang === 'HT' ? 'Balans Reyèl' : (currentLang === 'ES' ? 'Saldos Reales' : 'Soldes Réels')} :</strong> {currentLang === 'HT' ? 'Lajan ki disponib pou peye kliyan yo.' : (currentLang === 'ES' ? 'Dinero disponible para pagar a los clientes.' : 'L\'argent disponible pour payer les clients.')} &nbsp;•&nbsp; 
+              <strong className="text-slate-900 dark:text-white">2. Badges :</strong> {currentLang === 'HT' ? 'Vèt = Optimal, Wouj = Pou rechaje.' : (currentLang === 'ES' ? 'Verde = Óptimo, Rojo = Recargar.' : 'Indiquent si le portefeuille est suffisant ou doit être rechargé.')} &nbsp;•&nbsp; 
+              <strong className="text-slate-900 dark:text-white">3. Devises :</strong> DOP = Pesos, HTG = Gourdes, USD = Dollars.
             </p>
           </div>
         </div>
@@ -358,7 +360,7 @@ export const TreasuryView: React.FC = () => {
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span>{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-slate-500 hover:text-slate-800 dark:hover:text-white text-xs underline font-bold cursor-pointer">Fermer</button>
+          <button onClick={() => setFeedback(null)} className="text-slate-500 hover:text-slate-800 dark:hover:text-white text-xs underline font-bold cursor-pointer">{t('close', 'Fermer')}</button>
         </div>
       )}
 
@@ -385,7 +387,7 @@ export const TreasuryView: React.FC = () => {
               }}
               className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm whitespace-nowrap transition-all self-end sm:self-auto cursor-pointer"
             >
-              Injecter Flotte
+              {t('inject_float', 'Injecter Flotte')}
             </button>
           )}
         </div>
@@ -400,7 +402,7 @@ export const TreasuryView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
-                <span>Revenu Total & Performance Plateforme</span>
+                <span>{t('gross_revenue', 'Revenu Total & Performance Plateforme')}</span>
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5">
                 Vue consolidée : Frais Guichet (3%), Commissions Admin et Virements Zelle (USD).
@@ -422,7 +424,7 @@ export const TreasuryView: React.FC = () => {
           {/* Card 1: Revenu Brut Total */}
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-2 flex flex-col justify-between">
             <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Revenu Brut Total Agence</span>
+              <span>{t('gross_revenue', 'Revenu Brut Total Agence')}</span>
               <span className="text-emerald-400 text-[10px] bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-800">Global</span>
             </div>
             <div>
@@ -443,7 +445,7 @@ export const TreasuryView: React.FC = () => {
           {/* Card 2: Commissions Admin */}
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-2 flex flex-col justify-between">
             <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Commissions Admin Encaissées</span>
+              <span>{t('admin_commissions_enc', 'Commissions Admin Encaissées')}</span>
               <span className="text-blue-400 text-[10px] bg-blue-950 px-2 py-0.5 rounded-full border border-blue-800">Net Direc.</span>
             </div>
             <div>
@@ -498,7 +500,7 @@ export const TreasuryView: React.FC = () => {
             </p>
           </div>
           <div className="pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 font-medium">
-            <span>Comptes Bancaires</span>
+            <span>{t('bank_accounts', 'Comptes Bancaires')}</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold">+12.4%</span>
           </div>
         </div>
@@ -506,7 +508,7 @@ export const TreasuryView: React.FC = () => {
         {/* Card 2: HTG Flotte & Portefeuilles */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm space-y-3 sm:space-y-4 flex flex-col justify-between">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 sm:pb-3">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Flottes Haïti (HTG)</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('haiti_floats', 'Flottes Haïti (HTG)')}</span>
             <Smartphone className="w-4 h-4 text-slate-400" />
           </div>
           <div className="space-y-1">
@@ -514,12 +516,12 @@ export const TreasuryView: React.FC = () => {
               {totalHTG.toLocaleString()} <span className="text-xs font-bold text-slate-400">HTG</span>
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-              Portefeuilles MonCash & Natcash
+              {t('wallets_moncash_natcash', 'Portefeuilles MonCash & Natcash')}
             </p>
           </div>
           <div className="pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 font-medium">
-            <span>Ratio : 60% MC / 40% NC</span>
-            <span className="text-slate-800 dark:text-slate-200 font-bold">Taux: {dopToHtgRate}</span>
+            <span>{t('ratio_mc_nc', 'Ratio : 60% MC / 40% NC')}</span>
+            <span className="text-slate-800 dark:text-slate-200 font-bold">{t('rate_label', 'Taux')}: {dopToHtgRate}</span>
           </div>
         </div>
 
@@ -538,7 +540,7 @@ export const TreasuryView: React.FC = () => {
             </p>
           </div>
           <div className="pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 font-medium">
-            <span>Vitesse Moyenne</span>
+            <span>{t('avg_speed', 'Vitesse Moyenne')}</span>
             <span className="text-slate-900 dark:text-white font-bold">2.4 min</span>
           </div>
         </div>
@@ -554,10 +556,10 @@ export const TreasuryView: React.FC = () => {
             </div>
             <div>
               <h3 className="font-extrabold text-white text-sm tracking-tight flex items-center gap-2">
-                <span>Espace Spécial Zelle Pay (USD) & Commissions</span>
+                <span>{t('zelle_special_space', 'Espace Spécial Zelle Pay (USD) & Commissions')}</span>
               </h3>
               <p className="text-[11px] text-purple-200 font-medium mt-0.5">
-                Volume circulé en Dollars USD et conversion certifiée en Pesos (DOP).
+                {t('zelle_volume_circulated_desc', 'Volume circulé en Dollars USD et conversion certifiée en Pesos (DOP).')}
               </p>
             </div>
           </div>
@@ -575,51 +577,51 @@ export const TreasuryView: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1">
           {/* Box 1: Total Volume USD */}
           <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Volume Circulé Zelle</span>
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">{t('zelle_circulated_volume', 'Volume Circulé Zelle')}</span>
             <p className="text-xl sm:text-2xl font-black font-mono text-white">
               ${totalZelleVolumeUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-purple-300">USD</span>
             </p>
             <p className="text-[10px] text-purple-300 font-medium">
-              ≈ {totalZelleVolumeDOP.toLocaleString()} DOP au cours bancaire
+              ≈ {totalZelleVolumeDOP.toLocaleString()} DOP {t('at_bank_rate', 'au cours bancaire')}
             </p>
           </div>
 
           {/* Box 2: Commission Zelle USD */}
           <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Commission Agence (USD)</span>
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">{t('agency_comm_usd', 'Commission Agence (USD)')}</span>
             <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
               ${totalZelleCommissionUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-purple-300">USD</span>
             </p>
             <p className="text-[10px] text-purple-300 font-medium">
-              Taux appliqué : {zelleCommRate}% du volume Zelle
+              {t('applied_rate', 'Taux appliqué')} : {zelleCommRate}% {t('of_zelle_volume', 'du volume Zelle')}
             </p>
           </div>
 
           {/* Box 3: Commission Convertie en DOP */}
           <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Ajout aux Commissions (DOP)</span>
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">{t('added_to_comm_dop', 'Ajout aux Commissions (DOP)')}</span>
             <p className="text-xl sm:text-2xl font-black font-mono text-blue-300">
               +{totalZelleCommissionDOP.toLocaleString()} <span className="text-xs font-bold text-purple-300">DOP</span>
             </p>
             <p className="text-[10px] text-purple-300 font-medium">
-              Converti à 1 USD = {usdToDopRate.toFixed(1)} DOP
+              {t('converted_at', 'Converti à')} 1 USD = {usdToDopRate.toFixed(1)} DOP
             </p>
           </div>
 
           {/* Box 4: Équivalence HTG */}
           <div className="bg-purple-950/70 border border-purple-700/80 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Volume Équivalent Haïti</span>
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">{t('haiti_equiv_volume', 'Volume Équivalent Haïti')}</span>
             <p className="text-xl sm:text-2xl font-black font-mono text-white">
               {totalZelleVolumeHTG.toLocaleString()} <span className="text-xs font-bold text-purple-300">HTG</span>
             </p>
             <p className="text-[10px] text-purple-300 font-medium">
-              Calculé au taux USD de {usdToHtgRate || 140.5} HTG
+              {t('calculated_at_usd_rate', 'Calculé au taux USD de')} {usdToHtgRate || 140.5} HTG
             </p>
           </div>
         </div>
 
         <div className="pt-2 text-[10px] sm:text-[11px] text-purple-200 border-t border-purple-800/80 flex items-center justify-between flex-wrap gap-2">
-          <span>💡 <strong>Note de conversion :</strong> Les commissions Zelle en Dollars sont automatiquement converties en Pesos (DOP) au taux officiel et s'ajoutent aux commissions globales de la plateforme.</span>
+          <span>💡 <strong>{t('conversion_note', 'Note de conversion')} :</strong> {t('conversion_note_desc', 'Les commissions Zelle en Dollars sont automatiquement converties en Pesos (DOP) au taux officiel et s\'ajoutent aux commissions globales de la plateforme.')}</span>
         </div>
       </div>
 
@@ -629,11 +631,11 @@ export const TreasuryView: React.FC = () => {
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight flex items-center gap-2">
               <Layers className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-              <span>Volume Transité par Opérateur ({selectedDateRange.label})</span>
+              <span>{t('volume_by_operator', 'Volume Transité par Opérateur')} ({selectedDateRange.label})</span>
             </h3>
           </div>
           <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
-            7 Canaux Actifs
+            7 {t('active_channels', 'Canaux Actifs')}
           </span>
         </div>
 
@@ -664,8 +666,8 @@ export const TreasuryView: React.FC = () => {
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-slate-400">{data.count} ops</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Actif</span>
+                  <span className="text-slate-400">{data.count} {t('ops_short', 'ops')}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t('active_status', 'Actif')}</span>
                 </div>
               </div>
             );
@@ -702,13 +704,13 @@ export const TreasuryView: React.FC = () => {
             <div className="flex items-center gap-3">
               <CreditCard className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Comptes Opérateurs & Flottes</h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Suivi individuel par compte cible</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t('operator_accounts_floats', 'Comptes Opérateurs & Flottes')}</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{t('individual_tracking_target', 'Suivi individuel par compte cible')}</p>
               </div>
             </div>
 
             <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-mono">
-              {displayAccounts.length} Comptes
+              {displayAccounts.length} {t('accounts_count', 'Comptes')}
             </span>
           </div>
 
@@ -729,7 +731,7 @@ export const TreasuryView: React.FC = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-                      {bal.operator === 'natcash' ? 'Solde Natcash & Natcom (HT)' : bal.name}
+                      {bal.operator === 'natcash' ? (t('solde_natcash_natcom', 'Solde Natcash & Natcom (HT)')) : bal.name}
                     </span>
                     <span className="text-[10px] text-slate-400 font-bold uppercase">
                       {bal.operator === 'natcash' ? 'Natcash / Natcom' : bal.operator}
@@ -744,7 +746,7 @@ export const TreasuryView: React.FC = () => {
                       <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
                         isLow ? 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800' : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800'
                       }`}>
-                        {isLow ? 'ALERTE' : 'OPTIMAL'}
+                        {isLow ? t('alert_status', 'ALERTE') : t('optimal_status', 'OPTIMAL')}
                       </span>
                     </div>
 
@@ -760,7 +762,7 @@ export const TreasuryView: React.FC = () => {
                   </div>
 
                   <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span className="truncate">N° {bal.accountNumber || 'Interne'}</span>
+                    <span className="truncate">N° {bal.accountNumber || t('internal', 'Interne')}</span>
                     {currentUser.role === 'admin' && (
                       <button
                         onClick={() => {
@@ -769,7 +771,7 @@ export const TreasuryView: React.FC = () => {
                         }}
                         className="text-slate-900 dark:text-blue-400 font-bold hover:underline cursor-pointer"
                       >
-                        Action →
+                        {t('action_arrow', 'Action →')}
                       </button>
                     )}
                   </div>
@@ -787,8 +789,8 @@ export const TreasuryView: React.FC = () => {
           <div className="flex items-center gap-3">
             <History className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Journal des Opérations</h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Historique des réapprovisionnements & mouvements</p>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t('operations_journal', 'Journal des Opérations')}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{t('recharge_movements_history', 'Historique des réapprovisionnements & mouvements')}</p>
             </div>
           </div>
 
@@ -804,13 +806,13 @@ export const TreasuryView: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950/60 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-y border-slate-200 dark:border-slate-800">
-                <th className="py-3 px-4">Référence</th>
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Compte Source</th>
-                <th className="py-3 px-4 text-right">Montant</th>
-                <th className="py-3 px-4">Auteur</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4 text-center">Statut</th>
+                <th className="py-3 px-4">{t('reference', 'Référence')}</th>
+                <th className="py-3 px-4">{t('type', 'Type')}</th>
+                <th className="py-3 px-4">{t('source_account', 'Compte Source')}</th>
+                <th className="py-3 px-4 text-right">{t('amount', 'Montant')}</th>
+                <th className="py-3 px-4">{t('author', 'Auteur')}</th>
+                <th className="py-3 px-4">{t('date', 'Date')}</th>
+                <th className="py-3 px-4 text-center">{t('user_status', 'Statut')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
@@ -830,7 +832,7 @@ export const TreasuryView: React.FC = () => {
                   <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-mono">{op.date}</td>
                   <td className="py-3.5 px-4 text-center">
                     <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full text-[10px] font-bold">
-                      Validé
+                      {t('validated', 'Validé')}
                     </span>
                   </td>
                 </tr>
@@ -857,7 +859,7 @@ export const TreasuryView: React.FC = () => {
                 </div>
 
                 <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full text-[9px] font-bold">
-                  Validé
+                  {t('validated', 'Validé')}
                 </span>
               </div>
 
@@ -871,7 +873,7 @@ export const TreasuryView: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-400">
-                <span>Auteur : <strong className="text-slate-600 dark:text-slate-300 font-semibold">{op.author}</strong></span>
+                <span>{t('author', 'Auteur')} : <strong className="text-slate-600 dark:text-slate-300 font-semibold">{op.author}</strong></span>
                 <span className="font-mono">{op.date}</span>
               </div>
             </div>
@@ -902,8 +904,8 @@ export const TreasuryView: React.FC = () => {
                   <PlusCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 dark:text-white text-base">Réapprovisionner</h3>
-                  <p className="text-[11px] text-slate-400 font-medium">Injection de fonds dans une flotte</p>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">{t('inject_float', 'Réapprovisionner')}</h3>
+                  <p className="text-[11px] text-slate-400 font-medium">{t('inject_fund_desc', 'Injection de fonds dans une flotte')}</p>
                 </div>
               </div>
               <button 
@@ -916,7 +918,7 @@ export const TreasuryView: React.FC = () => {
 
             <form onSubmit={handleRechargeSubmit} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1.5">Compte Cible</label>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1.5">{t('target_account', 'Compte Cible')}</label>
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
@@ -924,14 +926,14 @@ export const TreasuryView: React.FC = () => {
                 >
                   {displayAccounts.map(acc => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.operator === 'natcash' ? 'Solde Natcash & Natcom (Natcom HT)' : acc.name} ({acc.balance.toLocaleString()} {acc.currency === 'DOP' ? 'Pesos' : acc.currency})
+                      {acc.operator === 'natcash' ? (t('solde_natcash_natcom', 'Solde Natcash & Natcom (HT)')) : acc.name} ({acc.balance.toLocaleString()} {acc.currency === 'DOP' ? 'Pesos' : acc.currency})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1.5">Montant à Injecter</label>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1.5">{t('inject_amount', 'Montant à Injecter')}</label>
                 <input
                   type="number"
                   value={rechargeAmount}
@@ -957,7 +959,7 @@ export const TreasuryView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1.5">Référence / Note (Optionnel)</label>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1.5">{t('reference_optional', 'Référence / Note (Optionnel)')}</label>
                 <input
                   type="text"
                   value={rechargeNote}
@@ -973,14 +975,14 @@ export const TreasuryView: React.FC = () => {
                   onClick={() => setShowRechargeModal(false)}
                   className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
                 >
-                  Annuler
+                  {t('cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Confirmer</span>
+                  <span>{t('confirm', 'Confirmer')}</span>
                 </button>
               </div>
             </form>

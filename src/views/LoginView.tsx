@@ -13,7 +13,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const LoginView: React.FC = () => {
-  const { login } = useApp();
+  const { login, t, currentLang, setLanguage } = useApp();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +32,13 @@ export const LoginView: React.FC = () => {
     setErrorMessage(null);
 
     if (!identifier.trim() || !password.trim()) {
-      setErrorMessage('Veuillez saisir votre nom d\'utilisateur ou numéro et votre mot de passe.');
+      setErrorMessage(
+        currentLang === 'HT' 
+          ? 'Tanpri mete non itilizatè oswa nimewo w ak modpas ou.' 
+          : (currentLang === 'ES' 
+            ? 'Por favor ingrese su usuario o teléfono y su contraseña.' 
+            : 'Veuillez saisir votre nom d\'utilisateur ou numéro et votre mot de passe.')
+      );
       return;
     }
 
@@ -40,7 +46,13 @@ export const LoginView: React.FC = () => {
     try {
       const result = await login(identifier.trim(), password);
       if (!result.success) {
-        setErrorMessage(result.message || 'Identifiants invalides. Veuillez vérifier vos accès.');
+        setErrorMessage(result.message || (
+          currentLang === 'HT'
+            ? 'Enfòmasyon sa yo pa kòrèk. Tanpri tcheke aksè ou.'
+            : (currentLang === 'ES'
+              ? 'Credenciales inválidas. Por favor verifique sus accesos.'
+              : 'Identifiants invalides. Veuillez vérifier vos accès.')
+        ));
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Impossible de se connecter au serveur backend.');
@@ -48,6 +60,12 @@ export const LoginView: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  const languages: { code: 'FR' | 'HT' | 'ES'; label: string; flag: string }[] = [
+    { code: 'FR', label: 'Français', flag: '🇫🇷' },
+    { code: 'HT', label: 'Kreyòl', flag: '🇭🇹' },
+    { code: 'ES', label: 'Español', flag: '🇩🇴' },
+  ];
 
   return (
     <div className="min-h-screen w-full bg-slate-50 text-slate-800 relative overflow-hidden font-sans flex items-center justify-center p-4 sm:p-6 lg:p-12 transition-colors duration-300 selection:bg-blue-600 selection:text-white">
@@ -67,7 +85,7 @@ export const LoginView: React.FC = () => {
       />
 
       {/* Top Header Bar inside Login Page */}
-      <div className="absolute top-6 left-6 right-6 hidden md:flex items-center justify-between z-20">
+      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
             <Sparkles className="w-5 h-5" />
@@ -75,6 +93,26 @@ export const LoginView: React.FC = () => {
           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
             Alexis <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-extrabold uppercase tracking-wider">Transferencia</span>
           </span>
+        </div>
+
+        {/* Global Language Selector */}
+        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200 shadow-sm">
+          {languages.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => setLanguage(l.code)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentLang === l.code
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <span>{l.flag}</span>
+              <span className="hidden sm:inline">{l.label}</span>
+              <span className="sm:hidden">{l.code}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -91,10 +129,14 @@ export const LoginView: React.FC = () => {
               <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 bg-clip-text text-transparent">Transferencia</span>
             </h1>
             <span className="text-sm font-bold tracking-widest text-slate-500 uppercase block mt-4">
-              PLATAFORMA DE TRANSFERENCIAS
+              {currentLang === 'HT' ? 'PLATFÒM TRANSFÈ SAN KASE TÈT' : (currentLang === 'ES' ? 'PLATAFORMA DE TRANSFERENCIAS' : 'PLATEFORME DE TRANSFERT UNIFIÉE')}
             </span>
             <p className="mt-4 text-sm text-slate-500 font-medium leading-relaxed max-w-md">
-              La solution unifiée et sécurisée pour la gestion de vos transferts entre la République Dominicaine et Haïti, avec rapprochement automatique.
+              {currentLang === 'HT'
+                ? 'Solisyon senp epi ansekirite pou jere transfè ant Repiblik Dominikèn ak Ayiti, ak verifikasyon otomatik.'
+                : (currentLang === 'ES'
+                  ? 'La solución unificada y segura para la gestión de sus transferencias entre República Dominicana y Haití.'
+                  : 'La solution unifiée et sécurisée pour la gestion de vos transferts entre la République Dominicaine et Haïti, avec rapprochement automatique.')}
             </p>
           </div>
 
@@ -105,8 +147,12 @@ export const LoginView: React.FC = () => {
                 <Globe2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Transferts R.D. ⇄ Haïti sécurisés</h3>
-                <p className="text-xs text-slate-500 mt-1.5 leading-snug">Rapprochements automatiques Natcash & MonCash pour une comptabilité sans faille.</p>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {currentLang === 'HT' ? 'Transfè R.D. ⇄ Ayiti an sekirite' : (currentLang === 'ES' ? 'Transferencias R.D. ⇄ Haití seguras' : 'Transferts R.D. ⇄ Haïti sécurisés')}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1.5 leading-snug">
+                  {currentLang === 'HT' ? 'Sistèm otomatik Natcash ak MonCash pou tout kont kòrèk.' : (currentLang === 'ES' ? 'Conciliaciones automáticas Natcash y MonCash para una contabilidad exacta.' : 'Rapprochements automatiques Natcash & MonCash pour une comptabilité sans faille.')}
+                </p>
               </div>
             </div>
 
@@ -115,8 +161,12 @@ export const LoginView: React.FC = () => {
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Taux officiel actualisé en direct</h3>
-                <p className="text-xs text-slate-500 mt-1.5 leading-snug">Les taux de change sont synchronisés en temps réel pour des conversions exactes.</p>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {currentLang === 'HT' ? 'Tays ofisyèl an dirèk' : (currentLang === 'ES' ? 'Tasa oficial actualizada en vivo' : 'Taux officiel actualisé en direct')}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1.5 leading-snug">
+                  {currentLang === 'HT' ? 'Tays yo mete ajou touswit pou konvèsyon yo toujou egzat.' : (currentLang === 'ES' ? 'Tasas sincronizadas en tiempo real para conversiones precisas.' : 'Les taux de change sont synchronisés en temps réel pour des conversions exactes.')}
+                </p>
               </div>
             </div>
 
@@ -125,8 +175,12 @@ export const LoginView: React.FC = () => {
                 <Zap className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Contrôle & Supervision</h3>
-                <p className="text-xs text-slate-500 mt-1.5 leading-snug">Séparation stricte des rôles avec validation par preuves et journaux d'audit inaltérables.</p>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {currentLang === 'HT' ? 'Kontwòl & Sipèvizyon' : (currentLang === 'ES' ? 'Control y Supervisión' : 'Contrôle & Supervision')}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1.5 leading-snug">
+                  {currentLang === 'HT' ? 'Separasyon wòl klè ak prèv foto obligatwa pou chak operasyon.' : (currentLang === 'ES' ? 'Separación estricta de roles con validación por comprobantes.' : 'Séparation stricte des rôles avec validation par preuves et journaux d\'audit inaltérables.')}
+                </p>
               </div>
             </div>
           </div>
@@ -143,10 +197,10 @@ export const LoginView: React.FC = () => {
             {/* Title */}
             <div className="mb-8">
               <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                Connexion au Portail
+                {t('login_title', 'Connexion au Portail')}
               </h2>
               <p className="text-sm text-slate-500 font-medium mt-2">
-                Veuillez entrer vos identifiants pour accéder à votre espace sécurisé.
+                {t('login_subtitle', 'Veuillez entrer vos identifiants pour accéder à votre espace sécurisé.')}
               </p>
             </div>
 
@@ -174,7 +228,7 @@ export const LoginView: React.FC = () => {
                     autoCorrect="off"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Nom d'utilisateur ou Téléphone"
+                    placeholder={t('identifier_placeholder', "Nom d'utilisateur ou Téléphone")}
                     className="w-full pl-11 pr-4 py-3 bg-slate-100/70 hover:bg-slate-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none transition-all shadow-inner font-medium"
                   />
                 </div>
@@ -191,7 +245,7 @@ export const LoginView: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Saisissez votre mot de passe"
+                    placeholder={t('password_placeholder', "Saisissez votre mot de passe")}
                     className="w-full pl-11 pr-11 py-3 bg-slate-100/70 hover:bg-slate-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none transition-all font-mono shadow-inner"
                   />
                   <button
@@ -213,10 +267,10 @@ export const LoginView: React.FC = () => {
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Connexion en cours...</span>
+                    <span>{t('loading', 'Connexion en cours...')}</span>
                   </>
                 ) : (
-                  <span>Se Connecter</span>
+                  <span>{t('connect', 'Se Connecter')}</span>
                 )}
               </button>
             </form>

@@ -295,18 +295,18 @@ export const OperationsGuichetView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              {t('counter_rd_title')}
+              {t('counter_rd_title', 'Saisie Opérations au Guichet (R.D.)')}
             </h2>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Interface taillée pour la saisie rapide au comptoir, l'encaissement en Pesos (DOP) et le décaissement en Gourdes (HTG).
+            {t('operational_portal', 'Interface taillée pour la saisie rapide au comptoir, l\'encaissement en Pesos (DOP) et le décaissement en Gourdes (HTG).')}
           </p>
         </div>
 
         {/* Live Exchange Rate Display / Controller */}
         <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 self-start md:self-auto">
           <div className="text-right">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t('rate_label')}</span>
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t('rate_label', 'Taux officiel')}</span>
             <span className="text-sm font-black text-slate-900 font-mono">
               100 DOP = {Math.round(dopToHtgRate * 100)} HTG
             </span>
@@ -315,11 +315,11 @@ export const OperationsGuichetView: React.FC = () => {
           {currentUser.role === 'admin' && (
             <button
               onClick={() => setIsEditingRate(!isEditingRate)}
-              className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors text-xs font-bold flex items-center gap-1 shadow-xs"
+              className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
               title="Modifier le Taux de Change Officiel"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Ajuster</span>
+              <span>{t('edit', 'Ajuster')}</span>
             </button>
           )}
         </div>
@@ -331,8 +331,8 @@ export const OperationsGuichetView: React.FC = () => {
           <div className="flex items-center gap-2">
             <RefreshCcw className="w-5 h-5 text-blue-600" />
             <div>
-              <p className="text-xs font-extrabold text-blue-900">Ajustement du Taux de Change Appliqué</p>
-              <p className="text-[11px] text-blue-700">Modifie le taux de conversion immédiatement pour toutes les nouvelles opérations.</p>
+              <p className="text-xs font-extrabold text-blue-900">{t('official_exchange_rate', 'Ajustement du Taux de Change Appliqué')}</p>
+              <p className="text-[11px] text-blue-700">{t('rate_today', 'Modifie le taux de conversion immédiatement pour toutes les nouvelles opérations.')}</p>
             </div>
           </div>
 
@@ -347,16 +347,16 @@ export const OperationsGuichetView: React.FC = () => {
             />
             <button
               type="submit"
-              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 shadow-xs"
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 shadow-xs cursor-pointer"
             >
-              Appliquer
+              {t('save', 'Appliquer')}
             </button>
             <button
               type="button"
               onClick={() => setIsEditingRate(false)}
-              className="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-300"
+              className="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-300 cursor-pointer"
             >
-              Annuler
+              {t('cancel', 'Annuler')}
             </button>
           </form>
         </div>
@@ -376,14 +376,14 @@ export const OperationsGuichetView: React.FC = () => {
                     {lastCreatedTx.referenceNumber}
                   </span>
                   <span className="text-xs font-extrabold uppercase text-blue-400">
-                    Transmis avec succès au flux opérationnel
+                    {t('transfer_sent', 'Transmis avec succès au flux opérationnel')}
                   </span>
                 </div>
                 <h3 className="text-lg font-black mt-0.5 text-white">
-                  {lastCreatedTx.amountDOP.toLocaleString()} DOP versé ➔ {lastCreatedTx.amountHTG.toLocaleString()} HTG à décaisser
+                  {lastCreatedTx.amountDOP.toLocaleString()} DOP ➔ {lastCreatedTx.amountHTG.toLocaleString()} HTG
                 </h3>
                 <p className="text-xs text-slate-400 font-medium">
-                  Bénéficiaire : <strong className="text-slate-200">{lastCreatedTx.receiverName}</strong> ({lastCreatedTx.receiverPhone}) • Opérateur : <strong className="text-slate-200">{lastCreatedTx.operator.toUpperCase()}</strong>
+                  {t('beneficiary', 'Bénéficiaire')} : <strong className="text-slate-200">{lastCreatedTx.receiverName}</strong> ({lastCreatedTx.receiverPhone}) • {t('operator', 'Opérateur')} : <strong className="text-slate-200">{lastCreatedTx.operator.toUpperCase()}</strong>
                 </p>
               </div>
             </div>
@@ -394,21 +394,21 @@ export const OperationsGuichetView: React.FC = () => {
                 className="px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-2 cursor-pointer"
               >
                 <FileText className="w-4 h-4 text-blue-100" />
-                <span>Reçu Guichet (PDF / Partager)</span>
+                <span>{t('download_receipt', 'Reçu Guichet (PDF / Partager)')}</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('tasks')}
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs transition-all border border-slate-700 flex items-center gap-2 cursor-pointer"
               >
-                <span>Suivre dans Mes Transactions</span>
+                <span>{t('my_transactions_day', 'Suivre dans Mes Transactions')}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
 
               <button
                 onClick={() => setLastCreatedTx(null)}
-                className="p-2 text-slate-500 hover:text-white text-xs font-bold"
-                title="Masquer cette bannière"
+                className="p-2 text-slate-500 hover:text-white text-xs font-bold cursor-pointer"
+                title={t('close', 'Fermer')}
               >
                 ✕
               </button>
@@ -424,7 +424,7 @@ export const OperationsGuichetView: React.FC = () => {
             <AlertTriangle className="w-5 h-5 text-rose-200" />
             <span>{feedback.message}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="underline text-white font-bold">Fermer</button>
+          <button onClick={() => setFeedback(null)} className="underline text-white font-bold cursor-pointer">{t('close', 'Fermer')}</button>
         </div>
       )}
 
@@ -438,10 +438,10 @@ export const OperationsGuichetView: React.FC = () => {
           <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                1. Sélection du Service & Opérateur (Logos Officiels)
+                {t('step1_service', '1. Sélection du Service & Opérateur')}
               </label>
               <span className="text-[11px] font-bold text-slate-400">
-                Cliquez directement sur l'opérateur pour éviter toute erreur
+                {t('service_selection', 'Cliquez directement sur l\'opérateur')}
               </span>
             </div>
 
@@ -534,16 +534,16 @@ export const OperationsGuichetView: React.FC = () => {
               <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                    2. Informations Récepteur {opLabel ? `(${opLabel})` : ''}
+                    {t('step2_parties', '2. Informations Récepteur')} {opLabel ? `(${opLabel})` : ''}
                   </label>
                   <span className="text-[11px] font-bold text-slate-400">
-                    {isTelecom ? 'Entrez uniquement le numéro de téléphone à recharger' : 'Saisissez les informations du compte récepteur (MonCash / Natcash)'}
+                    {isTelecom ? 'Entrez uniquement le numéro de téléphone à recharger' : t('receiver_info', 'Saisissez les informations du compte récepteur')}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-4">
                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
-                    {isTelecom ? `Recharge Directe (${opLabel})` : 'Bénéficiaire Récepteur (Haïti 🇭🇹)'}
+                    {isTelecom ? `Recharge Directe (${opLabel})` : t('receiver_info', 'Bénéficiaire Récepteur (Haïti 🇭🇹)')}
                   </span>
 
                   <div className={`grid grid-cols-1 ${isTelecom ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-4`}>
@@ -551,7 +551,7 @@ export const OperationsGuichetView: React.FC = () => {
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                           <User className="w-3.5 h-3.5 text-blue-500" />
-                          <span>Nom complet du bénéficiaire en Haïti</span>
+                          <span>{t('receiver_name', 'Nom complet du bénéficiaire')}</span>
                         </label>
                         <input
                           type="text"
@@ -567,7 +567,7 @@ export const OperationsGuichetView: React.FC = () => {
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                         <Phone className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{isTelecom ? `Numéro de Téléphone à Recharger (${opLabel})` : 'Numéro Portefeuille / Compte (Haïti)'}</span>
+                        <span>{isTelecom ? `Numéro de Téléphone à Recharger (${opLabel})` : t('receiver_phone', 'Numéro Portefeuille / Compte')}</span>
                       </label>
                       <input
                         type="tel"
@@ -594,7 +594,7 @@ export const OperationsGuichetView: React.FC = () => {
             <div className="flex items-center justify-between">
               <label className="block text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <Calculator className="w-4 h-4 text-emerald-600" />
-                <span>3. Saisie Financière & Conversion</span>
+                <span>{t('step3_amounts', '3. Saisie Financière & Conversion')}</span>
               </label>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                 Temps Réel
@@ -604,7 +604,7 @@ export const OperationsGuichetView: React.FC = () => {
             {/* Amount in DOP */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Montant en Pesos dominicains (DOP) versé :
+                {t('amount_dop', 'Montant en Pesos dominicains (DOP) versé :')}
               </label>
               <div className="relative">
                 <input
@@ -625,7 +625,7 @@ export const OperationsGuichetView: React.FC = () => {
             {/* Quick Amount Preset Pills */}
             <div className="space-y-1.5">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                Montants rapides au comptoir :
+                {t('quick_amounts', 'Montants rapides au comptoir :')}
               </span>
               <div className="grid grid-cols-3 gap-1.5">
                 {QUICK_AMOUNTS_DOP.map((preset) => (
@@ -633,7 +633,7 @@ export const OperationsGuichetView: React.FC = () => {
                     key={preset}
                     type="button"
                     onClick={() => setAmountDOP(preset.toString())}
-                    className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all border ${
+                    className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer ${
                       numAmountDOP === preset
                         ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -648,24 +648,24 @@ export const OperationsGuichetView: React.FC = () => {
             {/* Calculations Breakdown */}
             <div className="p-4 bg-slate-50/90 rounded-2xl space-y-3 text-xs border border-slate-200/70 font-sans">
               <div className="flex justify-between items-center text-slate-600">
-                <span className="whitespace-nowrap font-medium">Taux appliqué :</span>
+                <span className="whitespace-nowrap font-medium">{t('rate_label', 'Taux appliqué')} :</span>
                 <span className="font-mono font-bold text-slate-900 whitespace-nowrap">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-slate-200/70 text-slate-900">
-                <span className="font-black text-xs uppercase tracking-tight whitespace-nowrap">Montant net en Haïti :</span>
+                <span className="font-black text-xs uppercase tracking-tight whitespace-nowrap">{t('received_htg', 'Montant net en Haïti :')}</span>
                 <span className="font-mono font-black text-blue-600 text-lg whitespace-nowrap">
                   {computedHTG.toLocaleString()} HTG
                 </span>
               </div>
 
               <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
-                <span className="whitespace-nowrap">Frais de service agence (3%) :</span>
+                <span className="whitespace-nowrap">{t('fees', 'Frais de service (3%)')} :</span>
                 <span className="font-mono font-bold whitespace-nowrap">{feeDOP.toLocaleString()} DOP</span>
               </div>
 
               <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                <span className="whitespace-nowrap">Commission agence (1%) :</span>
+                <span className="whitespace-nowrap">{t('admin_comm', 'Commission agence')} :</span>
                 <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{commissionDOP.toLocaleString()} DOP</span>
               </div>
             </div>
@@ -694,7 +694,7 @@ export const OperationsGuichetView: React.FC = () => {
               }`}
             >
               <Send className="w-4 h-4" />
-              <span>Valider et Envoyer au Flux</span>
+              <span>{t('validate_transaction', 'Valider et Envoyer au Flux')}</span>
             </button>
           </div>
         </div>
@@ -709,9 +709,9 @@ export const OperationsGuichetView: React.FC = () => {
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Mes Dernières Opérations au Comptoir</h3>
+              <h3 className="font-extrabold text-slate-900 text-sm">{t('my_transactions_day', 'Mes Dernières Opérations au Comptoir')}</h3>
               <p className="text-[11px] text-slate-500 font-medium">
-                Suivi instantané des transactions récemment saisies depuis ce poste
+                {t('tracking_receipts', 'Suivi instantané des transactions récemment saisies depuis ce poste')}
               </p>
             </div>
           </div>
@@ -720,7 +720,7 @@ export const OperationsGuichetView: React.FC = () => {
             onClick={() => setActiveTab('tasks')}
             className="text-xs font-extrabold text-blue-600 hover:text-blue-700 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
           >
-            <span>Voir le tableau de suivi complet ("Mes Transactions du Jour")</span>
+            <span>{t('view_all', 'Voir tout')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -730,13 +730,13 @@ export const OperationsGuichetView: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                <th className="pb-3 px-3">Réf. & Heure</th>
-                <th className="pb-3 px-3">Opérateur</th>
-                <th className="pb-3 px-3">Expéditeur ➔ Bénéficiaire</th>
-                <th className="pb-3 px-3 text-right">Montant DOP</th>
-                <th className="pb-3 px-3 text-right">Montant Net HTG</th>
-                <th className="pb-3 px-3 text-center">Statut Flux</th>
-                <th className="pb-3 px-3 text-center">Action Reçu</th>
+                <th className="pb-3 px-3">{t('date', 'Réf. & Heure')}</th>
+                <th className="pb-3 px-3">{t('operator', 'Opérateur')}</th>
+                <th className="pb-3 px-3">{t('sender', 'Expéditeur')} ➔ {t('beneficiary', 'Bénéficiaire')}</th>
+                <th className="pb-3 px-3 text-right">{t('amount_dop', 'Montant DOP')}</th>
+                <th className="pb-3 px-3 text-right">{t('received_htg', 'Montant Net HTG')}</th>
+                <th className="pb-3 px-3 text-center">{t('status', 'Statut')}</th>
+                <th className="pb-3 px-3 text-center">{t('actions', 'Action Reçu')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -785,17 +785,17 @@ export const OperationsGuichetView: React.FC = () => {
                       {tx.status === 'cancelled' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
                           <XCircle className="w-3 h-3 text-rose-600" />
-                          Annulé
+                          {t('cancelled', 'Annulé')}
                         </span>
                       ) : isCompleted ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
                           <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                          Clôturé / Validé
+                          {t('completed', 'Clôturé / Validé')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-900 border border-orange-300">
                           <Clock className="w-3 h-3 text-orange-600 animate-pulse" />
-                          En attente en Haïti
+                          {t('pending', 'En attente')}
                         </span>
                       )}
                     </td>
@@ -813,7 +813,7 @@ export const OperationsGuichetView: React.FC = () => {
                         title={tx.status === 'cancelled' ? "Consulter le reçu d'annulation" : isCompleted ? "Télécharger ou partager le reçu PDF" : "Bordereau provisoire"}
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        <span>{tx.status === 'cancelled' ? "Reçu Annulé" : isCompleted ? "Reçu (PDF)" : "Bordereau"}</span>
+                        <span>{tx.status === 'cancelled' ? t('cancelled', 'Annulé') : isCompleted ? t('certified_receipt', 'Reçu (PDF)') : t('details', 'Bordereau')}</span>
                       </button>
                     </td>
                   </tr>

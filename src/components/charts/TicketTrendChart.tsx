@@ -8,12 +8,16 @@ interface TicketTrendChartProps {
   dateRange?: DateRange;
 }
 
-const dayLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-
 export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange }) => {
-  const { transactions, t } = useApp();
+  const { transactions, t, currentLang } = useApp();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hoverYPx, setHoverYPx] = useState<number | null>(null);
+
+  const dayLabels = currentLang === 'HT'
+    ? ['Dim', 'Lin', 'Mad', 'Mèk', 'Jed', 'Van', 'Sam']
+    : (currentLang === 'ES'
+      ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+      : ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']);
 
   // Filtrer les transactions selon la plage de dates
   const filteredTx = transactions.filter(tx => {
@@ -77,23 +81,23 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ dateRange })
             <Layers className="w-3.5 h-3.5 rotate-45" />
           </div>
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-            Tendance du Volume de Transactions ({dateRange?.label || '7 derniers jours'})
+            {t('trend_volume_7d', 'Tendance du Volume de Transactions')} ({dateRange?.label || t('last_7_days', '7 derniers jours')})
           </span>
         </div>
       </div>
 
-      {/* Métrique principale (Sans font-mono pour éviter le zéro barré 0̸) */}
+      {/* Métrique principale */}
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
           {rangeTotalVolume.toLocaleString()} DOP
         </span>
         {hasData ? (
           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-            +8% <span className="text-slate-400 dark:text-slate-500 font-normal">vs période précédente</span>
+            +8% <span className="text-slate-400 dark:text-slate-500 font-normal">{currentLang === 'HT' ? 'konpare ak peryòd anvan' : (currentLang === 'ES' ? 'vs período anterior' : 'vs période précédente')}</span>
           </span>
         ) : (
           <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-            0% <span className="text-slate-400 dark:text-slate-500 font-normal">(Réseau initialisé à 0)</span>
+            0% <span className="text-slate-400 dark:text-slate-500 font-normal">({currentLang === 'HT' ? 'Reso a kòmanse a 0' : (currentLang === 'ES' ? 'Red inicializada en 0' : 'Réseau initialisé à 0')})</span>
           </span>
         )}
       </div>

@@ -92,7 +92,8 @@ export const Header: React.FC = () => {
     scopedTxs.slice(0, 3).forEach((tx) => {
       let icon = Clock;
       let color = 'text-amber-500 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800';
-      let title = `Transfert ${tx.status === 'completed' ? 'Validé' : tx.status === 'cancelled' ? 'Annulé' : 'En cours'}`;
+      const statusLabel = tx.status === 'completed' ? t('Validé') : tx.status === 'cancelled' ? t('Annulé') : t('En cours');
+      const title = `${t('Transfert', 'Transfert')} ${statusLabel}`;
 
       if (tx.status === 'completed') {
         icon = CheckCircle2;
@@ -106,7 +107,7 @@ export const Header: React.FC = () => {
         id: `tx_${tx.id}`,
         title,
         message: `${tx.operator.toUpperCase()} • ${tx.amountHTG.toLocaleString()} HTG pour ${tx.receiverName}`,
-        time: 'Récent',
+        time: t('Récent', 'Récent'),
         icon,
         color,
         tx
@@ -117,9 +118,9 @@ export const Header: React.FC = () => {
     if (activeKillCount > 0) {
       list.push({
         id: 'ks_alert',
-        title: 'Sécurité des Services',
-        message: `${activeKillCount} service(s) temporairement suspendu(s)`,
-        time: 'Actif',
+        title: t('Sécurité des Services', 'Sécurité des Services'),
+        message: `${activeKillCount} ${t('service(s) temporairement suspendu(s)', 'service(s) temporairement suspendu(s)')}`,
+        time: t('Actif'),
         icon: Lock,
         color: 'text-rose-500 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800',
         actionTab: 'kill_switch'
@@ -130,7 +131,7 @@ export const Header: React.FC = () => {
       id: 'rate_info',
       title: t('rate_label'),
       message: `100 Pesos = ${Math.round(dopToHtgRate * 100)} HTG`,
-      time: 'Aujourd\'hui',
+      time: t('today', "Aujourd'hui"),
       icon: DollarSign,
       color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:border-blue-800'
     });
@@ -156,7 +157,7 @@ export const Header: React.FC = () => {
           <button
             onClick={toggleMobileSidebar}
             className="md:hidden p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
-            title="Menu Principal"
+            title={t('Menu Principal', 'Menu Principal')}
           >
             <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
           </button>
@@ -168,8 +169,8 @@ export const Header: React.FC = () => {
             <button
               onClick={() => setIsSidebarCollapsed(false)}
               className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center shadow-xs ring-1 ring-slate-200/80 dark:ring-slate-700"
-              title="Rouvrir la barre latérale"
-              aria-label="Rouvrir la barre latérale"
+              title={t('Rouvrir la barre latérale', 'Rouvrir la barre latérale')}
+              aria-label={t('Rouvrir la barre latérale', 'Rouvrir la barre latérale')}
             >
               <PanelLeftOpen className="w-4 h-4 text-slate-700 dark:text-slate-200" />
             </button>
@@ -177,7 +178,7 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        <span className="text-slate-500 dark:text-slate-400 font-medium hidden md:inline">Overview</span>
+        <span className="text-slate-500 dark:text-slate-400 font-medium hidden md:inline">{t('nav_overview')}</span>
         <span className="text-slate-300 dark:text-slate-600 hidden md:inline">/</span>
         <span className="font-bold text-slate-900 dark:text-slate-100 capitalize truncate hidden md:inline">
           {activeTab === 'overview' ? t('nav_dashboard') : activeTab === 'guichet' ? t('nav_guichet') : activeTab.replace('_', ' ')}
@@ -189,7 +190,7 @@ export const Header: React.FC = () => {
         <button
           onClick={openSearch}
           className="w-full flex items-center justify-between bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/70 px-3 py-1.5 rounded-xl text-xs text-slate-600 dark:text-slate-300 transition-all group shadow-2xs cursor-pointer"
-          title="Rechercher (⌘K ou Ctrl+K)"
+          title={t('Rechercher une opération...')}
         >
           <div className="flex items-center gap-2 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 flex-shrink-0 transition-colors" />
@@ -208,7 +209,7 @@ export const Header: React.FC = () => {
         <button 
           onClick={openSearch}
           className="md:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex-shrink-0"
-          title="Rechercher (⌘K / Ctrl+K)"
+          title={t('search_placeholder')}
         >
           <Search className="w-4 h-4" />
         </button>
@@ -216,7 +217,7 @@ export const Header: React.FC = () => {
         {/* Real-time Exchange Rate Widget (Hidden on mobile) */}
         <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 px-2.5 py-1 rounded-xl text-xs font-medium flex-shrink-0">
           <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-          <span className="text-slate-500 dark:text-slate-400 hidden lg:inline">Taux:</span>
+          <span className="text-slate-500 dark:text-slate-400 hidden lg:inline">{t('rate_label')}:</span>
           <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
             100 Pesos = {Math.round(dopToHtgRate * 100)} HTG
           </span>
@@ -230,7 +231,7 @@ export const Header: React.FC = () => {
               }}
               className="ml-1 text-[10px] text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-semibold"
             >
-              Edit
+              {t('edit')}
             </button>
           )}
         </div>
@@ -240,7 +241,7 @@ export const Header: React.FC = () => {
           <button 
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
             className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors relative"
-            title="Notifications"
+            title={t('Notifications')}
           >
             <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             
@@ -261,7 +262,7 @@ export const Header: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
                 <div className="flex items-center gap-1.5">
                   <Bell className="w-4 h-4 text-slate-900 dark:text-slate-100" />
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">Notifications</h4>
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">{t('Notifications')}</h4>
                   {unreadCount > 0 && (
                     <span className="px-1.5 py-0.2 bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 text-[10px] font-black rounded-full">
                       {unreadCount}
@@ -274,7 +275,7 @@ export const Header: React.FC = () => {
                       onClick={() => markAllNotificationsAsRead(notifications.map(n => n.id))}
                       className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
                     >
-                      Tout marquer lu
+                      {t('Tout marquer lu')}
                     </button>
                   )}
                   <button 
@@ -288,7 +289,7 @@ export const Header: React.FC = () => {
 
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {unreadNotifications.length === 0 ? (
-                  <p className="text-center py-6 text-xs text-slate-400">Aucune notification</p>
+                  <p className="text-center py-6 text-xs text-slate-400">{t('Aucune notification', 'Aucune notification')}</p>
                 ) : (
                   unreadNotifications.map((notif) => {
                     const IconComp = notif.icon;
@@ -333,7 +334,7 @@ export const Header: React.FC = () => {
                   }}
                   className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
-                  <span>Voir toutes les notifications</span>
+                  <span>{t('Voir toutes les notifications')}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -347,7 +348,7 @@ export const Header: React.FC = () => {
           <button 
             onClick={() => setIsLangOpen(!isLangOpen)}
             className="flex items-center gap-1.5 p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs font-semibold"
-            title="Changer de langue"
+            title={t('Changer de langue')}
           >
             <Globe className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             <span className="font-bold text-slate-800 dark:text-slate-200">{currentLang}</span>
@@ -382,7 +383,7 @@ export const Header: React.FC = () => {
         <button 
           onClick={() => setActiveTab('settings')}
           className="hidden md:block p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-          title="Paramètres"
+          title={t('Paramètres')}
         >
           <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
         </button>
@@ -391,7 +392,7 @@ export const Header: React.FC = () => {
         <button 
           onClick={logout}
           className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
-          title="Se déconnecter"
+          title={t('Se déconnecter')}
         >
           <LogOut className="w-4 h-4" />
         </button>

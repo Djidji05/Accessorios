@@ -33,7 +33,7 @@ export const LatestUpdatesPanel: React.FC = () => {
     return {
       id: `tx-act-${tx.id}`,
       timestamp: rawTime,
-      title: tx.status === 'completed' ? 'Transaction Clôturée' : 'Nouvelle Transaction Saisie',
+      title: tx.status === 'completed' ? t('transaction_completed', 'Transaction Clôturée') : t('new_transaction_entered', 'Nouvelle Transaction Saisie'),
       subtext: `${tx.referenceNumber} - ${tx.senderName} ➔ ${tx.receiverName} (${tx.amountDOP.toLocaleString()} DOP)`,
       time: new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       icon: tx.status === 'completed' ? ShieldCheck : Clock,
@@ -151,7 +151,7 @@ export const LatestUpdatesPanel: React.FC = () => {
                 key={item.id} 
                 onClick={() => handleActivityClick(item)}
                 className={`${index >= mobileLimit ? 'hidden md:flex' : 'flex'} items-start justify-between text-xs p-2.5 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer group`}
-                title={item.txRef ? "Cliquer pour afficher le reçu" : undefined}
+                title={item.txRef ? t('click_to_view_receipt', "Cliquer pour afficher le reçu") : undefined}
               >
                 <div className="flex items-start gap-2.5 min-w-0">
                   <div className={`w-8 h-8 rounded-xl ${item.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5 font-bold`}>
@@ -178,7 +178,7 @@ export const LatestUpdatesPanel: React.FC = () => {
                 onClick={() => setMobileLimit(prev => prev + 10)}
                 className="w-full py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
-                Voir plus
+                {t('see_more', 'Voir plus')}
               </button>
             )}
             {mobileLimit > 10 && (
@@ -186,7 +186,7 @@ export const LatestUpdatesPanel: React.FC = () => {
                 onClick={() => setMobileLimit(10)}
                 className="w-full py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
-                Voir moins
+                {t('see_less', 'Voir moins')}
               </button>
             )}
           </div>

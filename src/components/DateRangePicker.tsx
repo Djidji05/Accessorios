@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, Check, RotateCcw, X } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export interface DateRange {
   preset: string;
@@ -14,6 +15,7 @@ interface DateRangePickerProps {
 }
 
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChange }) => {
+  const { t, currentLang } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -34,12 +36,12 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
 
-  // Presets definition
+  // Presets definition with reactive localized labels
   const presets = [
-    { id: 'today', label: "Aujourd'hui", getRange: () => [today, today] },
+    { id: 'today', label: t('today', "Aujourd'hui"), getRange: () => [today, today] },
     { 
       id: 'yesterday', 
-      label: 'Hier', 
+      label: t('yesterday', 'Hier'), 
       getRange: () => {
         const y = new Date(today);
         y.setDate(y.getDate() - 1);
@@ -48,7 +50,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
     },
     { 
       id: 'last_7_days', 
-      label: '7 derniers jours', 
+      label: t('last_7_days', '7 derniers jours'), 
       getRange: () => {
         const s = new Date(today);
         s.setDate(s.getDate() - 7);
@@ -57,7 +59,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
     },
     { 
       id: 'last_30_days', 
-      label: '30 derniers jours', 
+      label: t('last_30_days', '30 derniers jours'), 
       getRange: () => {
         const s = new Date(today);
         s.setDate(s.getDate() - 30);
@@ -66,15 +68,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
     },
     { 
       id: 'this_month', 
-      label: 'Ce mois-ci', 
+      label: t('this_month', 'Ce mois-ci'), 
       getRange: () => [new Date(today.getFullYear(), today.getMonth(), 1), today] 
     },
     { 
       id: 'last_month', 
-      label: 'Mois dernier', 
+      label: t('last_month', 'Mois dernier'), 
       getRange: () => [new Date(today.getFullYear(), today.getMonth() - 1, 1), new Date(today.getFullYear(), today.getMonth(), 0)] 
     },
-    { id: 'custom', label: 'Personnalisé', getRange: () => [startDate, endDate] }
+    { id: 'custom', label: t('custom_period', 'Personnalisé'), getRange: () => [startDate, endDate] }
   ];
 
   // Close when clicking outside
@@ -94,40 +96,49 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
     };
   }, [isOpen]);
 
+  // Locale code based on selected language
+  const dateLocale = currentLang === 'ES' ? 'es-DO' : currentLang === 'HT' ? 'fr-HT' : 'fr-FR';
+
   // Format date helper: "12 Sep 2026"
   const formatDate = (d: Date | null) => {
     if (!d) return '';
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const formatShortDate = (d: Date | null) => {
     if (!d) return '';
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    return d.toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' });
   };
 
   // Label to display in pill button
   const getDisplayLabel = () => {
-    if (selectedPreset === 'last_7_days') return 'Last week';
-    if (selectedPreset === 'today') return "Aujourd'hui";
-    if (selectedPreset === 'yesterday') return 'Hier';
-    if (selectedPreset === 'last_30_days') return '30 derniers jours';
-    if (selectedPreset === 'this_month') return 'Ce mois-ci';
-    if (selectedPreset === 'last_month') return 'Mois dernier';
+    if (selectedPreset === 'last_7_days') return t('last_7_days', '7 derniers jours');
+    if (selectedPreset === 'today') return t('today', "Aujourd'hui");
+    if (selectedPreset === 'yesterday') return t('yesterday', 'Hier');
+    if (selectedPreset === 'last_30_days') return t('last_30_days', '30 derniers jours');
+    if (selectedPreset === 'this_month') return t('this_month', 'Ce mois-ci');
+    if (selectedPreset === 'last_month') return t('last_month', 'Mois dernier');
     if (startDate && endDate) {
       if (startDate.toDateString() === endDate.toDateString()) {
         return formatShortDate(startDate);
       }
       return `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`;
     }
-    return 'Choisir une période';
+    return t('select_period', 'Choisir une période');
   };
 
-  // Calendar calculations
-  const monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
-  const dayNames = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
+  // Calendar calculations with language-aware names
+  const monthNames = currentLang === 'ES'
+    ? ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    : currentLang === 'HT'
+    ? ['Janvye', 'Fevriye', 'Mas', 'Avril', 'Me', 'Jen', 'Jiyè', 'Out', 'Septanm', 'Oktòb', 'Novanm', 'Desanm']
+    : ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+  const dayNames = currentLang === 'ES'
+    ? ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
+    : currentLang === 'HT'
+    ? ['Li', 'Ma', 'Mè', 'Je', 'Va', 'Sa', 'Di']
+    : ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDayIndex = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7; // Monday = 0
@@ -247,7 +258,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
             ? 'bg-slate-900 text-white border-slate-900 dark:bg-blue-600 dark:border-blue-600 shadow-sm'
             : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
         }`}
-        title="Filtrer par période"
+        title={t('filter_by_period', 'Filtrer par période')}
       >
         <CalendarIcon className={`w-3.5 h-3.5 shrink-0 ${isOpen ? 'text-white' : 'text-slate-400 dark:text-slate-400'}`} />
         <span className="font-semibold truncate max-w-[130px] sm:max-w-none">{getDisplayLabel()}</span>
@@ -265,7 +276,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
             <div className="flex items-center justify-between sm:hidden border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-bold text-slate-900 dark:text-white">Sélectionner une période</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">{t('select_period', 'Sélectionner une période')}</span>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
@@ -280,7 +291,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
               {/* Presets Grid (Mobile: 2-column grid, Desktop: vertical list) */}
               <div className="sm:w-44 border-b sm:border-b-0 sm:border-r border-slate-100 dark:border-slate-800 pb-3 sm:pb-0 sm:pr-3 space-y-1">
                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block px-1 mb-1.5">
-                  Périodes Prédéfinies
+                  {t('predefined_periods', 'Périodes Prédéfinies')}
                 </span>
                 <div className="grid grid-cols-2 sm:flex sm:flex-col gap-1.5 sm:gap-1">
                   {presets.map((p) => {
@@ -311,7 +322,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
                   <button
                     onClick={handlePrevMonth}
                     className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-                    title="Mois précédent"
+                    title={t('previous_month', 'Mois précédent')}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -323,7 +334,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
                   <button
                     onClick={handleNextMonth}
                     className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-                    title="Mois suivant"
+                    title={t('next_month', 'Mois suivant')}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -396,7 +407,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
                         )}
                       </span>
                     ) : (
-                      <span>Sélectionnez une date</span>
+                      <span>{t('select_date', 'Sélectionnez une date')}</span>
                     )}
                   </div>
                 </div>
@@ -412,7 +423,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
                 className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium py-1.5 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Réinitialiser</span>
+                <span>{t('reset', 'Réinitialiser')}</span>
               </button>
 
               <div className="flex items-center gap-2">
@@ -420,13 +431,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
                   onClick={() => setIsOpen(false)}
                   className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium py-1.5 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
-                  Annuler
+                  {t('cancel', 'Annuler')}
                 </button>
                 <button
                   onClick={handleApply}
                   className="text-xs bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-bold py-1.5 px-4 rounded-xl shadow-xs transition-colors"
                 >
-                  Appliquer
+                  {t('apply', 'Appliquer')}
                 </button>
               </div>
             </div>

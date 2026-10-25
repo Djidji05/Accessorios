@@ -10,7 +10,7 @@ interface TransactionsTableProps {
 }
 
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange }) => {
-  const { setSelectedReceiptTx, transactions, serviceCommissionRates, adminCommissionRate } = useApp();
+  const { setSelectedReceiptTx, transactions, serviceCommissionRates, adminCommissionRate, t } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState<number>(1);
@@ -51,7 +51,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300">
           <XCircle className="w-3 h-3 text-rose-600" />
-          <span>Annulé</span>
+          <span>{t('cancelled', 'Annulé')}</span>
         </span>
       );
     }
@@ -60,7 +60,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-          <span>Traité / Validé</span>
+          <span>{t('completed', 'Traité / Validé')}</span>
         </span>
       );
     }
@@ -70,7 +70,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
           <AlertTriangle className="w-3 h-3 text-rose-600" />
-          <span>SLA Dépassé ({minutes}m)</span>
+          <span>SLA ({minutes}m)</span>
         </span>
       );
     }
@@ -78,7 +78,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black bg-orange-100 text-orange-900 border border-orange-300">
         <Clock className="w-3 h-3 text-orange-600 animate-pulse" />
-        <span>En cours ({15 - minutes}m restants)</span>
+        <span>{t('in_progress', 'En cours')} ({15 - minutes}m)</span>
       </span>
     );
   };
@@ -92,9 +92,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
           <span className="w-3 h-3 rounded-full bg-slate-900 animate-ping" />
           <div>
             <h3 className="font-black text-slate-900 text-xs uppercase tracking-wider">
-              Surveillance des SLA & Flux Opérationnels en Direct ({filteredTransactions.length})
+              {t('network_activity', 'Surveillance des Flux en Direct')} ({filteredTransactions.length})
             </h3>
-            <p className="text-[11px] text-slate-500 font-medium">Contrôle en temps réel des transactions du réseau</p>
+            <p className="text-[11px] text-slate-500 font-medium">{t('operational_portal', 'Contrôle en temps réel des transactions du réseau')}</p>
           </div>
         </div>
 
@@ -105,9 +105,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-white border border-slate-200 text-xs font-bold text-slate-700 px-3 py-1.5 rounded-xl focus:outline-none"
           >
-            <option value="all">Tous les Statuts</option>
-            <option value="in_progress">🟠 En Cours / En Attente</option>
-            <option value="completed">🟢 Clôturés / Certifiés</option>
+            <option value="all">{t('all', 'Tous les Statuts')}</option>
+            <option value="in_progress">🟠 {t('in_progress', 'En Cours / En Attente')}</option>
+            <option value="completed">🟢 {t('completed', 'Clôturés / Certifiés')}</option>
           </select>
 
           {/* Search Box */}
@@ -117,7 +117,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher #TX, nom, tél..."
+              placeholder={t('search_placeholder', 'Rechercher #TX, nom, tél...')}
               className="bg-white border border-slate-200 text-xs font-bold text-slate-900 pl-8 pr-3 py-1.5 rounded-xl focus:outline-none focus:border-slate-400 w-48"
             />
           </div>
@@ -129,15 +129,15 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/50">
-              <th className="py-3.5 px-5">Réf Transaction</th>
-              <th className="py-3.5 px-5">Opérateur</th>
-              <th className="py-3.5 px-5 text-center text-emerald-700">Commission Opérateur</th>
-              <th className="py-3.5 px-5">Bénéficiaire (Haïti)</th>
-              <th className="py-3.5 px-5 text-right">Montant Pesos</th>
-              <th className="py-3.5 px-5 text-right text-blue-600">Commission Admin</th>
-              <th className="py-3.5 px-5 text-right">Montant HTG</th>
-              <th className="py-3.5 px-5 text-center">Suivi SLA & Statut</th>
-              <th className="py-3.5 px-5 text-center">Action Reçu</th>
+              <th className="py-3.5 px-5">{t('reference', 'Réf Transaction')}</th>
+              <th className="py-3.5 px-5">{t('operator', 'Opérateur')}</th>
+              <th className="py-3.5 px-5 text-center text-emerald-700">{t('admin_comm', 'Commission Opérateur')}</th>
+              <th className="py-3.5 px-5">{t('beneficiary', 'Bénéficiaire (Haïti)')}</th>
+              <th className="py-3.5 px-5 text-right">{t('amount_dop', 'Montant Pesos')}</th>
+              <th className="py-3.5 px-5 text-right text-blue-600">{t('admin_comm', 'Commission Admin')}</th>
+              <th className="py-3.5 px-5 text-right">{t('received_htg', 'Montant HTG')}</th>
+              <th className="py-3.5 px-5 text-center">{t('status', 'Suivi SLA & Statut')}</th>
+              <th className="py-3.5 px-5 text-center">{t('actions', 'Action Reçu')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-sans">

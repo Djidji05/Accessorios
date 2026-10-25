@@ -30,7 +30,7 @@ import { WeeklySettlement } from '../types';
 import { Pagination } from '../components/Pagination';
 
 export const WeeklySettlementsView: React.FC = () => {
-  const { settlements, transactions, currentUser, recordAgentDeposit } = useApp();
+  const { settlements, transactions, currentUser, recordAgentDeposit, t, currentLang } = useApp();
 
   const isAdmin = currentUser.role === 'admin';
   const isGestionnaire = currentUser.role === 'gestionnaire';
@@ -426,10 +426,10 @@ export const WeeklySettlementsView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Gestion des Dépôts Agents
+                {t('settlements_title', 'Gestion des Dépôts Agents')}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                Enregistrez les versements d'espèces et dépôts bancaires reçus des agents.
+                {t('settlements_subtitle', "Enregistrez les versements d'espèces et dépôts bancaires reçus des agents.")}
               </p>
             </div>
           </div>
@@ -439,7 +439,7 @@ export const WeeklySettlementsView: React.FC = () => {
             className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer self-start sm:self-auto"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Enregistrer un Dépôt Agent</span>
+            <span>{t('record_deposit', 'Enregistrer un Dépôt Agent')}</span>
           </button>
         </div>
       ) : (
@@ -450,10 +450,10 @@ export const WeeklySettlementsView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Historique de mes Dépôts
+                {t('history_my_deposits', 'Historique de mes Dépôts')}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                Tous les dépôts et versements enregistrés pour vous par l'Administration.
+                {t('history_my_deposits_subtitle', "Tous les dépôts et versements enregistrés pour vous par l'Administration.")}
               </p>
             </div>
           </div>
@@ -471,7 +471,7 @@ export const WeeklySettlementsView: React.FC = () => {
             onChange={(e) => setSelectedWeekLabel(e.target.value)}
             className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white pl-9 pr-8 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer shadow-2xs appearance-none"
           >
-            <option value="all">📅 Toutes les Semaines ({availableWeeks.length})</option>
+            <option value="all">📅 {t('all_weeks', 'Toutes les Semaines')} ({availableWeeks.length})</option>
             {availableWeeks.map((w) => (
               <option key={w.label} value={w.label}>
                 {w.label} ({w.startDate} - {w.endDate}) {w.hasRemaining ? '🟠' : '🟢'}
@@ -492,10 +492,10 @@ export const WeeklySettlementsView: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                  Bilan Hebdomadaire Guichet & Versements ({selectedWeekLabel === 'all' ? 'Toutes les Semaines' : selectedWeekLabel})
+                  {t('weekly_balance_guichet', 'Bilan Hebdomadaire Guichet & Versements')} ({selectedWeekLabel === 'all' ? t('all_weeks', 'Toutes les Semaines') : selectedWeekLabel})
                 </span>
                 <h3 className="text-base font-black text-white">
-                  Mes Commissions & Situation avec l'Administration
+                  {t('my_commissions_admin_status', "Mes Commissions & Situation avec l'Administration")}
                 </h3>
               </div>
             </div>
@@ -506,7 +506,7 @@ export const WeeklySettlementsView: React.FC = () => {
                   ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
                   : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
               }`}>
-                {agentBannerDueToAdmin > 0 ? `🔴 DÛ À L'ADMIN : ${agentBannerDueToAdmin.toLocaleString()} DOP` : '🟢 TOUT PAYÉ (0 DOP)'}
+                {agentBannerDueToAdmin > 0 ? `🔴 ${t('due_to_admin', "DÛ À L'ADMIN")} : ${agentBannerDueToAdmin.toLocaleString()} DOP` : `🟢 ${t('all_paid', 'TOUT PAYÉ')} (0 DOP)`}
               </span>
             </div>
           </div>
@@ -516,7 +516,7 @@ export const WeeklySettlementsView: React.FC = () => {
             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60 space-y-1">
               <div className="flex items-center justify-between text-emerald-400">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  Commissions Récoltées
+                  {t('collected_commissions', 'Commissions Récoltées')}
                 </span>
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
               </div>
@@ -524,7 +524,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 +{agentBannerCommission.toLocaleString()} DOP
               </p>
               <p className="text-[10px] text-emerald-300/80 font-medium">
-                Gains générés sur les transactions
+                {t('earnings_generated_tx', 'Gains générés sur les transactions')}
               </p>
             </div>
 
@@ -538,7 +538,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 <span className={`text-[10px] font-black uppercase tracking-wider ${
                   agentBannerDueToAdmin > 0 ? 'text-rose-400' : 'text-slate-400'
                 }`}>
-                  Montant Dû à l'Admin
+                  {t('amount_due_admin', "Montant Dû à l'Admin")}
                 </span>
                 {agentBannerDueToAdmin > 0 ? (
                   <AlertCircle className="w-4 h-4 text-rose-400" />
@@ -552,7 +552,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 {agentBannerDueToAdmin.toLocaleString()} DOP
               </p>
               <p className="text-[10px] text-slate-400 font-medium">
-                {agentBannerDueToAdmin > 0 ? 'Solde net restant à verser' : 'Aucun montant restant dû'}
+                {agentBannerDueToAdmin > 0 ? t('net_balance_to_deposit', 'Solde net restant à verser') : t('no_amount_due', 'Aucun montant restant dû')}
               </p>
             </div>
 
@@ -560,7 +560,7 @@ export const WeeklySettlementsView: React.FC = () => {
             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60 space-y-1">
               <div className="flex items-center justify-between text-blue-400">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  Déposé à l'Admin
+                  {t('deposited_to_admin', "Déposé à l'Admin")}
                 </span>
                 <Landmark className="w-4 h-4 text-blue-400" />
               </div>
@@ -568,7 +568,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 {agentBannerDeposited.toLocaleString()} DOP
               </p>
               <p className="text-[10px] text-blue-300/80 font-medium">
-                Versements enregistrés par l'admin
+                {t('deposits_recorded_admin', "Versements enregistrés par l'admin")}
               </p>
             </div>
 
@@ -576,7 +576,7 @@ export const WeeklySettlementsView: React.FC = () => {
             <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/60 space-y-1">
               <div className="flex items-center justify-between text-slate-300">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  Total Encaissé
+                  {t('week_collected_total', 'Total Encaissé')}
                 </span>
                 <DollarSign className="w-4 h-4 text-slate-400" />
               </div>
@@ -584,7 +584,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 {agentBannerCollected.toLocaleString()} DOP
               </p>
               <p className="text-[10px] text-slate-400 font-medium">
-                Volume brut des opérations
+                {t('gross_ops_volume', 'Volume brut des opérations')}
               </p>
             </div>
           </div>
@@ -597,16 +597,16 @@ export const WeeklySettlementsView: React.FC = () => {
         <div className="space-y-3">
           <div className="px-2 flex items-center justify-between">
             <span className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">
-              Liste de mes Dépôts ({filteredSettlements.length})
+              {t('list_my_deposits', 'Liste de mes Dépôts')} ({filteredSettlements.length})
             </span>
-            <span className="text-[11px] text-slate-400 font-mono font-semibold">Par calendrier hebdomadaire</span>
+            <span className="text-[11px] text-slate-400 font-mono font-semibold">{t('by_weekly_calendar', 'Par calendrier hebdomadaire')}</span>
           </div>
 
           {filteredSettlements.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-center space-y-2 border border-slate-200 dark:border-slate-800">
               <Landmark className="w-8 h-8 text-slate-300 mx-auto" />
-              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs">Aucun dépôt ne correspond à ce filtre</h3>
-              <p className="text-[11px] text-slate-400">Veuillez sélectionner une autre semaine dans le calendrier ci-dessus.</p>
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs">{t('no_deposit_matches', 'Aucun dépôt ne correspond à ce filtre')}</h3>
+              <p className="text-[11px] text-slate-400">{t('select_another_week', 'Veuillez sélectionner une autre semaine dans le calendrier ci-dessus.')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -626,19 +626,19 @@ export const WeeklySettlementsView: React.FC = () => {
                         </div>
                         <div>
                           <h4 className="font-black text-slate-900 dark:text-slate-100 text-xs">{s.weekLabel}</h4>
-                          <p className="text-[10px] text-slate-400 font-mono">{s.startDate} au {s.endDate}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">{s.startDate} {t('to_date', 'au')} {s.endDate}</p>
                         </div>
                       </div>
 
                       {isPaid ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>🟢 Tout Payé</span>
+                          <span>🟢 {t('all_paid', 'Tout Payé')}</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
                           <Clock className="w-3 h-3 text-amber-600" />
-                          <span>🟠 Reste à Payer</span>
+                          <span>🟠 {t('remaining_to_deposit', 'Reste à Payer')}</span>
                         </span>
                       )}
                     </div>
@@ -646,28 +646,28 @@ export const WeeklySettlementsView: React.FC = () => {
                     {/* Breakdown Grid */}
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl">
                       <div>
-                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Total Encaissé</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold block">{t('week_collected_total', 'Total Encaissé')}</span>
                         <span className="font-extrabold text-slate-900 dark:text-slate-100">{s.totalCollected.toLocaleString()} {s.currency}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Commissions (%)</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold block">{t('commissions_percent', 'Commissions (%)')}</span>
                         <span className="font-extrabold text-emerald-600">+{s.totalCommission.toLocaleString()} {s.currency}</span>
                       </div>
                       <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Net Dû Admin</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold block">{t('net_due_admin', 'Net Dû Admin')}</span>
                         <span className="font-black text-slate-900 dark:text-slate-100">{s.netAmountToPay.toLocaleString()} {s.currency}</span>
                       </div>
                       <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                        <span className="text-[9px] text-slate-400 uppercase font-bold block">Déposé à l'Admin</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold block">{t('deposited_to_admin', "Déposé à l'Admin")}</span>
                         <span className="font-extrabold text-blue-600 dark:text-blue-400">{s.amountDeposited.toLocaleString()} {s.currency}</span>
                       </div>
                     </div>
 
                     {/* Footer highlight: Reste à Payer */}
                     <div className="flex justify-between items-center px-1 pt-0.5">
-                      <span className="text-[11px] font-bold text-slate-500">Solde Reste à Payer :</span>
+                      <span className="text-[11px] font-bold text-slate-500">{t('remaining_balance_label', 'Solde Reste à Payer :')}</span>
                       <span className={`text-xs sm:text-sm font-black font-mono ${isPaid ? 'text-emerald-600' : 'text-amber-600'}`}>
-                        {isPaid ? '0 DOP (Semaine réglée)' : `${s.remainingBalance.toLocaleString()} ${s.currency}`}
+                        {isPaid ? `0 DOP (${t('week_settled', 'Semaine réglée')})` : `${s.remainingBalance.toLocaleString()} ${s.currency}`}
                       </span>
                     </div>
 
@@ -693,31 +693,31 @@ export const WeeklySettlementsView: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-900/40">
             <span className="font-black text-slate-900 dark:text-slate-100 text-xs uppercase tracking-wider">
-              Relevé des Liquidations Hebdomadaires ({filteredSettlements.length})
+              {t('weekly_settlements_statement', 'Relevé des Liquidations Hebdomadaires')} ({filteredSettlements.length})
             </span>
-            <span className="text-[11px] text-slate-400 font-mono font-semibold">Calcul automatique selon %</span>
+            <span className="text-[11px] text-slate-400 font-mono font-semibold">{t('auto_calculated_percent', 'Calcul automatique selon %')}</span>
           </div>
 
           {filteredSettlements.length === 0 ? (
             <div className="p-12 text-center space-y-3">
               <Landmark className="w-10 h-10 text-slate-300 mx-auto" />
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Aucun relevé hebdomadaire ne correspond</h3>
-              <p className="text-xs text-slate-500">Essayez de modifier vos critères de recherche ou filtres.</p>
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{t('no_weekly_settlement_matches', 'Aucun relevé hebdomadaire ne correspond')}</h3>
+              <p className="text-xs text-slate-500">{t('try_modifying_search', 'Essayez de modifier vos critères de recherche ou filtres.')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/40 dark:bg-slate-900/20">
-                    <th className="py-3.5 px-5">Semaine & Période</th>
-                    <th className="py-3.5 px-5">Agent & Rôle</th>
-                    <th className="py-3.5 px-5 text-right">Total Encaissé</th>
-                    <th className="py-3.5 px-5 text-right">Commissions (%)</th>
-                    <th className="py-3.5 px-5 text-right">Net Dû Admin</th>
-                    <th className="py-3.5 px-5 text-right">Déposé à l'Admin</th>
-                    <th className="py-3.5 px-5 text-right">Reste à Payer</th>
-                    <th className="py-3.5 px-5 text-center">Statut Réglement</th>
-                    {(isAdmin || isGestionnaire) && <th className="py-3.5 px-5 text-center">Action Admin</th>}
+                    <th className="py-3.5 px-5">{t('week_and_period', 'Semaine & Période')}</th>
+                    <th className="py-3.5 px-5">{t('agent_and_role', 'Agent & Rôle')}</th>
+                    <th className="py-3.5 px-5 text-right">{t('week_collected_total', 'Total Encaissé')}</th>
+                    <th className="py-3.5 px-5 text-right">{t('commissions_percent', 'Commissions (%)')}</th>
+                    <th className="py-3.5 px-5 text-right">{t('net_due_admin', 'Net Dû Admin')}</th>
+                    <th className="py-3.5 px-5 text-right">{t('deposited_to_admin', "Déposé à l'Admin")}</th>
+                    <th className="py-3.5 px-5 text-right">{t('remaining_to_deposit', 'Reste à Payer')}</th>
+                    <th className="py-3.5 px-5 text-center">{t('settlement_status', 'Statut Réglement')}</th>
+                    {(isAdmin || isGestionnaire) && <th className="py-3.5 px-5 text-center">{t('admin_action', 'Action Admin')}</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
@@ -731,7 +731,7 @@ export const WeeklySettlementsView: React.FC = () => {
                         <td className="py-4 px-5">
                           <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{s.weekLabel}</div>
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            {s.startDate} au {s.endDate}
+                            {s.startDate} {t('to_date', 'au')} {s.endDate}
                           </div>
                         </td>
 
@@ -771,12 +771,12 @@ export const WeeklySettlementsView: React.FC = () => {
                           {isPaid ? (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>🟢 Tout Payé</span>
+                              <span>🟢 {t('all_paid', 'Tout Payé')}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
                               <Clock className="w-3.5 h-3.5 text-amber-600" />
-                              <span>🟠 Reste à Payer</span>
+                              <span>🟠 {t('remaining_to_deposit', 'Reste à Payer')}</span>
                             </span>
                           )}
                         </td>
@@ -794,7 +794,7 @@ export const WeeklySettlementsView: React.FC = () => {
                                 className="px-3 py-1.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1 cursor-pointer"
                               >
                                 <PlusCircle className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
-                                <span>Versement</span>
+                                <span>{t('record_deposit_btn', 'Versement')}</span>
                               </button>
                             )}
                           </td>
@@ -834,8 +834,8 @@ export const WeeklySettlementsView: React.FC = () => {
                   <Landmark className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-900 text-sm">Enregistrer un Versement Agent</h3>
-                  <p className="text-[11px] text-slate-500 font-medium">Saisie du dépôt effectué par l'agent à l'Admin</p>
+                  <h3 className="font-black text-slate-900 text-sm">{t('record_agent_deposit', 'Enregistrer un Versement Agent')}</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">{t('record_deposit_subtitle', "Saisie du dépôt effectué par l'agent à l'Admin")}</p>
                 </div>
               </div>
               <button
@@ -854,7 +854,7 @@ export const WeeklySettlementsView: React.FC = () => {
                   <label className="block text-[10px] font-black text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1">
                       <Search className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Rechercher un Agent par nom</span>
+                      <span>{t('search_agent_name', 'Rechercher un Agent par nom')}</span>
                     </span>
                     {modalAgentSearch && (
                       <button
@@ -862,7 +862,7 @@ export const WeeklySettlementsView: React.FC = () => {
                         onClick={() => setModalAgentSearch('')}
                         className="text-[10px] text-slate-400 hover:text-slate-700 font-bold"
                       >
-                        Effacer la recherche
+                        {t('clear_search', 'Effacer la recherche')}
                       </button>
                     )}
                   </label>
@@ -872,7 +872,7 @@ export const WeeklySettlementsView: React.FC = () => {
                       type="text"
                       value={modalAgentSearch}
                       onChange={(e) => setModalAgentSearch(e.target.value)}
-                      placeholder="Tapez le nom de l'agent (ex: Achmad, Pierre)..."
+                      placeholder={t('type_agent_name', "Tapez le nom de l'agent...")}
                       className="w-full bg-white border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-7 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 shadow-2xs"
                     />
                     {modalAgentSearch && (
@@ -892,7 +892,7 @@ export const WeeklySettlementsView: React.FC = () => {
                   <div>
                     <label className="block text-[10px] font-black text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
                       <User className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Sélectionner l'Agent *</span>
+                      <span>{t('select_agent_star', "Sélectionner l'Agent *")}</span>
                     </label>
                     <select
                       value={selectedAgentId}
@@ -913,7 +913,7 @@ export const WeeklySettlementsView: React.FC = () => {
                       }}
                       className="w-full bg-white border border-slate-200 text-xs font-bold text-slate-900 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer shadow-2xs"
                     >
-                      <option value="">-- Choisir un Agent dans la liste --</option>
+                      <option value="">-- {t('choose_agent_list', "Choisir un Agent dans la liste")} --</option>
                       {Array.from(
                         new Map(roleScopedSettlements.map((s) => [s.agentId, { id: s.agentId, name: s.agentName, role: s.agentRole }])).values()
                       )
@@ -929,7 +929,7 @@ export const WeeklySettlementsView: React.FC = () => {
                   <div>
                     <label className="block text-[10px] font-black text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Sélectionner la Semaine *</span>
+                      <span>{t('select_week_star', 'Sélectionner la Semaine *')}</span>
                     </label>
                     <select
                       value={selectedSettlementForDeposit ? selectedSettlementForDeposit.id : ''}
@@ -947,15 +947,15 @@ export const WeeklySettlementsView: React.FC = () => {
                       className="w-full bg-white border border-slate-200 text-xs font-bold text-slate-900 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer shadow-2xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                     >
                       {!selectedAgentId ? (
-                        <option value="">-- Sélectionnez d'abord un Agent --</option>
+                        <option value="">-- {t('select_agent_first', "Sélectionnez d'abord un Agent")} --</option>
                       ) : (
                         <>
-                          <option value="">-- Choisir une Semaine --</option>
+                          <option value="">-- {t('choose_week', 'Choisir une Semaine')} --</option>
                           {roleScopedSettlements
                             .filter((s) => s.agentId === selectedAgentId)
                             .map((s) => (
                               <option key={s.id} value={s.id}>
-                                {s.weekLabel.split(' ')[0]} {s.weekLabel.split(' ')[1]} — {s.remainingBalance > 0 ? `🟠 Reste: ${s.remainingBalance.toLocaleString()} ${s.currency}` : '🟢 Tout Payé'}
+                                {s.weekLabel.split(' ')[0]} {s.weekLabel.split(' ')[1]} — {s.remainingBalance > 0 ? `🟠 ${t('remaining_to_deposit', 'Reste')}: ${s.remainingBalance.toLocaleString()} ${s.currency}` : `🟢 ${t('all_paid', 'Tout Payé')}`}
                               </option>
                             ))}
                         </>
@@ -967,7 +967,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 {/* Quick select pills when searching */}
                 {modalAgentSearch && (
                   <div className="pt-1 border-t border-slate-200/60">
-                    <p className="text-[10px] text-slate-500 font-semibold mb-1">Résultats de recherche :</p>
+                    <p className="text-[10px] text-slate-500 font-semibold mb-1">{t('search_results', 'Résultats de recherche :')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {Array.from(
                         new Map(roleScopedSettlements.map((s) => [s.agentId, { id: s.agentId, name: s.agentName, role: s.agentRole }])).values()
@@ -1005,31 +1005,31 @@ export const WeeklySettlementsView: React.FC = () => {
             {selectedSettlementForDeposit ? (
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs animate-in fade-in">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">Agent Sélectionné :</span>
+                  <span className="text-slate-500 font-medium">{t('selected_agent', 'Agent Sélectionné :')}</span>
                   <span className="font-black text-slate-900">{selectedSettlementForDeposit.agentName}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">Semaine Concernée :</span>
+                  <span className="text-slate-500 font-medium">{t('concerned_week', 'Semaine Concernée :')}</span>
                   <span className="font-bold text-slate-800">{selectedSettlementForDeposit.weekLabel}</span>
                 </div>
                 <div className="flex justify-between pt-1 border-t border-slate-200/60 font-mono">
-                  <span className="text-slate-500 font-bold">Total Dû Net :</span>
+                  <span className="text-slate-500 font-bold">{t('net_due_admin', 'Total Dû Net :')}</span>
                   <span className="font-black text-slate-900">{selectedSettlementForDeposit.netAmountToPay.toLocaleString()} {selectedSettlementForDeposit.currency}</span>
                 </div>
                 <div className="flex justify-between font-mono">
-                  <span className="text-slate-500 font-bold">Déjà Déposé à l'Admin :</span>
+                  <span className="text-slate-500 font-bold">{t('already_deposited_admin', "Déjà Déposé à l'Admin :")}</span>
                   <span className="font-bold text-blue-700">{selectedSettlementForDeposit.amountDeposited.toLocaleString()} {selectedSettlementForDeposit.currency}</span>
                 </div>
                 <div className="flex justify-between font-mono font-black text-amber-700 pt-1 border-t border-slate-200/60">
-                  <span>Actuellement Reste à Payer :</span>
+                  <span>{t('remaining_balance_label', 'Actuellement Reste à Payer :')}</span>
                   <span>{selectedSettlementForDeposit.remainingBalance.toLocaleString()} {selectedSettlementForDeposit.currency}</span>
                 </div>
               </div>
             ) : (
               <div className="p-5 rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-center space-y-1.5 animate-in fade-in">
                 <User className="w-7 h-7 text-slate-400 mx-auto" />
-                <p className="text-xs font-bold text-slate-800">Aucun Agent sélectionné</p>
-                <p className="text-[11px] text-slate-400">Veuillez choisir un agent et une semaine ci-dessus pour afficher le bilan de liquidation.</p>
+                <p className="text-xs font-bold text-slate-800">{t('no_agent_selected', 'Aucun Agent sélectionné')}</p>
+                <p className="text-[11px] text-slate-400">{t('choose_agent_and_week', 'Veuillez choisir un agent et une semaine ci-dessus pour afficher le bilan de liquidation.')}</p>
               </div>
             )}
 
@@ -1041,7 +1041,7 @@ export const WeeklySettlementsView: React.FC = () => {
                 <form onSubmit={handleDepositSubmit} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-900 mb-1">
-                      Montant du Dépôt / Versement {selectedSettlementForDeposit ? `(${selectedSettlementForDeposit.currency})` : ''} *
+                      {t('deposit_amount_label', 'Montant du Dépôt / Versement')} {selectedSettlementForDeposit ? `(${selectedSettlementForDeposit.currency})` : ''} *
                     </label>
                     <div className="relative">
                       <input
@@ -1052,10 +1052,10 @@ export const WeeklySettlementsView: React.FC = () => {
                         onChange={(e) => setDepositAmount(e.target.value)}
                         placeholder={
                           !selectedSettlementForDeposit
-                            ? "Sélectionnez d'abord un agent et une semaine..."
+                            ? t('select_agent_first_short', "Sélectionnez d'abord un agent et une semaine...")
                             : isFullyPaid
-                            ? "🟢 Semaine entièrement réglée (Aucun solde dû)"
-                            : `Saisir le montant (ex: ${selectedSettlementForDeposit.remainingBalance})`
+                            ? `🟢 ${t('all_paid', 'Semaine entièrement réglée (Aucun solde dû)')}`
+                            : `${t('enter_amount', 'Saisir le montant')} (ex: ${selectedSettlementForDeposit.remainingBalance})`
                         }
                         className="w-full bg-slate-50 border border-slate-200 text-sm font-black text-slate-900 px-3.5 py-2.5 rounded-xl font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                         required={!isFullyPaid}
@@ -1069,10 +1069,10 @@ export const WeeklySettlementsView: React.FC = () => {
                     {isFullyPaid ? (
                       <p className="text-[11px] text-emerald-700 font-extrabold mt-1.5 flex items-center gap-1.5 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                        <span>🟢 Cette semaine est déjà 100% payée. Aucun versement supplémentaire ne peut être saisi.</span>
+                        <span>🟢 {t('week_fully_paid_note', 'Cette semaine est déjà 100% payée. Aucun versement supplémentaire ne peut être saisi.')}</span>
                       </p>
                     ) : (
-                      <p className="text-[10px] text-slate-400 mt-1">L'application recalculera instantanément le solde reste à payer.</p>
+                      <p className="text-[10px] text-slate-400 mt-1">{t('auto_recalc_note', "L'application recalculera instantanément le solde reste à payer.")}</p>
                     )}
                   </div>
 
@@ -1082,7 +1082,7 @@ export const WeeklySettlementsView: React.FC = () => {
                       onClick={closeModal}
                       className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
                     >
-                      Annuler
+                      {t('cancel', 'Annuler')}
                     </button>
                     <button
                       type="submit"
@@ -1090,7 +1090,7 @@ export const WeeklySettlementsView: React.FC = () => {
                       className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md flex items-center gap-2 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed shadow-none"
                     >
                       <Check className="w-4 h-4 text-emerald-400" />
-                      <span>Valider le Versement</span>
+                      <span>{t('validate_deposit', 'Valider le Versement')}</span>
                     </button>
                   </div>
                 </form>

@@ -219,14 +219,14 @@ export const SettingsView: React.FC = () => {
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-700" />
-                <span>1. Profil & Informations Personnelles Agent R.D.</span>
+                <span>{t('1. Profil & Informations Personnelles Agent R.D.')}</span>
               </h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nom & Prénom de l'Agent
+                  {t('Nom & Prénom de l\'Agent')}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -235,14 +235,14 @@ export const SettingsView: React.FC = () => {
                     value={rdName}
                     onChange={(e) => setRdName(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder="Nom complet"
+                    placeholder={t('Nom complet')}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Adresse e-mail professionnelle
+                  {t('Adresse e-mail professionnelle')}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -258,7 +258,7 @@ export const SettingsView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Numéro de Téléphone Guichet (R.D.)
+                  {t('Numéro de Téléphone Guichet (R.D.)')}
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -274,7 +274,7 @@ export const SettingsView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Agence & Emplacement
+                  {t('Agence & Emplacement')}
                 </label>
                 <div className="relative">
                   <Building className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -297,14 +297,14 @@ export const SettingsView: React.FC = () => {
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <Globe className="w-4 h-4 text-slate-700" />
-                <span>3. Préférences d'Affichage & Langue (Crucial R.D.)</span>
+                <span>{t('3. Préférences d\'Affichage & Langue (Crucial R.D.)')}</span>
               </h3>
             </div>
 
             {/* Choix de la Langue */}
             <div className="p-4 bg-slate-50 rounded-2xl space-y-2.5 border border-slate-200/80">
               <label className="block text-xs font-bold text-slate-900">
-                Langue de l'Interface de Vente (Navigation Rapide) :
+                {t('Langue de l\'Interface de Vente (Navigation Rapide) :')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
@@ -372,7 +372,7 @@ export const SettingsView: React.FC = () => {
               className="px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
-              <span>Se Déconnecter</span>
+              <span>{t('Se déconnecter')}</span>
             </button>
 
             <button
@@ -380,7 +380,7 @@ export const SettingsView: React.FC = () => {
               className="bg-slate-900 text-white font-extrabold text-xs px-7 py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer hover:shadow-xl active:scale-98"
             >
               <Save className="w-4 h-4 text-emerald-400" />
-              <span>Enregistrer Mes Paramètres</span>
+              <span>{t('Enregistrer Mes Paramètres')}</span>
             </button>
           </div>
 
@@ -411,15 +411,15 @@ export const SettingsView: React.FC = () => {
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-700" />
-                <span>1. Profil & Informations Personnelles</span>
+                <span>{t('1. Profil & Informations Personnelles')}</span>
               </h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Fiche Agent Terrain</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">{t('Fiche Agent Terrain')}</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nom & Prénom
+                  {t('Nom complet')}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -428,14 +428,14 @@ export const SettingsView: React.FC = () => {
                     value={haitiName}
                     onChange={(e) => setHaitiName(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder="Nom complet"
+                    placeholder={t('Nom complet')}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Adresse e-mail professionnelle
+                  {t('Adresse e-mail professionnelle')}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -452,7 +452,7 @@ export const SettingsView: React.FC = () => {
 
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Numéro de téléphone professionnel (Haïti)
+                  {t('Numéro de téléphone professionnel (Haïti)')}
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -464,7 +464,7 @@ export const SettingsView: React.FC = () => {
                     placeholder="+509 XX XX XX XX"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">Numéro associé au terminal Natcash & Natcom de l'agent.</p>
+                <p className="text-[10px] text-slate-400 mt-1">{t('Numéro associé au terminal Natcash & Natcom de l\'agent.')}</p>
               </div>
             </div>
           </div>
@@ -474,15 +474,15 @@ export const SettingsView: React.FC = () => {
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <Globe className="w-4 h-4 text-slate-700" />
-                <span>3. Préférences d'Affichage & Notifications Flux</span>
+                <span>{t('3. Préférences d\'Affichage & Notifications Flux')}</span>
               </h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Alertes Natcash/Natcom</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">{t('Alertes Natcash/Natcom')}</span>
             </div>
 
             {/* Choix de la Langue */}
             <div className="p-4 bg-slate-50 rounded-xl space-y-2.5 border border-slate-200/80">
               <label className="block text-xs font-bold text-slate-900">
-                Choix de la Langue de l'Interface
+                {t('Choix de la Langue de l\'Interface')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
@@ -543,8 +543,8 @@ export const SettingsView: React.FC = () => {
                     <Volume2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Alertes Sonores en Temps Réel</p>
-                    <p className="text-[11px] text-slate-500">Émettre un signal sonore lorsqu'une nouvelle tâche Natcash/Natcom arrive.</p>
+                    <p className="text-xs font-bold text-slate-900">{t('Alertes Sonores en Temps Réel')}</p>
+                    <p className="text-[11px] text-slate-500">{t('Émettre un signal sonore lorsqu\'une nouvelle tâche Natcash/Natcom arrive.')}</p>
                   </div>
                 </div>
                 <input
@@ -561,8 +561,8 @@ export const SettingsView: React.FC = () => {
                     <Bell className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Notifications Visuelles du Navigateur</p>
-                    <p className="text-[11px] text-slate-500">Afficher des popups/toasts à l'écran pour les retraits urgents.</p>
+                    <p className="text-xs font-bold text-slate-900">{t('Notifications Visuelles du Navigateur')}</p>
+                    <p className="text-[11px] text-slate-500">{t('Afficher des popups/toasts à l\'écran pour les retraits urgents.')}</p>
                   </div>
                 </div>
                 <input
@@ -583,7 +583,7 @@ export const SettingsView: React.FC = () => {
               className="px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
-              <span>Se Déconnecter</span>
+              <span>{t('Se déconnecter')}</span>
             </button>
 
             <button
@@ -591,7 +591,7 @@ export const SettingsView: React.FC = () => {
               className="bg-slate-900 text-white font-extrabold text-xs px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              <span>Enregistrer Mes Paramètres</span>
+              <span>{t('Enregistrer Mes Paramètres')}</span>
             </button>
           </div>
 
@@ -611,10 +611,10 @@ export const SettingsView: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <Settings className="w-5 h-5 text-slate-900" />
-            <span>Paramètres Généraux & Configuration Système</span>
+            <span>{t('Paramètres Généraux & Configuration Système')}</span>
           </h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Configurez les taux de change globaux, les paramètres de routage des nœuds et la sécurité du réseau.
+            {t('Configurez les taux de change globaux, les paramètres de routage des nœuds et la sécurité du réseau.')}
           </p>
         </div>
       </div>
@@ -629,7 +629,7 @@ export const SettingsView: React.FC = () => {
       {currentUser.role !== 'admin' && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-semibold flex items-center gap-2">
           <Lock className="w-4 h-4 text-amber-600" />
-          <span>Lecture seule : Seul l'Administrateur peut modifier les paramètres généraux du système.</span>
+          <span>{t('Lecture seule : Seul l\'Administrateur peut modifier les paramètres généraux du système.')}</span>
         </div>
       )}
 
@@ -640,15 +640,15 @@ export const SettingsView: React.FC = () => {
           <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-emerald-600" />
-              <span>Configuration des Taux de Change En Temps Réel</span>
+              <span>{t('Configuration des Taux de Change En Temps Réel')}</span>
             </h3>
-            <span className="text-[11px] text-slate-400 font-mono">Paires Pesos (RD) / HTG / USD</span>
+            <span className="text-[11px] text-slate-400 font-mono">{t('Paires Pesos (RD) / HTG / USD')}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Taux Officiel de Conversion (100 Pesos DOP ➔ Gourdes HTG) *
+                {t('Taux Officiel de Conversion (100 Pesos DOP ➔ Gourdes HTG) *')}
               </label>
               <div className="relative">
                 <input
@@ -667,7 +667,7 @@ export const SettingsView: React.FC = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Taux de Référence (1 USD ➔ HTG)
+                {t('Taux de Référence (1 USD ➔ HTG)')}
               </label>
               <div className="relative">
                 <input
@@ -678,7 +678,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">HTG</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">Taux indicatif des marchés internationaux.</p>
+              <p className="text-[10px] text-slate-400 mt-1">{t('Taux indicatif des marchés internationaux.')}</p>
             </div>
           </div>
         </div>
@@ -688,13 +688,13 @@ export const SettingsView: React.FC = () => {
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
             <h3 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
               <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Taux de Commission Admin par Service Offert</span>
+              <span>{t('Taux de Commission Admin par Service Offert')}</span>
             </h3>
-            <span className="text-[11px] text-slate-400 font-mono">Prélèvement Réseau par Service</span>
+            <span className="text-[11px] text-slate-400 font-mono">{t('Prélèvement Réseau par Service')}</span>
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            Définissez le pourcentage de commission calculé pour l'Administrateur sur chaque type de service réseau.
+            {t('Définissez le pourcentage de commission calculé pour l\'Administrateur sur chaque type de service réseau.')}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
@@ -723,7 +723,7 @@ export const SettingsView: React.FC = () => {
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Commission Admin (%) pour ce Service
+                      {t('Commission Admin (%) pour ce Service')}
                     </label>
                     <div className="relative">
                       <input
@@ -742,7 +742,7 @@ export const SettingsView: React.FC = () => {
                   </div>
 
                   <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-[10px] flex items-center justify-between text-emerald-900 dark:text-emerald-200 font-medium">
-                    <span>Ex. 1,000 DOP transférés :</span>
+                    <span>{t('Ex. 1,000 DOP transférés :')}</span>
                     <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                       Comm. Admin = <strong className="font-black">{exampleEarned} DOP</strong>
                     </span>
@@ -758,7 +758,7 @@ export const SettingsView: React.FC = () => {
           <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
               <Cpu className="w-4 h-4 text-blue-600" />
-              <span>Paramètres du Nœud Réseau & Routage Intelligente</span>
+              <span>{t('Paramètres du Nœud Réseau & Routage Intelligente')}</span>
             </h3>
             <span className="text-[11px] text-slate-400 font-mono">Node ID: {currentUser.nodeId}</span>
           </div>
@@ -766,8 +766,8 @@ export const SettingsView: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
               <div>
-                <p className="text-xs font-bold text-slate-900">Routage Automatique des Tâches</p>
-                <p className="text-[11px] text-slate-500">Route automatiquement les requêtes Natcash vers Haïti et MonCash vers les Télécoms.</p>
+                <p className="text-xs font-bold text-slate-900">{t('Routage Automatique des Tâches')}</p>
+                <p className="text-[11px] text-slate-500">{t('Route automatiquement les requêtes Natcash vers Haïti et MonCash vers les Télécoms.')}</p>
               </div>
               <input
                 type="checkbox"
@@ -780,8 +780,8 @@ export const SettingsView: React.FC = () => {
 
             <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
               <div>
-                <p className="text-xs font-bold text-slate-900">Devise Principale du Système</p>
-                <p className="text-[11px] text-slate-500">Devise d'affichage par défaut dans les rapports de trésorerie.</p>
+                <p className="text-xs font-bold text-slate-900">{t('Devise Principale du Système')}</p>
+                <p className="text-[11px] text-slate-500">{t('Devise d\'affichage par défaut dans les rapports de trésorerie.')}</p>
               </div>
               <select
                 value={defaultCurrency}
@@ -804,7 +804,7 @@ export const SettingsView: React.FC = () => {
             className="px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>Se Déconnecter</span>
+            <span>{t('Se déconnecter')}</span>
           </button>
 
           {currentUser.role === 'admin' && (
@@ -813,7 +813,7 @@ export const SettingsView: React.FC = () => {
               className="bg-slate-900 text-white font-bold text-xs px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              <span>Enregistrer les Modifications</span>
+              <span>{t('Enregistrer les Modifications')}</span>
             </button>
           )}
         </div>

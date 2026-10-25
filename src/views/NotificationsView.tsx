@@ -33,6 +33,8 @@ export const NotificationsView: React.FC = () => {
     readNotificationIds,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    currentLang,
+    t
   } = useApp();
 
   const [activeFilter, setActiveFilter] = useState<NotificationFilterType>('all');
@@ -47,6 +49,8 @@ export const NotificationsView: React.FC = () => {
   const isAgentHaiti = currentUser.role === 'agent_haiti';
 
   const activeKillCount = killSwitchList.filter(k => !k.enabled).length;
+
+  const notifLocale = currentLang === 'ES' ? 'es-DO' : currentLang === 'HT' ? 'fr-HT' : 'fr-FR';
 
   // Périmètre strict selon le rôle : l'agent RD ne voit que ses propres notifications de transactions
   const roleScopedTxs = transactions.filter((tx) => {
@@ -82,28 +86,28 @@ export const NotificationsView: React.FC = () => {
     roleScopedTxs.forEach((tx) => {
       let icon = Clock;
       let color = 'text-amber-500 bg-amber-500/10 border-amber-500/20';
-      let badgeText = 'En cours';
+      let badgeText = t('in_progress_count');
       let badgeColor = 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300';
-      let title = `Transfert ${tx.operator.toUpperCase()} en cours`;
+      let title = `${t('Transfert', 'Transfert')} ${tx.operator.toUpperCase()} ${t('En cours')}`;
 
       if (tx.status === 'completed') {
         icon = CheckCircle2;
         color = 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-        badgeText = 'Clôturé / Validé';
+        badgeText = t('Clôturée / Validée');
         badgeColor = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300';
-        title = `Transfert ${tx.operator.toUpperCase()} validé`;
+        title = `${t('Transfert', 'Transfert')} ${tx.operator.toUpperCase()} ${t('Validé')}`;
       } else if (tx.status === 'cancelled') {
         icon = ShieldAlert;
         color = 'text-rose-500 bg-rose-500/10 border-rose-500/20';
-        badgeText = 'Annulé';
+        badgeText = t('Annulé');
         badgeColor = 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300';
-        title = `Transfert ${tx.operator.toUpperCase()} annulé`;
+        title = `${t('Transfert', 'Transfert')} ${tx.operator.toUpperCase()} ${t('Annulé')}`;
       }
 
       const formatTime = (dateStr: string) => {
         const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return 'Récemment';
-        return d.toLocaleDateString('fr-FR', {
+        if (isNaN(d.getTime())) return t('Récent', 'Récemment');
+        return d.toLocaleDateString(notifLocale, {
           day: '2-digit',
           month: '2-digit',
           hour: '2-digit',
@@ -115,7 +119,7 @@ export const NotificationsView: React.FC = () => {
         id: `notif_tx_${tx.id}`,
         category: 'transactions',
         title,
-        message: `Bénéficiaire : ${tx.receiverName} (${tx.receiverPhone}) • Montant : ${tx.amountHTG.toLocaleString()} HTG (${tx.amountDOP.toLocaleString()} DOP) • Réf : ${tx.referenceNumber}`,
+        message: `${t('beneficiary')} : ${tx.receiverName} (${tx.receiverPhone}) • ${t('amount')} : ${tx.amountHTG.toLocaleString()} HTG (${tx.amountDOP.toLocaleString()} DOP) • Réf : ${tx.referenceNumber}`,
         time: formatTime(tx.createdAt),
         icon,
         color,
@@ -129,12 +133,12 @@ export const NotificationsView: React.FC = () => {
     list.push({
       id: 'notif_rate_current',
       category: 'rate',
-      title: 'Taux de Change Actif',
-      message: `Le taux officiel d'échange est fixé à 100 Pesos (DOP) = ${Math.round(dopToHtgRate * 100)} Gourdes (HTG).`,
-      time: 'Aujourd\'hui',
+      title: t('Taux de Change Actif', 'Taux de Change Actif'),
+      message: `${t('rate_label')} : 100 Pesos (DOP) = ${Math.round(dopToHtgRate * 100)} Gourdes (HTG).`,
+      time: t('today', "Aujourd'hui"),
       icon: DollarSign,
       color: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
-      badgeText: 'Info Taux',
+      badgeText: t('rate_label'),
       badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
     });
 
@@ -143,30 +147,30 @@ export const NotificationsView: React.FC = () => {
       list.push({
         id: 'notif_ks_alert',
         category: 'security',
-        title: 'Alerte Sécurité des Services',
-        message: `${activeKillCount} service(s) partenaire(s) temporairement suspendu(s) pour maintenance.`,
-        time: 'En cours',
+        title: t('Alerte Sécurité des Services', 'Alerte Sécurité des Services'),
+        message: `${activeKillCount} ${t('service(s) temporairement suspendu(s)', 'service(s) partenaire(s) temporairement suspendu(s) pour maintenance.')}`,
+        time: t('En cours'),
         icon: Lock,
         color: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
-        badgeText: 'Urgent',
+        badgeText: t('Critique'),
         badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300'
       });
     } else {
       list.push({
         id: 'notif_ks_ok',
         category: 'security',
-        title: 'Système & Services Opérationnels',
-        message: 'Tous les canaux de transfert (MonCash, Natcash, Natcom, Claro, Altice, Zelle) fonctionnent normalement.',
-        time: 'En direct',
+        title: t('Système & Services Opérationnels', 'Système & Services Opérationnels'),
+        message: t('Tous les canaux de transfert (MonCash, Natcash, Natcom, Claro, Altice, Zelle) fonctionnent normalement.', 'Tous les canaux de transfert (MonCash, Natcash, Natcom, Claro, Altice, Zelle) fonctionnent normalement.'),
+        time: t('Actif'),
         icon: Zap,
         color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-        badgeText: 'Opérationnel',
+        badgeText: t('Optimal'),
         badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
       });
     }
 
     return list;
-  }, [roleScopedTxs, dopToHtgRate, activeKillCount]);
+  }, [roleScopedTxs, dopToHtgRate, activeKillCount, notifLocale, t]);
 
   // Filtering based on tab tab activeFilter : seules les notifications non lues sont conservées (une notification lue est immédiatement effacée)
   const filteredNotifications = allNotifications.filter((n) => {
@@ -189,20 +193,20 @@ export const NotificationsView: React.FC = () => {
         <button
           onClick={() => setActiveTab(isAgentRD ? 'guichet' : 'overview')}
           className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-xs font-extrabold cursor-pointer transition-colors"
-          title="Retour à l'accueil"
+          title={t('back')}
         >
           <ArrowLeft className="w-4 h-4 text-orange-500" />
-          <span>Retour</span>
+          <span>{t('back')}</span>
         </button>
 
         {filteredNotifications.length > 0 && (
           <button
             onClick={() => markAllNotificationsAsRead(filteredNotifications.map(n => n.id))}
             className="px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border border-rose-200/60 dark:border-rose-900/40"
-            title="Effacer toutes les notifications affichées"
+            title={t('Tout effacer', 'Effacer toutes les notifications affichées')}
           >
             <CheckCheck className="w-4 h-4 text-rose-500" />
-            <span>Tout effacer</span>
+            <span>{t('Tout effacer', 'Tout effacer')}</span>
           </button>
         )}
       </header>
@@ -216,14 +220,14 @@ export const NotificationsView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Centre de Notifications
+                {t('Centre de Notifications', 'Centre de Notifications')}
               </h2>
               <span className="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/80 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-900/50">
                 {filteredNotifications.length}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {isAgentRD ? 'Espace Agent RD — Notifications & suivis personnalisés' : 'Suivi complet des alertes et des transferts'}
+              {isAgentRD ? t('Espace Agent RD — Notifications & suivis personnalisés', 'Espace Agent RD — Notifications & suivis personnalisés') : t('Suivi complet des alertes et des transferts', 'Suivi complet des alertes et des transferts')}
             </p>
           </div>
         </div>
@@ -233,7 +237,7 @@ export const NotificationsView: React.FC = () => {
           onClick={() => setActiveTab('history')}
           className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
         >
-          <span>Consulter l'Historique</span>
+          <span>{t('Consulter l\'Historique', 'Consulter l\'Historique')}</span>
           <ChevronRight className="w-4 h-4 text-orange-500" />
         </button>
       </div>

@@ -341,7 +341,7 @@ export const Sidebar: React.FC = () => {
                   <div className="text-left">
                     <span className="block font-bold leading-tight">{t('Tableau de bord')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'overview' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      KPIs & Statistiques
+                      {t('KPIs & Statistiques', 'KPIs & Statistiques')}
                     </span>
                   </div>
                 )}
@@ -387,7 +387,7 @@ export const Sidebar: React.FC = () => {
                   <div className="text-left">
                     <span className="block font-bold leading-tight">{t('File d\'attente')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Tâches & Routage
+                      {t('Tâches & Routage', 'Tâches & Routage')}
                     </span>
                   </div>
                 )}
@@ -421,7 +421,7 @@ export const Sidebar: React.FC = () => {
                   <div className="text-left">
                     <span className="block font-bold leading-tight">{t('Trésorerie & Solde')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'treasury' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Soldes & Liquidités
+                      {t('Soldes & Liquidités', 'Soldes & Liquidités')}
                     </span>
                   </div>
                 )}
@@ -444,7 +444,7 @@ export const Sidebar: React.FC = () => {
                   <div className="text-left">
                     <span className="block font-bold leading-tight">{t('Historique')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'history' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Archives & Bilans
+                      {t('Archives & Bilans', 'Archives & Bilans')}
                     </span>
                   </div>
                 )}

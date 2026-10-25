@@ -58,7 +58,8 @@ export const UserManagementView: React.FC = () => {
     activeTab,
     setActiveTab,
     transactions,
-    settlements
+    settlements,
+    t
   } = useApp();
 
   const [subTab, setSubTab] = useState<'user_list' | 'create_user' | 'permissions_matrix'>(
@@ -1711,14 +1712,14 @@ export const UserManagementView: React.FC = () => {
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 truncate">
               <Users className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              <span className="truncate">Gestion des Utilisateurs</span>
+              <span className="truncate">{t('users_title', 'Gestion des Utilisateurs')}</span>
             </h2>
             <span className="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-              {availableUsers.length} Comptes
+              {availableUsers.length} {t('accounts_count', 'Comptes')}
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Supervision des rôles employés, création des accès Nœud et configuration des privilèges.
+            {t('users_subtitle', 'Supervision des rôles employés, création des accès Nœud et configuration des privilèges.')}
           </p>
         </div>
 
@@ -1730,7 +1731,7 @@ export const UserManagementView: React.FC = () => {
               setSubTab('user_list');
               setActiveTab('user_list');
             }}
-            title="Liste des Utilisateurs"
+            title={t('sub_user_list', 'Liste & Rôles')}
             className={`px-3 py-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${
               subTab === 'user_list' 
                 ? 'bg-slate-900 text-white shadow-2xs' 
@@ -1738,7 +1739,7 @@ export const UserManagementView: React.FC = () => {
             }`}
           >
             <UserCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <span>Liste</span>
+            <span>{t('list_tab', 'Liste')}</span>
           </button>
 
           <button
@@ -1746,7 +1747,7 @@ export const UserManagementView: React.FC = () => {
               setSubTab('create_user');
               setActiveTab('create_user');
             }}
-            title="Créer un Utilisateur"
+            title={t('sub_create_user', 'Créer un Utilisateur')}
             className={`px-3 py-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${
               subTab === 'create_user' 
                 ? 'bg-slate-900 text-white shadow-2xs' 
@@ -1754,7 +1755,7 @@ export const UserManagementView: React.FC = () => {
             }`}
           >
             <UserPlus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Créer</span>
+            <span>{t('create_tab', 'Créer')}</span>
           </button>
 
           <button
@@ -1762,7 +1763,7 @@ export const UserManagementView: React.FC = () => {
               setSubTab('permissions_matrix');
               setActiveTab('permissions_matrix');
             }}
-            title="Matrice de Permissions"
+            title={t('permissions_matrix_title', 'Matrice de Permissions')}
             className={`px-3 py-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${
               subTab === 'permissions_matrix' 
                 ? 'bg-slate-900 text-white shadow-2xs' 
@@ -1770,7 +1771,7 @@ export const UserManagementView: React.FC = () => {
             }`}
           >
             <SlidersHorizontal className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-            <span>Matrice</span>
+            <span>{t('matrix_tab', 'Matrice')}</span>
           </button>
 
         </div>
@@ -1779,7 +1780,7 @@ export const UserManagementView: React.FC = () => {
       {currentUser.role !== 'admin' && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold flex items-center gap-2">
           <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
-          <span>Accès en Lecture Seule : Seul l'Administrateur peut activer/désactiver des comptes employés ou modifier la matrice.</span>
+          <span>{t('readonly_access_note', "Accès en Lecture Seule : Seul l'Administrateur peut activer/désactiver des comptes employés ou modifier la matrice.")}</span>
         </div>
       )}
 
@@ -2021,12 +2022,12 @@ export const UserManagementView: React.FC = () => {
           <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
               <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
-                Répertoire des Comptes Employés & Performance
+                {t('employee_accounts_directory', 'Répertoire des Comptes Employés & Performance')}
               </span>
               <span className="text-[11px] text-blue-600 font-bold bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/80">
                 {inspectionPeriod === 'week' ? selectedWeekInfo.label :
                  inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
-                 inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : 'Toutes dates'}
+                 inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : t('all_dates', 'Toutes dates')}
               </span>
             </div>
 
@@ -2034,13 +2035,13 @@ export const UserManagementView: React.FC = () => {
               <div className="min-w-[950px]">
                 {/* Table Header Row */}
                 <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
-                  <div className="col-span-3">Utilisateur / Courriel</div>
-                  <div className="col-span-2">Rôle / Privilège</div>
-                  <div className="col-span-2">Activité ({inspectionPeriod === 'week' ? selectedWeekInfo.shortLabel : 'Période'})</div>
-                  <div className="col-span-2">Dû Admin / Déposé</div>
-                  <div className="col-span-1 text-center">Commissions</div>
-                  <div className="col-span-1 text-center">Statut</div>
-                  <div className="col-span-1 text-center">Actions</div>
+                  <div className="col-span-3">{t('user_email_header', 'Utilisateur / Courriel')}</div>
+                  <div className="col-span-2">{t('role_privilege_header', 'Rôle / Privilège')}</div>
+                  <div className="col-span-2">{t('activity_header', 'Activité')} ({inspectionPeriod === 'week' ? selectedWeekInfo.shortLabel : t('period', 'Période')})</div>
+                  <div className="col-span-2">{t('due_admin_deposited', 'Dû Admin / Déposé')}</div>
+                  <div className="col-span-1 text-center">{t('commissions_header', 'Commissions')}</div>
+                  <div className="col-span-1 text-center">{t('user_status', 'Statut')}</div>
+                  <div className="col-span-1 text-center">{t('actions', 'Actions')}</div>
                 </div>
 
                 {/* Table Body Rows */}
@@ -2060,7 +2061,7 @@ export const UserManagementView: React.FC = () => {
                           setLastAssignedPassword(null);
                         }}
                         className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
-                        title="Cliquer pour voir la fiche utilisateur complète et télécharger le PDF"
+                        title={t('click_view_user_sheet', 'Cliquer pour voir la fiche utilisateur complète et télécharger le PDF')}
                       >
                         
                         {/* 1. Utilisateur / Profil */}
@@ -2099,20 +2100,20 @@ export const UserManagementView: React.FC = () => {
                             {userStats.volumeDOP.toLocaleString()} DOP
                           </p>
                           <p className="text-[10px] text-blue-600 font-bold">
-                            {userStats.txCount} transaction{userStats.txCount > 1 ? 's' : ''}
+                            {userStats.txCount} {t('tx_count_label', 'transactions')}
                           </p>
                         </div>
 
                         {/* 4. Dû Admin / Déposé */}
                         <div className="col-span-2">
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-slate-400 font-bold">Dû:</span>
+                            <span className="text-[10px] text-slate-400 font-bold">{t('due_colon', 'Dû:')}</span>
                             <span className={`font-mono font-extrabold text-xs ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                               {userStats.dueDOP.toLocaleString()} DOP
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-400 font-medium">
-                            Déposé: {userStats.depositedDOP.toLocaleString()} DOP
+                            {t('deposited_colon', 'Déposé:')} {userStats.depositedDOP.toLocaleString()} DOP
                           </p>
                         </div>
 
@@ -2131,7 +2132,7 @@ export const UserManagementView: React.FC = () => {
                               : 'bg-emerald-100 text-emerald-800'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
-                            {isOffline ? 'INACTIF' : 'ACTIF'}
+                            {isOffline ? t('inactive', 'INACTIF') : t('active', 'ACTIF')}
                           </span>
                         </div>
 
@@ -2202,8 +2203,8 @@ export const UserManagementView: React.FC = () => {
                 <UserPlus className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900 text-base">Créer un Nouveau Compte Employé</h3>
-                <p className="text-xs text-slate-500 font-medium">Attribution des identifiants et configuration des accès agence</p>
+                <h3 className="font-black text-slate-900 text-base">{t('create_new_employee_account', 'Créer un Nouveau Compte Employé')}</h3>
+                <p className="text-xs text-slate-500 font-medium">{t('assign_credentials_desc', 'Attribution des identifiants et configuration des accès agence')}</p>
               </div>
             </div>
           </div>
@@ -2225,9 +2226,9 @@ export const UserManagementView: React.FC = () => {
                   }}
                   className="px-3 py-1 bg-white text-slate-900 rounded-lg text-xs font-extrabold hover:bg-slate-100"
                 >
-                  Voir la Liste →
+                  {t('view_list_arrow', 'Voir la Liste →')}
                 </button>
-                <button onClick={() => setFormMsg(null)} className="underline text-white text-xs">Fermer</button>
+                <button onClick={() => setFormMsg(null)} className="underline text-white text-xs">{t('close', 'Fermer')}</button>
               </div>
             </div>
           )}
@@ -2238,17 +2239,17 @@ export const UserManagementView: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  1. Identité & Identifiants de Connexion
+                  {t('identity_credentials_title', '1. Identité & Identifiants de Connexion')}
                 </h4>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  Identifiants requis pour l'accès au portail Dalexis
+                  {t('credentials_required_desc', "Identifiants requis pour l'accès au portail")}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Nom Complet */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nom Complet de l'Employé *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">{t('employee_fullname', "Nom Complet de l'Employé *")}</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -2274,14 +2275,14 @@ export const UserManagementView: React.FC = () => {
                 {/* Nom d'utilisateur (Username) */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">Nom d'utilisateur (Username) *</label>
+                    <label className="block text-xs font-bold text-slate-700">{t('username_star', "Nom d'utilisateur (Username) *")}</label>
                     <button
                       type="button"
                       onClick={autoGenerateUsername}
                       className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
                     >
                       <Sparkles className="w-3 h-3" />
-                      Suggérer
+                      {t('suggest', 'Suggérer')}
                     </button>
                   </div>
                   <div className="relative">
@@ -2297,12 +2298,12 @@ export const UserManagementView: React.FC = () => {
                       required
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Identifiant unique court utilisé lors de la connexion.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{t('unique_username_desc', 'Identifiant unique court utilisé lors de la connexion.')}</p>
                 </div>
 
                 {/* Courriel Professionnel */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Courriel Professionnel *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">{t('professional_email_star', 'Courriel Professionnel *')}</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -2316,14 +2317,14 @@ export const UserManagementView: React.FC = () => {
                 {/* Mot de passe Initial */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-700">Mot de Passe Initial *</label>
+                    <label className="block text-xs font-bold text-slate-700">{t('initial_password_star', 'Mot de Passe Initial *')}</label>
                     <button
                       type="button"
                       onClick={generateStrongPassword}
                       className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1"
                     >
                       <Key className="w-3 h-3" />
-                      Générer sécurisé
+                      {t('generate_secure', 'Générer sécurisé')}
                     </button>
                   </div>
                   <div className="relative">
@@ -2331,7 +2332,7 @@ export const UserManagementView: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Min. 6 caractères (défaut: dalexis123)"
+                      placeholder="Min. 6 caractères"
                       className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-3.5 pr-10 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 font-mono"
                     />
                     <button
@@ -2343,7 +2344,7 @@ export const UserManagementView: React.FC = () => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Mot de passe pour la première connexion de l'agent.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{t('first_conn_pwd_desc', "Mot de passe pour la première connexion de l'agent.")}</p>
                 </div>
               </div>
             </div>
@@ -2351,12 +2352,12 @@ export const UserManagementView: React.FC = () => {
             {/* Role & Location Section */}
             <div className="space-y-4">
               <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
-                2. Rôle Système & Affectation Agence
+                {t('role_and_assignment_title', '2. Rôle Système & Affectation Agence')}
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Rôle Système & Privilèges *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">{t('system_role_star', 'Rôle Système & Privilèges *')}</label>
                   <select
                     value={formData.role}
                     onChange={(e) => {
@@ -2369,27 +2370,27 @@ export const UserManagementView: React.FC = () => {
                     }}
                     className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   >
-                    <option value="agent_rd">Agent RD (Guichet Saisie Rep. Dom.)</option>
-                    <option value="agent_haiti">Agent Haïti (Décaissement Natcash/Natcom)</option>
-                    <option value="gestionnaire">Gestionnaire (Flux MonCash/Digicel)</option>
-                    <option value="admin">Administrateur Système (Accès Global)</option>
+                    <option value="agent_rd">{t('agent_rd_role', 'Agent RD (Guichet Saisie Rep. Dom.)')}</option>
+                    <option value="agent_haiti">{t('agent_haiti_role', 'Agent Haïti (Décaissement Natcash/Natcom)')}</option>
+                    <option value="gestionnaire">{t('gestionnaire_role', 'Gestionnaire (Flux MonCash/Digicel)')}</option>
+                    <option value="admin">{t('admin_role', 'Administrateur Système (Accès Global)')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Localisation / Agence Physique *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">{t('location_agency_star', 'Localisation / Agence Physique *')}</label>
                   <input
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="ex: Agence Santo Domingo - Av. 27 de Febrero"
+                    placeholder="ex: Agence Santo Domingo"
                     className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Taux de Commission Agent (%) *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">{t('agent_commission_rate_star', 'Taux de Commission Agent (%) *')}</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -2398,7 +2399,7 @@ export const UserManagementView: React.FC = () => {
                       max="100"
                       value={formData.commissionRate}
                       onChange={(e) => setFormData({ ...formData, commissionRate: parseFloat(e.target.value) || 0 })}
-                      placeholder="ex: 1.0 pour 1%"
+                      placeholder="ex: 1.0"
                       className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 pl-3.5 pr-8 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       required
                     />
@@ -2417,7 +2418,7 @@ export const UserManagementView: React.FC = () => {
                 }}
                 className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200"
               >
-                Annuler
+                {t('cancel', 'Annuler')}
               </button>
 
               <button
@@ -2426,7 +2427,7 @@ export const UserManagementView: React.FC = () => {
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>{isSubmitting ? 'Enregistrement en cours...' : 'Enregistrer le Nouvel Utilisateur'}</span>
+                <span>{isSubmitting ? t('saving', 'Enregistrement en cours...') : t('save_new_user', 'Enregistrer le Nouvel Utilisateur')}</span>
               </button>
             </div>
           </form>
@@ -2441,10 +2442,10 @@ export const UserManagementView: React.FC = () => {
             <div>
               <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-cyan-600" />
-                <span>Matrice de Modélisation des Permissions Nœud</span>
+                <span>{t('permissions_matrix_title', 'Matrice de Modélisation des Permissions Nœud')}</span>
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Modélisation dynamique des autorisations par opérateur et plafonds de transaction.
+                {t('matrix_modeling_desc', 'Modélisation dynamique des autorisations par opérateur et plafonds de transaction.')}
               </p>
             </div>
 
@@ -2472,7 +2473,7 @@ export const UserManagementView: React.FC = () => {
 
                     <div className="flex items-center gap-3 self-start sm:self-auto">
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Plafond Max Transaction</span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{t('max_transaction_ceiling', 'Plafond Max Transaction')}</span>
                         {currentUser.role === 'admin' ? (
                           <div className="flex items-center gap-1 justify-end mt-0.5">
                             <input
@@ -2494,12 +2495,12 @@ export const UserManagementView: React.FC = () => {
                         <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-md ${
                           perm.canCancelTransaction ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
                         }`}>
-                          {perm.canCancelTransaction ? 'Annulation Autorisée' : 'Annulation Restreinte'}
+                          {perm.canCancelTransaction ? t('cancel_allowed', 'Annulation Autorisée') : t('cancel_restricted', 'Annulation Restreinte')}
                         </span>
                         <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-md ${
                           perm.canManageKillSwitch ? 'bg-purple-100 text-purple-900' : 'bg-slate-100 text-slate-500'
                         }`}>
-                          {perm.canManageKillSwitch ? 'Sécurité Services Autorisée' : 'Sécurité Services Restreinte'}
+                          {perm.canManageKillSwitch ? t('service_security_allowed', 'Sécurité Services Autorisée') : t('service_security_restricted', 'Sécurité Services Restreinte')}
                         </span>
                       </div>
                     </div>

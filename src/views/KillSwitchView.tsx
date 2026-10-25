@@ -18,7 +18,7 @@ import { OperatorCode } from '../types';
 import { OPERATOR_CONFIG, OperatorBadge } from '../components/OperatorBadge';
 
 export const KillSwitchView: React.FC = () => {
-  const { killSwitchList, toggleKillSwitch, currentUser } = useApp();
+  const { killSwitchList, toggleKillSwitch, currentUser, t } = useApp();
   
   // State for emergency lock reason modal
   const [lockingOp, setLockingOp] = useState<OperatorCode | null>(null);
@@ -32,7 +32,7 @@ export const KillSwitchView: React.FC = () => {
 
     if (isCurrentlyEnabled) {
       setLockingOp(op);
-      setLockReason('Panne réseau / Maintenance d\'urgence');
+      setLockReason(t('default_lock_reason', "Panne réseau / Maintenance d'urgence"));
     } else {
       // Unlocking directly
       toggleKillSwitch(op);
@@ -45,7 +45,7 @@ export const KillSwitchView: React.FC = () => {
     e.preventDefault();
     if (!lockingOp) return;
 
-    toggleKillSwitch(lockingOp, lockReason || 'Maintenance d\'urgence');
+    toggleKillSwitch(lockingOp, lockReason || t('emergency_maintenance', "Maintenance d'urgence"));
     setFeedback(`Service ${lockingOp.toUpperCase()} VERROUILLÉ D'URGENCE !`);
     setLockingOp(null);
     setLockReason('');
@@ -63,9 +63,9 @@ export const KillSwitchView: React.FC = () => {
               <ShieldAlert className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Gestion des Interrupteurs de Sécurité</h2>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">{t('killswitch_title', "Arrêt d'Urgence & Sécurité")}</h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Suspension et réactivation en temps réel des flux opérateurs partenaires en cas d'incident ou de maintenance.
+                {t('killswitch_subtitle', "Suspension et réactivation en temps réel des flux opérateurs partenaires en cas d'incident ou de maintenance.")}
               </p>
             </div>
           </div>
@@ -75,12 +75,12 @@ export const KillSwitchView: React.FC = () => {
           {lockedCount > 0 ? (
             <span className="px-3.5 py-2 bg-rose-600 text-white font-black text-xs rounded-xl flex items-center gap-2 shadow-md animate-pulse">
               <AlertTriangle className="w-4 h-4" />
-              <span>{lockedCount} SERVICE(S) EN SUSPENSION D'URGENCE</span>
+              <span>{lockedCount} {t('services_emergency_suspended', "SERVICE(S) EN SUSPENSION D'URGENCE")}</span>
             </span>
           ) : (
             <span className="px-3.5 py-2 bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-xs rounded-xl flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>TOUS LES SERVICES OPÉRATIONNELS</span>
+              <span>{t('all_services_operational', 'TOUS LES SERVICES OPÉRATIONNELS')}</span>
             </span>
           )}
         </div>
@@ -93,14 +93,14 @@ export const KillSwitchView: React.FC = () => {
             <Zap className="w-5 h-5 text-amber-400" />
             <span>{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-white text-xs underline">Fermer</button>
+          <button onClick={() => setFeedback(null)} className="text-white text-xs underline">{t('close', 'Fermer')}</button>
         </div>
       )}
 
       {currentUser.role !== 'admin' && (
         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold flex items-center gap-2">
           <Lock className="w-4 h-4 text-amber-600" />
-          <span>Accès Réservé Administrateur : Seul un administrateur système est autorisé à modifier les paramètres de sécurité des services.</span>
+          <span>{t('admin_reserved_security_note', "Accès Réservé Administrateur : Seul un administrateur système est autorisé à modifier les paramètres de sécurité des services.")}</span>
         </div>
       )}
 
@@ -126,21 +126,21 @@ export const KillSwitchView: React.FC = () => {
                   isEnabled ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-600 text-white shadow-xs'
                 }`}>
                   {isEnabled ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                  <span>{isEnabled ? 'ACTIF' : 'VERROUILLÉ'}</span>
+                  <span>{isEnabled ? t('active', 'ACTIF') : t('locked', 'VERROUILLÉ')}</span>
                 </span>
               </div>
 
               {!isEnabled && item.reason && (
                 <div className="p-3 bg-white border border-rose-200 rounded-xl text-xs text-rose-900 font-medium space-y-1">
                   <p className="font-extrabold text-rose-700 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> Motif d'Urgence :
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> {t('emergency_reason_colon', "Motif d'Urgence :")}
                   </p>
                   <p className="font-mono text-[11px] bg-rose-50 p-2 rounded-lg border border-rose-100">{item.reason}</p>
                 </div>
               )}
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                <span>Dernière action:</span>
+                <span>{t('last_action_colon', 'Dernière action:')}</span>
                 <span className="font-bold text-slate-600">{item.updatedBy}</span>
               </div>
 
@@ -155,7 +155,7 @@ export const KillSwitchView: React.FC = () => {
                 }`}
               >
                 <Power className="w-4 h-4" />
-                <span>{isEnabled ? 'Verrouiller Urgence' : 'Déverrouiller le Service'}</span>
+                <span>{isEnabled ? t('emergency_lock_btn', 'Verrouiller Urgence') : t('unlock_service_btn', 'Déverrouiller le Service')}</span>
               </button>
             </div>
           );
@@ -172,7 +172,7 @@ export const KillSwitchView: React.FC = () => {
                 <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
                   <Lock className="w-4 h-4" />
                 </div>
-                <h3 className="font-black text-slate-900 text-base">Verrouillage d'Urgence : {lockingOp.toUpperCase()}</h3>
+                <h3 className="font-black text-slate-900 text-base">{t('emergency_lock_title', "Verrouillage d'Urgence :")} {lockingOp.toUpperCase()}</h3>
               </div>
               <button 
                 onClick={() => setLockingOp(null)}
@@ -184,12 +184,12 @@ export const KillSwitchView: React.FC = () => {
 
             <form onSubmit={handleConfirmLock} className="space-y-4 text-xs font-sans">
               <p className="text-slate-600 font-medium leading-relaxed">
-                Spécifiez le motif d'arrêt d'urgence pour le service <span className="font-extrabold text-slate-900">{lockingOp.toUpperCase()}</span>. Cette action empêchera immédiatement toute saisie sur ce canal.
+                {t('specify_lock_reason_desc', "Spécifiez le motif d'arrêt d'urgence pour le service")} <span className="font-extrabold text-slate-900">{lockingOp.toUpperCase()}</span>. {t('lock_prevents_input_desc', "Cette action empêchera immédiatement toute saisie sur ce canal.")}
               </p>
 
               {/* Quick Preset Badges */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Raccourcis Motifs</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('quick_reasons_shortcuts', 'Raccourcis Motifs')}</label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     'Panne API MonCash',
@@ -210,12 +210,12 @@ export const KillSwitchView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Motif Détaillé de l'Arrêt *</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">{t('detailed_lock_reason_star', "Motif Détaillé de l'Arrêt *")}</label>
                 <textarea
                   rows={3}
                   value={lockReason}
                   onChange={(e) => setLockReason(e.target.value)}
-                  placeholder="Ex: Interruption temporaire du service par l'opérateur MonCash..."
+                  placeholder="Ex: Interruption temporaire du service..."
                   className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-600"
                   required
                 />
@@ -227,14 +227,14 @@ export const KillSwitchView: React.FC = () => {
                   onClick={() => setLockingOp(null)}
                   className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200"
                 >
-                  Annuler
+                  {t('cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5"
                 >
                   <Power className="w-4 h-4" />
-                  <span>Confirmer le Verrouillage</span>
+                  <span>{t('confirm_lock_btn', 'Confirmer le Verrouillage')}</span>
                 </button>
               </div>
             </form>

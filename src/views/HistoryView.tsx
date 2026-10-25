@@ -23,7 +23,8 @@ import { Pagination } from '../components/Pagination';
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
 export const HistoryView: React.FC = () => {
-  const { transactions, currentUser, setSelectedReceiptTx, completeTask, setIsTransactionDetailOpen } = useApp();
+  const { transactions, currentUser, setSelectedReceiptTx, completeTask, setIsTransactionDetailOpen, currentLang, t } = useApp();
+  const dateLocale = currentLang === 'ES' ? 'es-DO' : currentLang === 'HT' ? 'fr-HT' : 'fr-FR';
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>('all');
   const [operatorFilter, setOperatorFilter] = useState<string>('all');
@@ -134,13 +135,13 @@ export const HistoryView: React.FC = () => {
           <button
             onClick={() => setInspectedTx(null)}
             className="p-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 cursor-pointer"
-            title="Retour"
+            title={t('back', 'Retour')}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
           <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Détails de la Transaction
+            {t('Détails de la Transaction', 'Détails de la Transaction')}
           </h3>
 
           <div className="w-9" />
@@ -152,7 +153,7 @@ export const HistoryView: React.FC = () => {
           {/* Header Row: Reference & Status */}
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Référence</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{t('Référence', 'Référence')}</span>
               <span className="font-mono font-black text-base text-slate-900 dark:text-white">
                 {tx.referenceNumber}
               </span>
@@ -160,15 +161,15 @@ export const HistoryView: React.FC = () => {
 
             {isCancelled ? (
               <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/60 dark:border-rose-900/60 flex items-center gap-1 shadow-2xs">
-                ✕ Annulé
+                ✕ {t('cancelled', 'Annulé')}
               </span>
             ) : isCompleted ? (
               <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50">
-                ✓ Clôturé
+                ✓ {t('completed', 'Clôturé')}
               </span>
             ) : (
               <span className="text-[10px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-orange-600" /> En attente
+                <Clock className="w-3 h-3 text-orange-600" /> {t('pending', 'En attente')}
               </span>
             )}
           </div>
@@ -178,24 +179,24 @@ export const HistoryView: React.FC = () => {
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border-2 border-rose-200 dark:border-rose-900/60 space-y-2 animate-in fade-in">
               <div className="flex items-center gap-1.5 text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wide">
                 <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>Information d'Annulation Officielle :</span>
+                <span>{t("Information d'Annulation Officielle :", "Information d'Annulation Officielle :")}</span>
               </div>
               <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-rose-200 dark:border-rose-900/40 space-y-1 text-xs">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-slate-500 font-bold text-[11px]">Motif :</span>
+                  <span className="text-slate-500 font-bold text-[11px]">{t('Motif :', 'Motif :')}</span>
                   <span className="font-extrabold text-rose-700 dark:text-rose-400 text-right break-words text-[11px]">
-                    {tx.cancellationReason || "Annulé par l'administrateur"}
+                    {tx.cancellationReason || t("Annulé par l'administrateur", "Annulé par l'administrateur")}
                   </span>
                 </div>
                 {tx.cancelledAt && (
                   <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-rose-100 dark:border-slate-800 font-mono">
-                    <span>Date d'annulation :</span>
-                    <span>{new Date(tx.cancelledAt).toLocaleString('fr-FR')}</span>
+                    <span>{t("Date d'annulation :", "Date d'annulation :")}</span>
+                    <span>{new Date(tx.cancelledAt).toLocaleString(dateLocale)}</span>
                   </div>
                 )}
               </div>
               <p className="text-[10px] text-rose-700 dark:text-rose-400 font-semibold leading-tight">
-                ⚠️ Cette opération a été révoquée par l'Administrateur. Aucun fonds n'a été décaissé.
+                {t("⚠️ Cette opération a été révoquée par l'Administrateur. Aucun fonds n'a été décaissé.", "⚠️ Cette opération a été révoquée par l'Administrateur. Aucun fonds n'a été décaissé.")}
               </p>
             </div>
           )}
@@ -204,51 +205,51 @@ export const HistoryView: React.FC = () => {
           <div className="space-y-2 text-xs">
             
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Service / Opérateur</span>
+              <span className="text-slate-500 font-medium">{t('Service / Opérateur', 'Service / Opérateur')}</span>
               <OperatorBadge operator={tx.operator} size="sm" />
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Bénéficiaire</span>
+              <span className="text-slate-500 font-medium">{t('Bénéficiaire', 'Bénéficiaire')}</span>
               <span className="font-extrabold text-slate-900 dark:text-white">{tx.receiverName}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Téléphone Bénéficiaire</span>
+              <span className="text-slate-500 font-medium">{t('Téléphone Bénéficiaire', 'Téléphone Bénéficiaire')}</span>
               <span className="font-mono font-bold text-slate-900 dark:text-white">{tx.receiverPhone}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Expéditeur</span>
+              <span className="text-slate-500 font-medium">{t('Expéditeur', 'Expéditeur')}</span>
               <span className="font-extrabold text-slate-900 dark:text-white">{tx.senderName}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Téléphone Expéditeur</span>
+              <span className="text-slate-500 font-medium">{t('Téléphone Expéditeur', 'Téléphone Expéditeur')}</span>
               <span className="font-mono font-bold text-slate-900 dark:text-white">{tx.senderPhone}</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Montant Envoyé</span>
+              <span className="text-slate-500 font-medium">{t('Montant Envoyé', 'Montant Envoyé')}</span>
               <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{tx.amountDOP.toLocaleString()} DOP</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-              <span className="text-blue-700 dark:text-blue-400 font-bold">Commission Admin (DOP)</span>
+              <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin (DOP)', 'Commission Admin (DOP)')}</span>
               <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
                 +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
               </span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-              <span className="text-blue-700 dark:text-blue-400 font-bold">Montant Reçu</span>
+              <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Montant Reçu', 'Montant Reçu')}</span>
               <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{tx.amountHTG.toLocaleString()} HTG</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">Date & Heure</span>
+              <span className="text-slate-500 font-medium">{t('Date & Heure', 'Date & Heure')}</span>
               <span className="font-mono text-slate-700 dark:text-slate-300">
-                {new Date(tx.createdAt).toLocaleString('fr-FR', {
+                {new Date(tx.createdAt).toLocaleString(dateLocale, {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
@@ -263,7 +264,7 @@ export const HistoryView: React.FC = () => {
               <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-400">
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  <span>Preuve de Clôture & Validation :</span>
+                  <span>{t('Preuve de Clôture & Validation :', 'Preuve de Clôture & Validation :')}</span>
                 </div>
                 {tx.proofNotes && (
                   <p className="text-[11px] font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 break-words">
@@ -274,7 +275,7 @@ export const HistoryView: React.FC = () => {
                   <div className="mt-2 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-52 bg-slate-900 flex items-center justify-center p-1">
                     <img 
                       src={tx.proofUrl} 
-                      alt="Preuve de transaction" 
+                      alt={t('Preuve de transaction', 'Preuve de transaction')} 
                       className="max-h-48 w-auto object-contain rounded-lg"
                     />
                   </div>
@@ -298,7 +299,7 @@ export const HistoryView: React.FC = () => {
               className="w-full py-3.5 rounded-2xl font-black text-xs text-slate-950 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Upload className="w-4 h-4" />
-              <span>Valider avec Preuve</span>
+              <span>{t('Valider avec Preuve', 'Valider avec Preuve')}</span>
             </button>
           )}
 
@@ -306,10 +307,10 @@ export const HistoryView: React.FC = () => {
             type="button"
             onClick={() => setSelectedReceiptTx(tx)}
             className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
-            title="Consulter et télécharger le reçu officiel"
+            title={t('Télécharger Reçu (PDF / Partager)', 'Télécharger Reçu (PDF / Partager)')}
           >
             <Download className="w-4 h-4 text-emerald-400" />
-            <span>Télécharger Reçu (PDF / Partager)</span>
+            <span>{t('Télécharger Reçu (PDF / Partager)', 'Télécharger Reçu (PDF / Partager)')}</span>
           </button>
 
           <button
@@ -317,7 +318,7 @@ export const HistoryView: React.FC = () => {
             onClick={() => setInspectedTx(null)}
             className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block"
           >
-            Retour à l'historique
+            {t("Retour à l'historique", "Retour à l'historique")}
           </button>
         </div>
 
@@ -332,10 +333,10 @@ export const HistoryView: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                      Valider la Transaction #{proofModalTx.referenceNumber}
+                      {t('validate_transaction', 'Valider la Transaction')} #{proofModalTx.referenceNumber}
                     </h3>
                     <p className="text-[11px] text-slate-400">
-                      Opérateur : <strong className="uppercase text-slate-700 dark:text-slate-200">{proofModalTx.operator}</strong> • {proofModalTx.receiverName} ({proofModalTx.receiverPhone})
+                      {t('Opérateur', 'Opérateur')} : <strong className="uppercase text-slate-700 dark:text-slate-200">{proofModalTx.operator}</strong> • {proofModalTx.receiverName} ({proofModalTx.receiverPhone})
                     </p>
                   </div>
                 </div>
@@ -358,12 +359,12 @@ export const HistoryView: React.FC = () => {
               {/* Photo upload */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                  1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)
+                  {t("1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)", "1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)")}
                 </label>
 
                 {proofImage ? (
                   <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
-                    <img src={proofImage} alt="Preuve" className="max-h-48 object-contain" />
+                    <img src={proofImage} alt={t('Preuve', 'Preuve')} className="max-h-48 object-contain" />
                     <button
                       type="button"
                       onClick={() => setProofImage(null)}
@@ -375,8 +376,8 @@ export const HistoryView: React.FC = () => {
                 ) : (
                   <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors bg-slate-50 dark:bg-slate-900/50">
                     <Camera className="w-8 h-8 text-slate-400 mb-1" />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Cliquez pour importer la preuve photo MonCash / Reçu</span>
-                    <span className="text-[10px] text-slate-400">PNG, JPG ou WEBP (Max 10 Mo)</span>
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{t('Cliquez pour importer la preuve photo MonCash / Reçu', 'Cliquez pour importer la preuve photo MonCash / Reçu')}</span>
+                    <span className="text-[10px] text-slate-400">{t('PNG, JPG ou WEBP (Max 10 Mo)', 'PNG, JPG ou WEBP (Max 10 Mo)')}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -393,8 +394,6 @@ export const HistoryView: React.FC = () => {
                 )}
               </div>
 
-
-
               <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
@@ -402,13 +401,13 @@ export const HistoryView: React.FC = () => {
                     if (!proofModalTx) return;
 
                     if (!proofImage) {
-                      setProofError('La preuve doit obligatoirement être une photo ou une capture d\'écran du reçu.');
+                      setProofError(t("La preuve doit obligatoirement être une photo ou une capture d'écran du reçu.", "La preuve doit obligatoirement être une photo ou une capture d'écran du reçu."));
                       return;
                     }
 
                     const proofSummary = proofNotes.trim()
                       ? proofNotes.trim()
-                      : `Preuve validée par ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                      : `${t('proof_validated_by', 'Preuve validée par')} ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
 
                     const result = completeTask(proofModalTx.id, proofSummary, proofImage || undefined);
 
@@ -426,13 +425,13 @@ export const HistoryView: React.FC = () => {
                       setProofImage(null);
                       setProofError(null);
                     } else {
-                      setProofError(result.message || 'Erreur lors de la validation.');
+                      setProofError(result.message || t('error_validating', 'Erreur lors de la validation.'));
                     }
                   }}
                   className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmer & Valider la Transaction</span>
+                  <span>{t('Confirmer & Valider la Transaction', 'Confirmer & Valider la Transaction')}</span>
                 </button>
               </div>
             </div>
@@ -456,10 +455,10 @@ export const HistoryView: React.FC = () => {
           </div>
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-              Historique des Transactions
+              {t('Historique des Transactions', 'Historique des Transactions')}
             </h2>
             <p className="text-xs text-slate-400 font-medium">
-              {filteredTransactions.length} transaction{filteredTransactions.length > 1 ? 's' : ''} affichée{filteredTransactions.length > 1 ? 's' : ''} au total
+              {filteredTransactions.length} {t('transaction(s) affichée(s) au total', 'transaction(s) affichée(s) au total')}
             </p>
           </div>
         </div>
@@ -468,19 +467,19 @@ export const HistoryView: React.FC = () => {
           <button
             onClick={() => exportTransactionsToCSV(filteredTransactions)}
             className="px-4 py-2.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-xs cursor-pointer"
-            title="Exporter l'historique au format CSV"
+            title={t('Export CSV', 'Export CSV')}
           >
             <Download className="w-4 h-4 text-slate-500" />
-            <span>Export CSV</span>
+            <span>{t('Export CSV', 'Export CSV')}</span>
           </button>
 
           <button
             onClick={() => exportTransactionsToPDF(filteredTransactions)}
             className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-900 shadow-sm hover:shadow-md cursor-pointer"
-            title="Exporter l'historique au format PDF"
+            title={t('Export PDF', 'Export PDF')}
           >
             <Download className="w-4 h-4 text-emerald-400" />
-            <span>Export PDF</span>
+            <span>{t('Export PDF', 'Export PDF')}</span>
           </button>
         </div>
       </div>
@@ -494,7 +493,7 @@ export const HistoryView: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Rechercher par nom, téléphone, ou référence TRX..."
+              placeholder={t('Rechercher par nom, téléphone, ou référence TRX...', 'Rechercher par nom, téléphone, ou référence TRX...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-blue-500/20"
@@ -516,7 +515,7 @@ export const HistoryView: React.FC = () => {
               onChange={(e) => setOperatorFilter(e.target.value)}
               className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
-              <option value="all">Tous les opérateurs</option>
+              <option value="all">{t('Tous les opérateurs', 'Tous les opérateurs')}</option>
               <option value="moncash">MonCash</option>
               <option value="natcash">Natcash</option>
               <option value="digicel">Digicel</option>
@@ -529,11 +528,11 @@ export const HistoryView: React.FC = () => {
             {/* Date Filters Bar (Tous, Jour, Semaine, Mois, Année) */}
             <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar bg-slate-100/80 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/70 dark:border-slate-800">
               {[
-                { id: 'all', label: 'Tous' },
-                { id: 'today', label: 'Jour' },
-                { id: 'week', label: 'Semaine' },
-                { id: 'month', label: 'Mois' },
-                { id: 'year', label: 'Année' },
+                { id: 'all', label: t('Tous', 'Tous') },
+                { id: 'today', label: t('Jour', 'Jour') },
+                { id: 'week', label: t('Semaine', 'Semaine') },
+                { id: 'month', label: t('Mois', 'Mois') },
+                { id: 'year', label: t('Année', 'Année') },
               ].map((f) => (
                 <button
                   key={f.id}
@@ -561,16 +560,16 @@ export const HistoryView: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/70 dark:bg-slate-950/50">
-                    <th className="py-4 px-5">Réf Transaction</th>
-                    <th className="py-4 px-5">Date & Heure</th>
-                    <th className="py-4 px-5">Opérateur</th>
-                    <th className="py-4 px-5">Expéditeur (RD)</th>
-                    <th className="py-4 px-5">Bénéficiaire (Haïti)</th>
-                    <th className="py-4 px-5 text-right">Montant DOP</th>
-                    <th className="py-4 px-5 text-right">Montant HTG</th>
-                    <th className="py-4 px-5 text-right text-blue-600 dark:text-blue-400">Commission Admin</th>
-                    <th className="py-4 px-5 text-center">Statut</th>
-                    <th className="py-4 px-5 text-center">Actions</th>
+                    <th className="py-4 px-5">{t('Réf Transaction', 'Réf Transaction')}</th>
+                    <th className="py-4 px-5">{t('Date & Heure', 'Date & Heure')}</th>
+                    <th className="py-4 px-5">{t('Opérateur', 'Opérateur')}</th>
+                    <th className="py-4 px-5">{t('Expéditeur (RD)', 'Expéditeur (RD)')}</th>
+                    <th className="py-4 px-5">{t('Bénéficiaire (Haïti)', 'Bénéficiaire (Haïti)')}</th>
+                    <th className="py-4 px-5 text-right">{t('Montant DOP', 'Montant DOP')}</th>
+                    <th className="py-4 px-5 text-right">{t('Montant HTG', 'Montant HTG')}</th>
+                    <th className="py-4 px-5 text-right text-blue-600 dark:text-blue-400">{t('Commission Admin', 'Commission Admin')}</th>
+                    <th className="py-4 px-5 text-center">{t('Statut', 'Statut')}</th>
+                    <th className="py-4 px-5 text-center">{t('actions', 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-sans">
@@ -588,7 +587,7 @@ export const HistoryView: React.FC = () => {
 
                       {/* Date */}
                       <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px] font-medium">
-                        {new Date(tx.createdAt).toLocaleDateString('fr-FR', {
+                        {new Date(tx.createdAt).toLocaleDateString(dateLocale, {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric',
@@ -636,16 +635,16 @@ export const HistoryView: React.FC = () => {
                         {tx.status === 'completed' ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800">
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            <span>Clôturé</span>
+                            <span>{t('completed', 'Clôturé')}</span>
                           </span>
                         ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800">
                             <Clock className="w-3 h-3 animate-pulse text-orange-600" />
-                            <span>En attente</span>
+                            <span>{t('pending', 'En attente')}</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[11px] font-black text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/60 dark:border-rose-800">
-                            Annulé
+                            {t('cancelled', 'Annulé')}
                           </span>
                         )}
                       </td>
@@ -657,18 +656,18 @@ export const HistoryView: React.FC = () => {
                             type="button"
                             onClick={() => setInspectedTx(tx)}
                             className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
-                            title="Voir tous les détails"
+                            title={t('details', 'Détails')}
                           >
-                            Détails
+                            {t('Détails', 'Détails')}
                           </button>
                           <button
                             type="button"
                             onClick={() => setSelectedReceiptTx(tx)}
                             className="px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
-                            title="Télécharger ou partager le reçu PDF"
+                            title={t('Télécharger ou partager le reçu PDF', 'Télécharger ou partager le reçu PDF')}
                           >
                             <FileText className="w-3.5 h-3.5" />
-                            <span>Reçu PDF</span>
+                            <span>{t('Reçu PDF', 'Reçu PDF')}</span>
                           </button>
                         </div>
                       </td>
@@ -710,15 +709,15 @@ export const HistoryView: React.FC = () => {
 
                   {tx.status === 'completed' ? (
                     <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/50 dark:border-blue-900/50">
-                      ✓ Clôturé
+                      ✓ {t('completed', 'Clôturé')}
                     </span>
                   ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
                     <span className="text-[10px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800 flex items-center gap-1">
-                      <Clock className="w-3 h-3 animate-pulse text-orange-600" /> En attente
+                      <Clock className="w-3 h-3 animate-pulse text-orange-600" /> {t('pending', 'En attente')}
                     </span>
                   ) : (
                     <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/50 dark:border-rose-900/50">
-                      Annulé
+                      {t('cancelled', 'Annulé')}
                     </span>
                   )}
                 </div>
@@ -726,7 +725,7 @@ export const HistoryView: React.FC = () => {
                 {/* Beneficiary & Amount Info */}
                 <div className="flex items-center justify-between pt-1">
                   <div>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Bénéficiaire</span>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">{t('Bénéficiaire', 'Bénéficiaire')}</span>
                     <h4 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
                       {tx.receiverName}
                     </h4>
@@ -748,7 +747,7 @@ export const HistoryView: React.FC = () => {
                 {/* Footer Row: Date/Time + Receipt Button */}
                 <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
                   <span className="text-[11px] text-slate-400 font-medium">
-                    {new Date(tx.createdAt).toLocaleDateString('fr-FR', {
+                    {new Date(tx.createdAt).toLocaleDateString(dateLocale, {
                       day: 'numeric',
                       month: 'short',
                       year: 'numeric',
@@ -763,16 +762,16 @@ export const HistoryView: React.FC = () => {
                       onClick={() => setInspectedTx(tx)}
                       className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
                     >
-                      Détails
+                      {t('Détails', 'Détails')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedReceiptTx(tx)}
                       className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 text-white text-[11px] font-bold hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
-                      title="Télécharger ou partager le reçu PDF"
+                      title={t('Télécharger ou partager le reçu PDF', 'Télécharger ou partager le reçu PDF')}
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      <span>Reçu PDF</span>
+                      <span>{t('Reçu PDF', 'Reçu PDF')}</span>
                     </button>
                   </div>
                 </div>
@@ -800,10 +799,10 @@ export const HistoryView: React.FC = () => {
           </div>
           <div>
             <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-              Aucune transaction trouvée
+              {t('Aucune transaction trouvée', 'Aucune transaction trouvée')}
             </h4>
             <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
-              Aucun résultat ne correspond aux filtres de date, d'opérateur ou de recherche sélectionnés.
+              {t("Aucun résultat ne correspond aux filtres de date, d'opérateur ou de recherche sélectionnés.", "Aucun résultat ne correspond aux filtres de date, d'opérateur ou de recherche sélectionnés.")}
             </p>
           </div>
           <button
@@ -815,7 +814,7 @@ export const HistoryView: React.FC = () => {
             }}
             className="px-5 py-2.5 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs hover:shadow-sm cursor-pointer inline-flex items-center gap-2"
           >
-            <span>Réinitialiser tous les filtres</span>
+            <span>{t('Réinitialiser tous les filtres', 'Réinitialiser tous les filtres')}</span>
           </button>
         </div>
       )}
@@ -831,10 +830,10 @@ export const HistoryView: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                    Valider la Transaction #{proofModalTx.referenceNumber}
+                    {t('validate_transaction', 'Valider la Transaction')} #{proofModalTx.referenceNumber}
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    Opérateur : <strong className="uppercase text-slate-700 dark:text-slate-200">{proofModalTx.operator}</strong> • {proofModalTx.receiverName} ({proofModalTx.receiverPhone})
+                    {t('Opérateur', 'Opérateur')} : <strong className="uppercase text-slate-700 dark:text-slate-200">{proofModalTx.operator}</strong> • {proofModalTx.receiverName} ({proofModalTx.receiverPhone})
                   </p>
                 </div>
               </div>
@@ -857,12 +856,12 @@ export const HistoryView: React.FC = () => {
             {/* Photo upload */}
             <div className="space-y-1.5">
               <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)
+                {t("1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)", "1. Photo / Capture d'écran du reçu (Preuve OBLIGATOIRE 📷)")}
               </label>
 
               {proofImage ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
-                  <img src={proofImage} alt="Preuve" className="max-h-48 object-contain" />
+                  <img src={proofImage} alt={t('Preuve', 'Preuve')} className="max-h-48 object-contain" />
                   <button
                     type="button"
                     onClick={() => setProofImage(null)}
@@ -874,8 +873,8 @@ export const HistoryView: React.FC = () => {
               ) : (
                 <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors bg-slate-50 dark:bg-slate-900/50">
                   <Camera className="w-8 h-8 text-slate-400 mb-1" />
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Cliquez pour importer la preuve photo MonCash / Reçu</span>
-                  <span className="text-[10px] text-slate-400">PNG, JPG ou WEBP (Max 10 Mo)</span>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{t('Cliquez pour importer la preuve photo MonCash / Reçu', 'Cliquez pour importer la preuve photo MonCash / Reçu')}</span>
+                  <span className="text-[10px] text-slate-400">{t('PNG, JPG ou WEBP (Max 10 Mo)', 'PNG, JPG ou WEBP (Max 10 Mo)')}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -892,8 +891,6 @@ export const HistoryView: React.FC = () => {
               )}
             </div>
 
-
-
             <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
@@ -901,13 +898,13 @@ export const HistoryView: React.FC = () => {
                   if (!proofModalTx) return;
 
                   if (!proofImage) {
-                    setProofError('La preuve doit obligatoirement être une photo ou une capture d\'écran du reçu.');
+                    setProofError(t("La preuve doit obligatoirement être une photo ou une capture d'écran du reçu.", "La preuve doit obligatoirement être une photo ou une capture d'écran du reçu."));
                     return;
                   }
 
                   const proofSummary = proofNotes.trim()
                     ? proofNotes.trim()
-                    : `Preuve validée par ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                    : `${t('proof_validated_by', 'Preuve validée par')} ${currentUser.name} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
 
                   const result = completeTask(proofModalTx.id, proofSummary, proofImage || undefined);
 
@@ -925,13 +922,13 @@ export const HistoryView: React.FC = () => {
                     setProofImage(null);
                     setProofError(null);
                   } else {
-                    setProofError(result.message || 'Erreur lors de la validation.');
+                    setProofError(result.message || t('error_validating', 'Erreur lors de la validation.'));
                   }
                 }}
                 className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Confirmer & Valider la Transaction</span>
+                <span>{t('Confirmer & Valider la Transaction', 'Confirmer & Valider la Transaction')}</span>
               </button>
             </div>
           </div>
