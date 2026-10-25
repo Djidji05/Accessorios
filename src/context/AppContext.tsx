@@ -1413,38 +1413,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return { success: false, message: 'Identifiants invalides.' };
     } catch (err: any) {
-      // Mode de secours local si backend déconnecté ou mot de passe démo
-      const input = identifierOrEmail.trim().toLowerCase();
-      const cleanInput = input.replace(/^@/, '');
-      const localCreds: Record<string, string> = (() => {
-        try {
-          return JSON.parse(localStorage.getItem('dalexis_credentials') || '{}');
-        } catch {
-          return {};
-        }
-      })();
-      const savedPass = localCreds[input] || localCreds[cleanInput];
-
-      const found = availableUsers.find(
-        (u) =>
-          u.email.toLowerCase() === input ||
-          u.email.toLowerCase() === cleanInput ||
-          (u.username && (u.username.toLowerCase() === input || u.username.toLowerCase() === cleanInput))
-      );
-      if (found && (password === 'dalexis123' || (savedPass && password === savedPass))) {
-        localStorage.setItem('dalexis_token', `demo_token_${found.id}`);
-        localStorage.setItem('dalexis_user', JSON.stringify(found));
-        localStorage.setItem('dalexis_last_activity', Date.now().toString());
-        setCurrentUser(found);
-        const targetTab: ActiveTab = 
-          found.role === 'agent_rd' ? 'guichet' :
-          found.role === 'agent_haiti' ? 'tasks' :
-          'overview';
-        setActiveTab(targetTab);
-        setIsAuthenticated(true);
-        return { success: true, message: 'Connexion réussie !' };
-      }
-      return { success: false, message: err.message || 'Identifiants invalides.' };
+      console.error('Erreur authentification:', err);
+      return { 
+        success: false, 
+        message: err.message || 'Identifiants invalides ou serveur indisponible.' 
+      };
     }
   };
 
