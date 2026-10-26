@@ -202,4 +202,50 @@ export const api = {
         body: JSON.stringify(permissions),
       }),
   },
+
+  // 9. Notifications et Service Email
+  email: {
+    getStatus: () => request<{
+      isConfigured: boolean;
+      provider: 'resend' | 'smtp' | 'simulation';
+      providerLabel: string;
+      smtpHost: string;
+      smtpPort: number;
+      smtpSecure: boolean;
+      smtpUser: string;
+      hasSmtpPass: boolean;
+      smtpFrom: string;
+      hasResendKey: boolean;
+      resendFrom: string;
+      adminNotificationEmails: string[];
+      slaEngine: { isRunning: boolean; trackedPendingCount: number };
+      supportedLanguages: string[];
+    }>('/email/status'),
+    updateConfig: (data: {
+      provider?: 'gmail' | 'resend' | 'smtp' | 'simulation';
+      smtpHost?: string;
+      smtpPort?: number;
+      smtpSecure?: boolean;
+      smtpUser?: string;
+      smtpPass?: string;
+      smtpFrom?: string;
+      resendApiKey?: string;
+      resendFrom?: string;
+      adminNotificationEmails?: string | string[];
+    }) => request<{ success: boolean; message: string; status: any }>('/email/config', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    verify: () => request<{ success: boolean; message: string }>('/email/verify', {
+      method: 'POST',
+    }),
+    sendTest: (to: string, lang?: string) => request<{ success: boolean; simulated: boolean; message: string }>('/email/test', {
+      method: 'POST',
+      body: JSON.stringify({ to, lang }),
+    }),
+    triggerSlaCheck: () => request<{ success: boolean; message: string; details: any }>('/email/sla-check', {
+      method: 'POST',
+    }),
+  },
 };
+

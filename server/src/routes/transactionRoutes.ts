@@ -2,6 +2,11 @@ import { Router } from 'express';
 import { prisma } from '../prisma';
 import { authMiddleware, requireRole } from '../middleware/auth';
 import { realtimeService } from '../services/realtimeService';
+import { 
+  sendNewTransactionNotification, 
+  sendTransactionCompletedNotification, 
+  sendTransactionCancelledNotification 
+} from '../services/emailService';
 
 const router = Router();
 
@@ -247,6 +252,9 @@ router.post('/', authMiddleware, async (req, res) => {
     realtimeService.broadcast('TRANSACTION_CREATED', lightweightNewTx);
     realtimeService.broadcast('BALANCE_UPDATED', { operator });
 
+    // Déclenchement de la notification par e-mail en arrière-plan
+    sendNewTransactionNotification(result).catch((e) => console.error('Erreur notification email création tx:', e));
+
     return res.status(201).json({
       success: true,
       message: `Transaction ${referenceNumber} enregistrée avec succès.`,
@@ -306,6 +314,9 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
     };
 
     realtimeService.broadcast('TRANSACTION_COMPLETED', lightweightTx);
+
+    // Déclenchement de la notification de clôture par e-mail
+    sendTransactionCompletedNotification(updated).catch((e) => console.error('Erreur notification email clôture tx:', e));
 
     return res.json({ success: true, message: 'Tâche clôturée avec succès.', transaction: lightweightTx });
   } catch (error) {
@@ -371,6 +382,9 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
 
     realtimeService.broadcast('TRANSACTION_CANCELLED', updated);
     realtimeService.broadcast('BALANCE_UPDATED', { operator: existing.operator });
+
+    // Déclenchement de la notification d'annulation par e-mail
+    sendTransactionCancelledNotification(updated, reason || 'Annulé par l\'administrateur').catch((e) => console.error('Erreur notification email annulation tx:', e));
 
     return res.json({ success: true, message: 'Transaction annulée et solde restitué.', transaction: updated });
   } catch (error) {
