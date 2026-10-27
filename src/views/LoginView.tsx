@@ -13,7 +13,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const LoginView: React.FC = () => {
-  const { login, t, currentLang, setLanguage } = useApp();
+  const { login, t, currentLang } = useApp();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -61,12 +61,6 @@ export const LoginView: React.FC = () => {
     }
   };
 
-  const languages: { code: 'FR' | 'HT' | 'ES'; label: string; flag: string }[] = [
-    { code: 'FR', label: 'Français', flag: '🇫🇷' },
-    { code: 'HT', label: 'Kreyòl', flag: '🇭🇹' },
-    { code: 'ES', label: 'Español', flag: '🇩🇴' },
-  ];
-
   return (
     <div className="min-h-screen w-full bg-slate-50 text-slate-800 relative overflow-hidden font-sans flex items-center justify-center p-4 sm:p-6 lg:p-12 transition-colors duration-300 selection:bg-blue-600 selection:text-white">
       
@@ -93,26 +87,6 @@ export const LoginView: React.FC = () => {
           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
             Alexis <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-extrabold uppercase tracking-wider">Transferencia</span>
           </span>
-        </div>
-
-        {/* Global Language Selector */}
-        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200 shadow-sm">
-          {languages.map((l) => (
-            <button
-              key={l.code}
-              type="button"
-              onClick={() => setLanguage(l.code)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                currentLang === l.code
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <span>{l.flag}</span>
-              <span className="hidden sm:inline">{l.label}</span>
-              <span className="sm:hidden">{l.code}</span>
-            </button>
-          ))}
         </div>
       </div>
 
