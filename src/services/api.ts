@@ -217,6 +217,7 @@ export const api = {
       smtpFrom: string;
       hasResendKey: boolean;
       resendFrom: string;
+      frontendUrl?: string;
       adminNotificationEmails: string[];
       slaEngine: { isRunning: boolean; trackedPendingCount: number };
       supportedLanguages: string[];
@@ -231,6 +232,7 @@ export const api = {
       smtpFrom?: string;
       resendApiKey?: string;
       resendFrom?: string;
+      frontendUrl?: string;
       adminNotificationEmails?: string | string[];
     }) => request<{ success: boolean; message: string; status: any }>('/email/config', {
       method: 'POST',

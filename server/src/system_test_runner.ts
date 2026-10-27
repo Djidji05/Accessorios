@@ -223,13 +223,13 @@ function testSlaEscalation() {
     assert("Moteur SLA & Langues", `Clés de traduction opérationnelles [${lang}]`, Boolean(t.reference && t.operator && t.amountHTG));
   }
 
-  // Détection des paliers de 30 minutes
-  function getMilestone(minutes: number) {
-    return minutes >= 30 ? Math.floor(minutes / 30) * 30 : 0;
+  // Détection des paliers de 24 heures
+  function getMilestoneHours(hours: number) {
+    return hours >= 24 ? Math.floor(hours / 24) * 24 : 0;
   }
-  assert("Moteur SLA & Langues", "Détection palier 35 min -> Jalon 30m", getMilestone(35) === 30);
-  assert("Moteur SLA & Langues", "Détection palier 65 min -> Jalon 60m", getMilestone(65) === 60);
-  assert("Moteur SLA & Langues", "Détection palier 15 min -> Aucun jalon (0)", getMilestone(15) === 0);
+  assert("Moteur SLA & Langues", "Détection palier 26h -> Jalon 24h", getMilestoneHours(26) === 24);
+  assert("Moteur SLA & Langues", "Détection palier 50h -> Jalon 48h", getMilestoneHours(50) === 48);
+  assert("Moteur SLA & Langues", "Détection palier 12h -> Aucun jalon (0)", getMilestoneHours(12) === 0);
 }
 
 // ----------------------------------------------------

@@ -35,7 +35,7 @@ export let emailConfig: EmailConfigState = {
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: process.env.SMTP_PASS || '',
   smtpFrom: process.env.SMTP_FROM || process.env.RESEND_FROM || "D'Alexis Transferencia <notifications@dalexistransferencia.com>",
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  frontendUrl: process.env.FRONTEND_URL || 'https://alexistransferencia.app',
   adminNotificationEmails: (process.env.ADMIN_NOTIFICATION_EMAILS || 'admin@accessorio.com,supervision@accessorio.com')
     .split(',')
     .map(e => e.trim())
@@ -309,9 +309,9 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
  */
 export const EMAIL_TRANSLATIONS = {
   FR: {
-    slaAlertSubject: (ref: string, minutes: number) => `🚨 [ALERTE SLA] Transaction #${ref} en attente depuis ${minutes} minutes`,
-    slaAlertTitle: 'Alerte Dépassement SLA - Transaction en Attente',
-    slaAlertWarning: (minutes: number) => `Cette transaction est en attente d'exécution ou de validation depuis plus de <strong>${minutes} minutes</strong> sans avoir été clôturée.`,
+    slaAlertSubject: (ref: string, timeText: string | number) => `🚨 [ALERTE SLA 24H] Transaction #${ref} en attente depuis ${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)}h` : timeText} (seuil 24h dépassé)`,
+    slaAlertTitle: 'Alerte Dépassement SLA - Transaction en Attente (24h+)',
+    slaAlertWarning: (timeText: string | number) => `Cette transaction est en attente d'exécution ou de validation depuis plus de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} heures` : timeText}</strong> sans avoir été clôturée (seuil SLA de 24h dépassé).`,
     actionRequired: 'Action Requise Immédiatement',
     txDetailsTitle: 'Détails de l\'Opération',
     reference: 'Référence',
@@ -325,7 +325,7 @@ export const EMAIL_TRANSLATIONS = {
     createdAt: 'Date d\'Émission',
     elapsedTime: 'Temps d\'Attente Total',
     openTxButton: 'Accéder à la Transaction',
-    footerNote: 'Ce message d\'alerte automatique est renvoyé toutes les 30 minutes jusqu\'à ce que la transaction soit validée ou traitée.',
+    footerNote: 'Ce message d\'alerte automatique est renvoyé toutes les 24 heures jusqu\'à ce que la transaction soit validée ou traitée.',
     newTxSubject: (ref: string) => `📋 [NOUVELLE TRANSACTION] Réf #${ref} à traiter`,
     newTxTitle: 'Nouvelle Transaction Enregistrée',
     newTxSubtitle: 'Une nouvelle opération est en attente de décaissement ou traitement',
@@ -337,9 +337,9 @@ export const EMAIL_TRANSLATIONS = {
     cancellationReason: 'Motif d\'annulation',
   },
   HT: {
-    slaAlertSubject: (ref: string, minutes: number) => `🚨 [ALÈT SLA] Tranzaksyon #${ref} ap tann depi ${minutes} minit san trete`,
-    slaAlertTitle: 'Alèt Depasman SLA - Tranzaksyon ap Tann',
-    slaAlertWarning: (minutes: number) => `Tranzaksyon sa a ap tann pou egzekite oswa valide depi plis pase <strong>${minutes} minit</strong> san li pa finalize.`,
+    slaAlertSubject: (ref: string, timeText: string | number) => `🚨 [ALÈT SLA 24H] Tranzaksyon #${ref} ap tann depi ${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} èdtan` : timeText} san trete`,
+    slaAlertTitle: 'Alèt Depasman SLA - Tranzaksyon ap Tann (24h+)',
+    slaAlertWarning: (timeText: string | number) => `Tranzaksyon sa a ap tann pou egzekite oswa valide depi plis pase <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} èdtan` : timeText}</strong> san li pa finalize (delè 24h depase).`,
     actionRequired: 'Aksyon Egzije Touswit',
     txDetailsTitle: 'Detay sou Operasyon an',
     reference: 'Referans',
@@ -353,7 +353,7 @@ export const EMAIL_TRANSLATIONS = {
     createdAt: 'Dat Li Fèt',
     elapsedTime: 'Tan Li Genyen Ap Tann',
     openTxButton: 'Louvri Tranzaksyon an',
-    footerNote: 'Mesaj alèt otomatik sa a ap voye chak 30 minit jiskaske tranzaksyon an valide oswa trete nèt.',
+    footerNote: 'Mesaj alèt otomatik sa a ap voye chak 24 èdtan jiskaske tranzaksyon an valide oswa trete nèt.',
     newTxSubject: (ref: string) => `📋 [NOUVO TRANZAKSYON] Referans #${ref} pou trete`,
     newTxTitle: 'Nouvo Tranzaksyon Anrejistre',
     newTxSubtitle: 'Yon nouvo operasyon ap tann pou peye oswa trete',
@@ -365,9 +365,9 @@ export const EMAIL_TRANSLATIONS = {
     cancellationReason: 'Rezon anilasyon an',
   },
   ES: {
-    slaAlertSubject: (ref: string, minutes: number) => `🚨 [ALERTA SLA] Transacción #${ref} en espera desde hace ${minutes} minutos`,
-    slaAlertTitle: 'Alerta de Tiempo SLA - Transacción en Espera',
-    slaAlertWarning: (minutes: number) => `Esta transacción lleva en espera de procesamiento o validación más de <strong>${minutes} minutos</strong> sin haber sido completada.`,
+    slaAlertSubject: (ref: string, timeText: string | number) => `🚨 [ALERTA SLA 24H] Transacción #${ref} en espera desde hace ${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)}h` : timeText} (límite 24h superado)`,
+    slaAlertTitle: 'Alerta de Tiempo SLA - Transacción en Espera (24h+)',
+    slaAlertWarning: (timeText: string | number) => `Esta transacción lleva en espera de procesamiento o validación más de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} horas` : timeText}</strong> sin haber sido completada (límite SLA de 24h superado).`,
     actionRequired: 'Acción Requerida Inmediatamente',
     txDetailsTitle: 'Detalles de la Operación',
     reference: 'Referencia',
@@ -381,12 +381,12 @@ export const EMAIL_TRANSLATIONS = {
     createdAt: 'Fecha de Emisión',
     elapsedTime: 'Tiempo de Espera Total',
     openTxButton: 'Ver Transacción en el Sistema',
-    footerNote: 'Este mensaje de alerta automática se reenvía cada 30 minutos hasta que la transacción sea validada o procesada.',
+    footerNote: 'Este mensaje de alerta automática se reenvía cada 24 horas hasta que la transacción sea validada o procesada.',
     newTxSubject: (ref: string) => `📋 [NUEVA TRANSACCIÓN] Ref #${ref} por procesar`,
     newTxTitle: 'Nueva Transacción Registrada',
     newTxSubtitle: 'Una nueva operación está en cola de desembolso o recarga',
     completedTxSubject: (ref: string) => `✅ [COMPLETADA] Transacción #${ref} validada con éxito`,
-    completedTxTitle: 'Transacción Completada con Éxito',
+    completedTxTitle: 'Transacción Completa con Éxito',
     completedTxSubtitle: 'El desembolso o servicio ha sido completado con éxito',
     cancelledTxSubject: (ref: string) => `⚠️ [CANCELADA] Transacción #${ref} cancelada`,
     cancelledTxTitle: 'Transacción Cancelada y Fondos Restituidos',
@@ -501,15 +501,17 @@ function buildTxTableHtml(tx: any, t: any): string {
 }
 
 /**
- * Template SLA 30m+
+ * Template SLA 24h+
  */
 export function buildSlaAlertEmailHtml(tx: any, elapsedMinutes: number, lang: SupportedLanguage = 'FR'): string {
   const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
   const txUrl = `${emailConfig.frontendUrl}/#tasks`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  const timeFormatted = elapsedHours >= 24 ? `${elapsedHours} heures` : `${elapsedMinutes} min`;
 
   const content = `
     <div style="background-color: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #e11d48; padding: 14px 16px; border-radius: 12px; margin-bottom: 22px; color: #9f1239; font-size: 13px; line-height: 1.5;">
-      ⚠️ <strong>${t.actionRequired} :</strong> ${t.slaAlertWarning(elapsedMinutes)}
+      ⚠️ <strong>${t.actionRequired} :</strong> ${t.slaAlertWarning(timeFormatted)}
     </div>
     ${buildTxTableHtml(tx, t)}
     <div style="text-align: center; margin: 26px 0 10px 0;">
@@ -519,7 +521,7 @@ export function buildSlaAlertEmailHtml(tx: any, elapsedMinutes: number, lang: Su
     </div>
   `;
 
-  return wrapEmailHtml(content, t.slaAlertTitle, "Alerte de dépassement SLA de traitement", "SLA CRITIQUE", "#e11d48", lang);
+  return wrapEmailHtml(content, t.slaAlertTitle, "Alerte de dépassement SLA de traitement (24h+)", "SLA CRITIQUE (24H+)", "#e11d48", lang);
 }
 
 /**
@@ -654,7 +656,7 @@ export async function getConcernedStakeholderEmails(tx: any): Promise<{ email: s
 }
 
 /**
- * Envoie l'alerte SLA 30m+
+ * Envoie l'alerte SLA 24h+
  */
 export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number): Promise<{ sentCount: number; recipients: string[] }> {
   const stakeholders = await getConcernedStakeholderEmails(tx);
@@ -663,14 +665,15 @@ export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number
   }
 
   const recipientsSent: string[] = [];
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
 
   for (const person of stakeholders) {
     const lang = resolveLanguage(null, tx.operator, person.role);
     const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
 
-    const subject = t.slaAlertSubject(tx.referenceNumber, elapsedMinutes);
+    const subject = t.slaAlertSubject(tx.referenceNumber, elapsedHours);
     const html = buildSlaAlertEmailHtml(tx, elapsedMinutes, lang);
-    const text = `${t.slaAlertTitle}\n\nTransaction #${tx.referenceNumber} (${tx.operator.toUpperCase()})\nTemps d'attente : ${elapsedMinutes} minutes sans traitement.\nBénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\nMontant : ${tx.amountHTG} HTG / ${tx.amountDOP} DOP.\nResponsable : ${tx.assignedToName || tx.assignedToRole}.\n\nLien : ${emailConfig.frontendUrl}/#tasks`;
+    const text = `${t.slaAlertTitle}\n\nTransaction #${tx.referenceNumber} (${tx.operator.toUpperCase()})\nTemps d'attente : ${elapsedHours} heures sans traitement (seuil 24h dépassé).\nBénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\nMontant : ${tx.amountHTG} HTG / ${tx.amountDOP} DOP.\nResponsable : ${tx.assignedToName || tx.assignedToRole}.\n\nLien : ${emailConfig.frontendUrl}/#tasks`;
 
     await sendEmail({
       to: person.email,
@@ -681,6 +684,8 @@ export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number
 
     recipientsSent.push(`${person.name} <${person.email}> [${lang}]`);
   }
+
+  console.log(`🚨 [ALERTE SLA 24h+] Transaction #${tx.referenceNumber} (${elapsedHours}h en attente) envoyée à ${recipientsSent.length} destinataire(s): ${recipientsSent.join(', ')}`);
 
   return { sentCount: recipientsSent.length, recipients: recipientsSent };
 }

@@ -2,15 +2,19 @@ import { prisma } from '../prisma';
 import { sendSlaAlertToStakeholders } from './emailService';
 
 // Suivi en mémoire des jalons d'alertes envoyés par transaction ID
-// Clé: transaction.id -> Valeur: dernier jalon de 30 minutes alerté (ex: 30, 60, 90, 120...)
+// Clé: transaction.id -> Valeur: dernier jalon d'heures alerté (ex: 24, 48, 72...)
 const alertTracker = new Map<string, number>();
 
 let intervalHandle: NodeJS.Timeout | null = null;
 let isChecking = false;
 
+// Seuil d'escalade SLA : 24 heures (1440 minutes) et récurrence toutes les 24 heures (24h, 48h, 72h...)
+export const SLA_THRESHOLD_MINUTES = 24 * 60; // 1440 minutes = 24 heures
+export const SLA_HOURS_STEP = 24;
+
 /**
  * Vérifie toutes les transactions en attente ou en cours, calcule le temps écoulé,
- * et déclenche l'envoi d'un e-mail d'escalade toutes les 30 minutes de retard (30m, 60m, 90m...)
+ * et déclenche l'envoi d'un e-mail d'escalade toutes les 24 heures de retard (24h, 48h, 72h...)
  */
 export async function checkPendingTransactionsSla(): Promise<{
   checkedCount: number;
@@ -65,44 +69,45 @@ export async function checkPendingTransactionsSla(): Promise<{
     for (const tx of pendingTransactions) {
       const createdTs = new Date(tx.createdAt).getTime();
       const elapsedMinutes = Math.floor((now - createdTs) / (1000 * 60));
+      const elapsedHours = Math.floor(elapsedMinutes / 60);
 
-      // Si la transaction dépasse 30 minutes
-      if (elapsedMinutes >= 30) {
-        // Jalon de 30 minutes atteint (30, 60, 90, 120...)
-        const currentMilestone = Math.floor(elapsedMinutes / 30) * 30;
-        let lastSentMilestone = alertTracker.get(tx.id);
+      // Si la transaction dépasse 24 heures (1440 minutes)
+      if (elapsedMinutes >= SLA_THRESHOLD_MINUTES) {
+        // Jalon de 24h atteint (24h, 48h, 72h...)
+        const currentMilestoneHours = Math.floor(elapsedHours / SLA_HOURS_STEP) * SLA_HOURS_STEP;
+        let lastSentMilestoneHours = alertTracker.get(tx.id);
 
         // Si le serveur vient de redémarrer, vérifier la table AuditLog pour éviter les doublons d'e-mails
-        if (lastSentMilestone === undefined) {
+        if (lastSentMilestoneHours === undefined) {
           const existingAudit = await prisma.auditLog.findFirst({
             where: {
-              action: `TRANSACTION_SLA_ALERT_${currentMilestone}M`,
+              action: `TRANSACTION_SLA_ALERT_${currentMilestoneHours}H`,
               details: { contains: tx.referenceNumber },
             },
             select: { id: true },
           }).catch(() => null);
 
           if (existingAudit) {
-            alertTracker.set(tx.id, currentMilestone);
-            lastSentMilestone = currentMilestone;
+            alertTracker.set(tx.id, currentMilestoneHours);
+            lastSentMilestoneHours = currentMilestoneHours;
           } else {
-            lastSentMilestone = 0;
+            lastSentMilestoneHours = 0;
           }
         }
 
-        // Si l'alerte pour ce jalon de 30 minutes n'a pas encore été envoyée
-        if (currentMilestone > (lastSentMilestone || 0)) {
-          console.log(`⏱️ [SLA ESCALATION] Transaction #${tx.referenceNumber} dépasse ${elapsedMinutes}m (Jalon: ${currentMilestone}m). Envoi des e-mails aux personnes concernées...`);
+        // Si l'alerte pour ce jalon de 24 heures n'a pas encore été envoyée
+        if (currentMilestoneHours > (lastSentMilestoneHours || 0)) {
+          console.log(`⏱️ [SLA ESCALATION 24h+] Transaction #${tx.referenceNumber} dépasse ${elapsedHours}h (Jalon: ${currentMilestoneHours}h). Envoi des e-mails aux personnes concernées...`);
 
           const result = await sendSlaAlertToStakeholders(tx, elapsedMinutes);
 
           if (result.sentCount > 0) {
-            alertTracker.set(tx.id, currentMilestone);
+            alertTracker.set(tx.id, currentMilestoneHours);
             alertsSent.push({
               txId: tx.id,
               referenceNumber: tx.referenceNumber,
               elapsedMinutes,
-              milestone: currentMilestone,
+              milestone: currentMilestoneHours,
             });
 
             // Enregistrer l'événement dans le journal d'audit immuable
@@ -110,12 +115,12 @@ export async function checkPendingTransactionsSla(): Promise<{
               await prisma.auditLog.create({
                 data: {
                   nodeId: 'cron-sla',
-                  actorName: 'Moteur SLA Escalation Automatique',
+                  actorName: 'Moteur SLA Escalation Automatique (24h)',
                   actorRole: 'system',
-                  action: `TRANSACTION_SLA_ALERT_${currentMilestone}M`,
+                  action: `TRANSACTION_SLA_ALERT_${currentMilestoneHours}H`,
                   targetType: 'transaction',
-                  priority: currentMilestone >= 60 ? 'Critical' : 'High',
-                  details: `Alerte email SLA déclenchée : Transaction #${tx.referenceNumber} (${tx.operator.toUpperCase()}) en attente depuis ${elapsedMinutes} minutes sans traitement. Notification envoyée à ${result.sentCount} intervenants.`,
+                  priority: currentMilestoneHours >= 48 ? 'Critical' : 'High',
+                  details: `Alerte email SLA déclenchée : Transaction #${tx.referenceNumber} (${tx.operator.toUpperCase()}) en attente depuis ${elapsedHours} heures sans traitement (seuil 24h dépassé). Notification envoyée à ${result.sentCount} intervenants.`,
                   nodeStatus: 'ACK',
                 },
               });
@@ -140,7 +145,7 @@ export async function checkPendingTransactionsSla(): Promise<{
 }
 
 /**
- * Démarre le moteur d'escalade SLA en tâche de fond (vérification automatique chaque minute)
+ * Démarre le moteur d'escalade SLA en tâche de fond (vérification automatique)
  */
 export function startSlaReminderEngine(intervalMs: number = 60 * 1000) {
   if (intervalHandle) {
@@ -148,7 +153,7 @@ export function startSlaReminderEngine(intervalMs: number = 60 * 1000) {
     return;
   }
 
-  console.log(`⏱️ Démarrage du moteur SLA Reminder (Vérification toutes les ${intervalMs / 1000}s, alertes email récurrentes toutes les 30 minutes de retard)`);
+  console.log(`⏱️ Démarrage du moteur SLA Reminder (Vérification périodique, alertes email récurrentes toutes les 24 heures de retard)`);
 
   // Première exécution après 10 secondes de démarrage du serveur
   setTimeout(() => {
@@ -178,10 +183,11 @@ export function stopSlaReminderEngine() {
 export function getSlaEngineStatus() {
   return {
     isRunning: Boolean(intervalHandle),
+    thresholdHours: SLA_HOURS_STEP,
     trackedPendingCount: alertTracker.size,
     trackedMilestones: Array.from(alertTracker.entries()).map(([txId, milestone]) => ({
       txId,
-      lastAlertMilestone: `${milestone} min`,
+      lastAlertMilestone: `${milestone} heures`,
     })),
   };
 }

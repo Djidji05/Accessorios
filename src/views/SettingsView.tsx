@@ -162,6 +162,7 @@ export const SettingsView: React.FC = () => {
   const [resendApiKey, setResendApiKey] = useState('');
   const [resendFrom, setResendFrom] = useState("D'Alexis Transferencia <notifications@dalexistransferencia.com>");
   const [adminNotificationEmails, setAdminNotificationEmails] = useState('');
+  const [frontendUrl, setFrontendUrl] = useState('https://alexistransferencia.app');
   
   // Test Email State
   const [testEmailRecipient, setTestEmailRecipient] = useState(currentUser.email || '');
@@ -185,8 +186,9 @@ export const SettingsView: React.FC = () => {
       if (res.smtpPort) setSmtpPort(res.smtpPort);
       if (res.smtpSecure !== undefined) setSmtpSecure(res.smtpSecure);
       if (res.smtpFrom) setSmtpFrom(res.smtpFrom);
-      if (res.resendFrom) setResendFrom(res.resendFrom);
+      if (resendFrom) setResendFrom(resendFrom);
       if (res.adminNotificationEmails) setAdminNotificationEmails(res.adminNotificationEmails.join(', '));
+      if (res.frontendUrl) setFrontendUrl(res.frontendUrl);
     } catch (err) {
       console.error('Erreur chargement statut email:', err);
     }
@@ -221,6 +223,7 @@ export const SettingsView: React.FC = () => {
         payload.provider = 'simulation';
       }
       payload.adminNotificationEmails = adminNotificationEmails;
+      payload.frontendUrl = frontendUrl;
 
       const res = await api.email.updateConfig(payload);
       setEmailFeedback({ type: 'success', message: res.message });
@@ -944,7 +947,7 @@ export const SettingsView: React.FC = () => {
                     {t('Service E-mails & Notifications Automatiques')}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-medium">
-                    {t('Alertes SLA 30m, notifications de transferts, clôtures de tâches et escalades.')}
+                    {t('Alertes SLA 24h, notifications de transferts, clôtures de tâches et escalades.')}
                   </p>
                 </div>
               </div>
@@ -1197,7 +1200,7 @@ export const SettingsView: React.FC = () => {
             {/* Destinataires d'Administration */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                {t('E-mails des Superviseurs pour les Alertes SLA & Escalades (séparés par des virgules)')}
+                {t('E-mails des Superviseurs pour les Alertes SLA 24h & Escalades (séparés par des virgules)')}
               </label>
               <input
                 type="text"
@@ -1206,6 +1209,23 @@ export const SettingsView: React.FC = () => {
                 placeholder="ndjivensly@gmail.com, alexis@dalexistransfer.com"
                 className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 text-xs px-3 py-2.5 rounded-xl font-medium"
               />
+            </div>
+
+            {/* URL Publique de Redirection dans les Emails */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {t('URL Publique de la Plateforme (Liens de redirection dans les e-mails) *')}
+              </label>
+              <input
+                type="url"
+                value={frontendUrl}
+                onChange={(e) => setFrontendUrl(e.target.value)}
+                placeholder="https://alexistransferencia.app"
+                className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 text-xs px-3 py-2.5 rounded-xl font-mono focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">
+                {t('Les liens dans les e-mails ("Accéder à la Transaction", etc.) renverront directement vers cette adresse (ex: https://alexistransferencia.app au lieu de localhost).')}
+              </p>
             </div>
 
             {/* Barre de Boutons d'Action Email */}
