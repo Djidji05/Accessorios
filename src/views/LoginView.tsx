@@ -80,10 +80,12 @@ export const LoginView: React.FC = () => {
 
       {/* Top Header Bar inside Login Page */}
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-            <Sparkles className="w-5 h-5" />
-          </div>
+        <div className="flex items-center gap-3">
+          <img 
+            src="/images/alexis-emblem.png" 
+            alt="Alexis Transferencia" 
+            className="w-10 h-10 rounded-2xl shadow-lg ring-1 ring-blue-500/20 object-contain bg-slate-950 p-1"
+          />
           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
             Alexis <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-extrabold uppercase tracking-wider">Transferencia</span>
           </span>
@@ -94,18 +96,23 @@ export const LoginView: React.FC = () => {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10 pt-20 lg:pt-12">
         
         {/* Left Side: Brand Visuals & Features */}
-        <div className="lg:col-span-6 hidden lg:flex flex-col justify-center space-y-10 pr-8 relative">
+        <div className="lg:col-span-6 hidden lg:flex flex-col justify-center space-y-8 pr-8 relative">
           
-          {/* Futuristic Branding Banner */}
-          <div>
-            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-              Alexis <br/>
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 bg-clip-text text-transparent">Transferencia</span>
-            </h1>
-            <span className="text-sm font-bold tracking-widest text-slate-500 uppercase block mt-4">
-              {currentLang === 'HT' ? 'PLATFÒM TRANSFÈ SAN KASE TÈT' : (currentLang === 'ES' ? 'PLATAFORMA DE TRANSFERENCIAS' : 'PLATEFORME DE TRANSFERT UNIFIÉE')}
+          {/* Official 3D Branding Banner */}
+          <div className="space-y-4">
+            <div className="relative group max-w-md">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-600 rounded-3xl blur-xl opacity-20 group-hover:opacity-35 transition duration-1000" />
+              <img 
+                src="/images/alexis-banner.png" 
+                alt="Alexis Transferencia Logo" 
+                className="relative w-full rounded-2xl shadow-2xl border border-slate-800/30 object-contain bg-slate-950/60"
+              />
+            </div>
+
+            <span className="text-xs font-black tracking-widest text-blue-600 uppercase block">
+              {currentLang === 'HT' ? 'PLATFÒM OFISYÈL TRANSFÈ SAN KASE TÈT' : (currentLang === 'ES' ? 'PLATAFORMA OFICIAL DE TRANSFERENCIAS' : 'PLATEFORME OFFICIELLE DE TRANSFERT UNIFIÉE')}
             </span>
-            <p className="mt-4 text-sm text-slate-500 font-medium leading-relaxed max-w-md">
+            <p className="text-sm text-slate-600 font-medium leading-relaxed max-w-md">
               {currentLang === 'HT'
                 ? 'Solisyon senp epi ansekirite pou jere transfè ant Repiblik Dominikèn ak Ayiti, ak verifikasyon otomatik.'
                 : (currentLang === 'ES'
@@ -170,6 +177,18 @@ export const LoginView: React.FC = () => {
 
             {/* Title */}
             <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4 lg:hidden">
+                <img 
+                  src="/images/alexis-emblem.png" 
+                  alt="Alexis Transferencia" 
+                  className="w-11 h-11 rounded-2xl shadow-md object-contain bg-slate-950 p-1 ring-1 ring-blue-500/20"
+                />
+                <div>
+                  <h3 className="text-base font-black text-slate-900 leading-tight">Alexis Transferencia</h3>
+                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Portail Sécurisé</span>
+                </div>
+              </div>
+
               <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
                 {t('login_title', 'Connexion au Portail')}
               </h2>

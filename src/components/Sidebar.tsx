@@ -110,14 +110,16 @@ export const Sidebar: React.FC = () => {
         {(!isSidebarCollapsed || isMobileSidebarOpen) ? (
           <>
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-slate-900/10 flex-shrink-0">
-                A
-              </div>
+              <img 
+                src="/images/alexis-emblem.png" 
+                alt="Alexis Transferencia" 
+                className="w-8 h-8 rounded-xl object-contain shadow-sm ring-1 ring-slate-900/10 flex-shrink-0 bg-slate-950 p-0.5" 
+              />
               <div className="truncate">
                 <span className="font-extrabold text-slate-900 text-xs tracking-tight block leading-tight">
                   Alexis
                 </span>
-                <span className="text-[10px] font-semibold text-emerald-600 tracking-tight block">
+                <span className="text-[10px] font-bold text-sky-600 tracking-tight block">
                   Transferencia
                 </span>
               </div>
@@ -127,7 +129,7 @@ export const Sidebar: React.FC = () => {
               {isMobileSidebarOpen ? (
                 <button
                   onClick={() => setIsMobileSidebarOpen(false)}
-                  className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
+                  className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors cursor-pointer"
                   title="Fermer le menu"
                 >
                   <X className="w-5 h-5 text-slate-700" />
@@ -135,7 +137,7 @@ export const Sidebar: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setIsSidebarCollapsed(true)}
-                  className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors items-center justify-center"
+                  className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors items-center justify-center cursor-pointer"
                   title="Réduire la barre latérale"
                   aria-label="Réduire la barre latérale"
                 >
@@ -147,11 +149,11 @@ export const Sidebar: React.FC = () => {
         ) : (
           <button
             onClick={() => setIsSidebarCollapsed(false)}
-            className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm shadow-md hover:bg-slate-800 transition-all group relative"
+            className="w-8 h-8 rounded-xl bg-slate-950 flex items-center justify-center shadow-md hover:scale-105 transition-all group relative cursor-pointer ring-1 ring-slate-900/10 overflow-hidden p-0.5"
             title="Agrandir la barre latérale"
             aria-label="Agrandir la barre latérale"
           >
-            <span className="group-hover:hidden">D</span>
+            <img src="/images/alexis-emblem.png" alt="Alexis" className="w-full h-full object-contain group-hover:hidden" />
             <PanelLeftOpen className="w-4 h-4 hidden group-hover:block text-white" />
           </button>
         )}

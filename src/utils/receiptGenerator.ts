@@ -61,25 +61,48 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.fillStyle = isCancelled ? '#BE123C' : '#0F172A';
   ctx.fillRect(0, 0, canvas.width, 16);
 
-  // Logo D'Alexis
-  ctx.fillStyle = isCancelled ? '#BE123C' : '#0F172A';
-  ctx.beginPath();
-  ctx.roundRect(285, 45, 80, 80, 20);
-  ctx.fill();
+  // Logo officiel Alexis Transferencia
+  try {
+    const logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = '/images/alexis-emblem.png';
+    });
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(285, 45, 80, 80, 20);
+    ctx.clip();
+    ctx.drawImage(logoImg, 285, 45, 80, 80);
+    ctx.restore();
+    if (isCancelled) {
+      ctx.fillStyle = 'rgba(190, 18, 60, 0.45)';
+      ctx.beginPath();
+      ctx.roundRect(285, 45, 80, 80, 20);
+      ctx.fill();
+    }
+  } catch {
+    ctx.fillStyle = isCancelled ? '#BE123C' : '#0F172A';
+    ctx.beginPath();
+    ctx.roundRect(285, 45, 80, 80, 20);
+    ctx.fill();
 
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 44px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(isCancelled ? '✕' : 'D', 325, 102);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(isCancelled ? '✕' : 'A', 325, 102);
+  }
 
   // Titre & En-tête
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 28px sans-serif';
-  ctx.fillText("D'Alexis", 325, 160);
+  ctx.textAlign = 'center';
+  ctx.fillText("Alexis", 325, 160);
 
-  ctx.fillStyle = '#64748B';
-  ctx.font = '600 16px sans-serif';
-  ctx.fillText('Transferencia y accesorio', 325, 185);
+  ctx.fillStyle = '#0284C7';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('Transferencia', 325, 185);
 
   ctx.fillStyle = '#94A3B8';
   ctx.font = '14px sans-serif';

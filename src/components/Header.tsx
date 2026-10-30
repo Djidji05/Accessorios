@@ -152,15 +152,25 @@ export const Header: React.FC = () => {
     <header className={`${isDesktopNavRole ? (selectedService ? 'hidden md:flex' : 'flex') : 'hidden md:flex'} h-14 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 px-2 sm:px-6 items-center justify-between sticky top-0 z-30 transition-colors w-full min-w-0`}>
       {/* Left Section: Mobile Brand Header & Desktop Breadcrumbs */}
       <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 min-w-0 flex-shrink">
-        {/* Mobile Menu Toggle Button */}
+        {/* Mobile Menu Toggle Button & Brand Emblem */}
         {isDesktopNavRole && (
-          <button
-            onClick={toggleMobileSidebar}
-            className="md:hidden p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
-            title={t('Menu Principal', 'Menu Principal')}
-          >
-            <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              onClick={toggleMobileSidebar}
+              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0 cursor-pointer"
+              title={t('Menu Principal', 'Menu Principal')}
+            >
+              <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
+            </button>
+            <div className="flex items-center gap-1.5">
+              <img 
+                src="/images/alexis-emblem.png" 
+                alt="Alexis Transferencia" 
+                className="w-7 h-7 rounded-lg object-contain bg-slate-950 p-0.5 shadow-xs ring-1 ring-slate-900/10" 
+              />
+              <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
+            </div>
+          </div>
         )}
 
         {/* Desktop Sidebar Toggle & Breadcrumbs (md:flex) */}

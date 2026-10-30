@@ -1077,6 +1077,11 @@ export const MobileAgentHome: React.FC = () => {
       {/* 2. MAIN AGENT CARD */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 text-white p-6 shadow-xl border border-slate-800/80">
         
+        {/* Subtle Brand Logo Watermark */}
+        <div className="absolute -bottom-6 -right-6 w-36 h-36 opacity-15 pointer-events-none select-none">
+          <img src="/images/alexis-emblem.png" alt="" className="w-full h-full object-contain" />
+        </div>
+
         <div className="relative space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
