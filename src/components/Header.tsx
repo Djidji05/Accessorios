@@ -30,6 +30,8 @@ export const Header: React.FC = () => {
     currentUser, 
     dopToHtgRate, 
     setDopToHtgRate, 
+    usdToHtgRate,
+    setUsdToHtgRate,
     unreadTasksCount, 
     killSwitchList,
     isSidebarCollapsed,
@@ -225,25 +227,50 @@ export const Header: React.FC = () => {
         </button>
 
         {/* Real-time Exchange Rate Widget (Hidden on mobile) */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 px-2.5 py-1 rounded-xl text-xs font-medium flex-shrink-0">
+        <div className="hidden sm:flex items-center gap-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 px-2.5 py-1 rounded-xl text-xs font-medium flex-shrink-0">
           <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-          <span className="text-slate-500 dark:text-slate-400 hidden lg:inline">{t('rate_label')}:</span>
-          <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-            100 Pesos = {Math.round(dopToHtgRate * 100)} HTG
-          </span>
-          {currentUser.role === 'admin' && (
-            <button 
-              onClick={() => {
-                const newRate = prompt('Nouveau taux 1 Peso -> HTG:', dopToHtgRate.toString());
-                if (newRate && !isNaN(parseFloat(newRate))) {
-                  setDopToHtgRate(parseFloat(newRate));
-                }
-              }}
-              className="ml-1 text-[10px] text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-semibold"
-            >
-              {t('edit')}
-            </button>
-          )}
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span className="font-bold text-slate-900 dark:text-slate-100">
+              100 DOP = {Math.round(dopToHtgRate * 100)} HTG
+            </span>
+            {currentUser.role === 'admin' && (
+              <button 
+                onClick={() => {
+                  const newRate = prompt('Nouveau taux 100 DOP -> HTG (ex: 230):', Math.round(dopToHtgRate * 100).toString());
+                  if (newRate && !isNaN(parseFloat(newRate))) {
+                    const parsed = parseFloat(newRate);
+                    setDopToHtgRate(parsed > 10 ? parsed / 100 : parsed);
+                  }
+                }}
+                className="text-[10px] text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-semibold cursor-pointer"
+                title="Modifier le taux DOP/HTG"
+              >
+                {t('edit')}
+              </button>
+            )}
+          </div>
+
+          <div className="h-3 w-px bg-slate-300 dark:bg-slate-700 mx-0.5" />
+
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span className="font-bold text-slate-700 dark:text-slate-300">
+              1 USD = {usdToHtgRate || 140.5} HTG
+            </span>
+            {currentUser.role === 'admin' && (
+              <button 
+                onClick={() => {
+                  const newUsd = prompt('Nouveau taux 1 USD -> HTG (ex: 140.5):', (usdToHtgRate || 140.5).toString());
+                  if (newUsd && !isNaN(parseFloat(newUsd))) {
+                    setUsdToHtgRate(parseFloat(newUsd));
+                  }
+                }}
+                className="text-[10px] text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-semibold cursor-pointer"
+                title="Modifier le taux USD/HTG"
+              >
+                {t('edit')}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* NOTIFICATION BELL ICON BUTTON */}

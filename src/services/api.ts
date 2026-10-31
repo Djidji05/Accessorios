@@ -161,11 +161,11 @@ export const api = {
 
   // 6. Taux de change officiel
   rates: {
-    get: () => request<{ baseCurrency: string; targetCurrency: string; rate: number }>('/rates').catch(() => ({ baseCurrency: 'DOP', targetCurrency: 'HTG', rate: 2.35 })),
-    update: (rate: number, actorName?: string) =>
+    get: () => request<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number }>('/rates').catch(() => ({ baseCurrency: 'DOP', targetCurrency: 'HTG', rate: 2.35, usdRate: 140.5 })),
+    update: (rate: number, actorName?: string, currency: 'DOP' | 'USD' = 'DOP') =>
       request<{ success: boolean; message: string; rate: { rate: number } }>('/rates', {
         method: 'PUT',
-        body: JSON.stringify({ rate, actorName }),
+        body: JSON.stringify({ rate, actorName, currency }),
       }),
   },
 

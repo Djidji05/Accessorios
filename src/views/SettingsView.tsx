@@ -40,6 +40,7 @@ export const SettingsView: React.FC = () => {
     dopToHtgRate, 
     setDopToHtgRate, 
     usdToHtgRate, 
+    setUsdToHtgRate,
     currentUser, 
     logout, 
     adminCommissionRate,
@@ -71,16 +72,19 @@ export const SettingsView: React.FC = () => {
     setAdminCommissionInput((adminCommissionRate || 1.0).toString());
   }, [adminCommissionRate]);
   
-
-  
-  // State pour Administrateur & Général
+  // State pour Administrateur & Général (DOP et USD)
   const [rateInput, setRateInput] = useState(() => {
     return (dopToHtgRate <= 10 ? Math.round(dopToHtgRate * 100) : Math.round(dopToHtgRate)).toString();
   });
+  const [usdRateInput, setUsdRateInput] = useState(() => (usdToHtgRate || 140.5).toString());
 
   React.useEffect(() => {
     setRateInput((dopToHtgRate <= 10 ? Math.round(dopToHtgRate * 100) : Math.round(dopToHtgRate)).toString());
   }, [dopToHtgRate]);
+
+  React.useEffect(() => {
+    setUsdRateInput((usdToHtgRate || 140.5).toString());
+  }, [usdToHtgRate]);
 
   const [companyHeader, setCompanyHeader] = useState("Alexis Transferencia");
   const [defaultCurrency, setDefaultCurrency] = useState<'DOP' | 'HTG' | 'USD'>('DOP');
@@ -290,12 +294,17 @@ export const SettingsView: React.FC = () => {
       setDopToHtgRate(finalRate);
     }
 
+    const newUsdRate = parseFloat(usdRateInput);
+    if (!isNaN(newUsdRate) && newUsdRate > 0) {
+      setUsdToHtgRate(newUsdRate);
+    }
+
     // Enregistrer les taux de commission par service configurés par l'Admin
     Object.entries(svcRatesState).forEach(([serviceKey, val]) => {
       updateServiceCommissionRate(serviceKey, val);
     });
 
-    setFeedbackMessage('Paramètres système et grille de commission Admin par service enregistrés avec succès !');
+    setFeedbackMessage('Taux de change (DOP & USD) et commissions Admin enregistrés avec succès !');
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -810,13 +819,16 @@ export const SettingsView: React.FC = () => {
               <div className="relative">
                 <input
                   type="number"
-                  disabled
-                  value={usdToHtgRate}
-                  className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-500 px-3 py-2.5 rounded-xl cursor-not-allowed"
+                  step="0.1"
+                  value={usdRateInput}
+                  disabled={currentUser.role !== 'admin'}
+                  onChange={(e) => setUsdRateInput(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-black text-slate-900 px-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 disabled:opacity-60"
+                  placeholder="140.5"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">HTG</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">{t('Taux indicatif des marchés internationaux.')}</p>
+              <p className="text-[10px] text-slate-500 font-medium mt-1">Saisir <span className="font-mono font-bold text-slate-700">140.5</span> signifie que <span className="font-mono font-bold text-slate-700">1 USD = 140.5 HTG</span> (utilisé pour Zelle et conversions).</p>
             </div>
           </div>
         </div>

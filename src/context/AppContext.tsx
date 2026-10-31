@@ -60,6 +60,7 @@ interface AppContextType {
   dopToHtgRate: number;
   usdToHtgRate: number;
   setDopToHtgRate: (rate: number) => void;
+  setUsdToHtgRate: (rate: number) => void;
   adminCommissionRate: number;
   setAdminCommissionRate: (rate: number) => void;
   serviceCommissionRates: Record<string, number>;
@@ -293,8 +294,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('theme', 'light');
   }, []);
   
-  const [dopToHtgRate, setDopToHtgRateState] = useState<number>(2.35);
-  const [usdToHtgRate, setUsdToHtgRate] = useState<number>(140.5);
+  const [dopToHtgRate, setDopToHtgRateState] = useState<number>(() => {
+    const saved = localStorage.getItem('dalexis_dop_to_htg_rate');
+    return saved ? parseFloat(saved) : 2.35;
+  });
+  const [usdToHtgRate, setUsdToHtgRateState] = useState<number>(() => {
+    const saved = localStorage.getItem('dalexis_usd_to_htg_rate');
+    return saved ? parseFloat(saved) : 140.5;
+  });
   
   const [adminCommissionRate, setAdminCommissionRateState] = useState<number>(() => {
     const saved = localStorage.getItem('admin_commission_rate');
@@ -625,9 +632,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // 1. Données publiques (taux de change - toutes les 60s ou initial)
         if (isFullSync) {
           api.rates.get().then((rateData) => {
-            if (rateData?.rate && isMounted) {
-              const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
-              setDopToHtgRateState((prev) => (prev === r ? prev : r));
+            if (isMounted) {
+              if (rateData?.rate) {
+                const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
+                setDopToHtgRateState((prev) => (prev === r ? prev : r));
+              }
+              if (rateData?.usdRate) {
+                const u = parseFloat(String(rateData.usdRate));
+                if (!isNaN(u) && u > 0) {
+                  setUsdToHtgRateState((prev) => (prev === u ? prev : u));
+                }
+              }
             }
           }).catch(() => null);
         }
@@ -862,7 +877,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventSource.addEventListener('RATE_UPDATED', (e: MessageEvent) => {
           try {
             const rateObj = JSON.parse(e.data);
-            if (rateObj?.rate) {
+            if (rateObj?.isUSD || rateObj?.baseCurrency === 'USD') {
+              const u = parseFloat(String(rateObj.rate || rateObj.usdRate));
+              if (!isNaN(u) && u > 0) {
+                setUsdToHtgRateState(u);
+                showToast(`📈 Taux USD officiel actualisé en direct : 1 USD = ${u} HTG`, 'info');
+              }
+            } else if (rateObj?.rate) {
               const r = rateObj.rate > 10 ? rateObj.rate / 100 : rateObj.rate;
               setDopToHtgRateState(r);
               showToast(`📈 Taux de change officiel actualisé en direct : 100 DOP = ${Math.round(r * 100)} HTG`, 'info');
@@ -927,8 +948,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Si l'utilisateur entre 230 (pour 100 Pesos), on divise par 100 pour obtenir le taux unitaire (2.30)
     const normalizedRate = rate > 10 ? rate / 100 : rate;
     setDopToHtgRateState(normalizedRate);
-    api.rates.update(normalizedRate, currentUser.name).catch(() => null);
+    localStorage.setItem('dalexis_dop_to_htg_rate', normalizedRate.toString());
+    api.rates.update(normalizedRate, currentUser.name, 'DOP').catch(() => null);
     showToast(`Taux de change officiel mis à jour : 100 DOP = ${Math.round(normalizedRate * 100)} HTG`, 'success');
+  };
+
+  const setUsdToHtgRate = (rate: number) => {
+    const num = parseFloat(String(rate));
+    if (isNaN(num) || num <= 0) return;
+    setUsdToHtgRateState(num);
+    localStorage.setItem('dalexis_usd_to_htg_rate', num.toString());
+    api.rates.update(num, currentUser.name, 'USD').catch(() => null);
+    showToast(`Taux USD officiel mis à jour : 1 USD = ${num} HTG`, 'success');
   };
 
   // Subscribe to distributed event bus for audit logging
@@ -1610,6 +1641,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dopToHtgRate,
         usdToHtgRate,
         setDopToHtgRate,
+        setUsdToHtgRate,
         adminCommissionRate,
         setAdminCommissionRate,
         serviceCommissionRates,
