@@ -1,5 +1,16 @@
 import React from 'react';
-import { LayoutDashboard, History, Landmark, Settings, Zap, Bell, Users, Wallet } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  History, 
+  Landmark, 
+  Settings, 
+  Zap, 
+  Bell, 
+  Users, 
+  Wallet, 
+  Wrench,
+  Clock
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const BottomNavBar: React.FC = () => {
@@ -11,6 +22,7 @@ export const BottomNavBar: React.FC = () => {
     selectedReceiptTx, 
     isTransactionDetailOpen, 
     unreadTasksCount,
+    transactions,
     t 
   } = useApp();
 
@@ -27,7 +39,16 @@ export const BottomNavBar: React.FC = () => {
   const role = currentUser.role;
   const isAgentHaiti = role === 'agent_haiti';
   const isAgentRD = role === 'agent_rd';
+  const isGestionnaire = role === 'gestionnaire';
 
+  // Compteur des tâches en attente dédiées au Gestionnaire (Télécoms, flux numériques MonCash/Digicel/Claro/Altice)
+  const gestionnairePendingCount = (transactions || []).filter(
+    (t) => t.status === 'in_progress' && (t.channel === 'digital_telecom' || t.assignedToRole === 'gestionnaire')
+  ).length;
+
+  // =========================================================================
+  // 1. BARRE DE NAVIGATION MOBILE : AGENT HAÏTI
+  // =========================================================================
   if (isAgentHaiti) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 md:hidden px-3 py-2 shadow-xl">
@@ -78,6 +99,9 @@ export const BottomNavBar: React.FC = () => {
     );
   }
 
+  // =========================================================================
+  // 2. BARRE DE NAVIGATION MOBILE : AGENT R.D.
+  // =========================================================================
   if (isAgentRD) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 md:hidden px-3 py-2 shadow-xl">
@@ -142,7 +166,112 @@ export const BottomNavBar: React.FC = () => {
     );
   }
 
-  // Admin and Gestionnaire roles Mobile Bottom Navigation Bar
+  // =========================================================================
+  // 3. BARRE DE NAVIGATION MOBILE DÉDIÉE : GESTIONNAIRE
+  // =========================================================================
+  if (isGestionnaire) {
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 md:hidden px-1.5 py-1.5 shadow-xl">
+        <div className="flex items-center justify-around max-w-lg mx-auto">
+          {/* 1. Tableau de bord */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('overview')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'overview'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[9px] tracking-tight font-semibold">{t('nav_dashboard', 'Tableau')}</span>
+          </button>
+
+          {/* 2. File d'attente / Tâches Numériques (avec badge des validations en attente) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('tasks')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all relative cursor-pointer ${
+              activeTab === 'tasks'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <div className="relative">
+              <Zap className={`w-5 h-5 ${activeTab === 'tasks' ? 'text-amber-500' : ''}`} />
+              {gestionnairePendingCount > 0 && (
+                <span className="absolute -top-1 -right-2 px-1 min-w-3.5 h-3.5 rounded-full bg-orange-500 text-white font-black text-[9px] flex items-center justify-center shadow-xs">
+                  {gestionnairePendingCount > 99 ? '99+' : gestionnairePendingCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[9px] tracking-tight font-semibold">{t('nav_tasks', 'Tâches')}</span>
+          </button>
+
+          {/* 3. Espace Opérations (Guichet Saisie & Exécution) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('guichet')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'guichet'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <Wrench className="w-5 h-5" />
+            <span className="text-[9px] tracking-tight font-semibold">{t('Espace Opérations', 'Opérations')}</span>
+          </button>
+
+          {/* 4. Trésorerie & Soldes Flottes */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('treasury')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'treasury'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <Wallet className="w-5 h-5" />
+            <span className="text-[9px] tracking-tight font-semibold">{t('nav_treasury', 'Trésorerie')}</span>
+          </button>
+
+          {/* 5. Historique & Archives */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('history')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'history'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <History className="w-5 h-5" />
+            <span className="text-[9px] tracking-tight font-semibold">{t('nav_history', 'Historique')}</span>
+          </button>
+
+          {/* 6. Paramètres */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'settings'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="text-[9px] tracking-tight font-semibold">{t('nav_settings', 'Paramètres')}</span>
+          </button>
+        </div>
+      </nav>
+    );
+  }
+
+  // =========================================================================
+  // 4. BARRE DE NAVIGATION MOBILE : ADMINISTRATEUR (STANDARD)
+  // Espace Opérations à la place de Trésorerie selon la demande utilisateur
+  // =========================================================================
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 md:hidden px-2 py-1.5 shadow-xl">
       <div className="flex items-center justify-around max-w-lg mx-auto">
@@ -181,18 +310,18 @@ export const BottomNavBar: React.FC = () => {
           <span className="text-[10px] tracking-tight font-semibold">{t('nav_tasks', 'Tâches')}</span>
         </button>
 
-        {/* 3. Trésorerie */}
+        {/* 3. Espace Opérations (remplace Trésorerie) */}
         <button
           type="button"
-          onClick={() => setActiveTab('treasury')}
+          onClick={() => setActiveTab('guichet')}
           className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer ${
-            activeTab === 'treasury'
+            activeTab === 'guichet'
               ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
               : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
           }`}
         >
-          <Landmark className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight font-semibold">{t('nav_treasury', 'Trésorerie')}</span>
+          <Wrench className="w-5 h-5" />
+          <span className="text-[10px] tracking-tight font-semibold">{t('Espace Opérations', 'Opérations')}</span>
         </button>
 
         {/* 4. Historique */}

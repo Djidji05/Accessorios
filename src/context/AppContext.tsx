@@ -158,6 +158,13 @@ interface AppContextType {
   currentLang: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string, fallback?: string) => string;
+
+  // PWA Installation State
+  isPWAInstalled: boolean;
+  canInstallPWA: boolean;
+  showPWAInstallPrompt: boolean;
+  setShowPWAInstallPrompt: (show: boolean) => void;
+  installPWA: () => Promise<'accepted' | 'dismissed' | 'unsupported_ios' | 'unavailable' | 'already_installed'>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -275,6 +282,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.classList.remove('dark');
     localStorage.setItem('theme', 'light');
   };
+
+  // PWA Installation Management
+  const [deferredPWAPrompt, setDeferredPWAPrompt] = useState<any>(null);
+  const [isPWAInstalled, setIsPWAInstalled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://')
+      );
+    }
+    return false;
+  });
+  const [showPWAInstallPrompt, setShowPWAInstallPrompt] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPWAPrompt(e);
+      setShowPWAInstallPrompt(true);
+    };
+
+    const handleAppInstalled = () => {
+      setIsPWAInstalled(true);
+      setShowPWAInstallPrompt(false);
+      setDeferredPWAPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const handleDisplayModeChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsPWAInstalled(true);
+        setShowPWAInstallPrompt(false);
+      }
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleDisplayModeChange);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleDisplayModeChange);
+      }
+    };
+  }, []);
+
+  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unsupported_ios' | 'unavailable' | 'already_installed'> => {
+    if (isPWAInstalled) {
+      return 'already_installed';
+    }
+    if (deferredPWAPrompt) {
+      try {
+        deferredPWAPrompt.prompt();
+        const { outcome } = await deferredPWAPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setIsPWAInstalled(true);
+          setShowPWAInstallPrompt(false);
+          setDeferredPWAPrompt(null);
+          return 'accepted';
+        }
+        return 'dismissed';
+      } catch (err) {
+        console.error('PWA install prompt error:', err);
+      }
+    }
+    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      return 'unsupported_ios';
+    }
+    return 'unavailable';
+  }, [deferredPWAPrompt, isPWAInstalled]);
 
   // i18n Language State & Helper
   const [currentLang, setCurrentLangState] = useState<Language>(() => {
@@ -1820,6 +1903,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         readNotificationIds,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        isPWAInstalled,
+        canInstallPWA: Boolean(deferredPWAPrompt) || !isPWAInstalled,
+        showPWAInstallPrompt,
+        setShowPWAInstallPrompt,
+        installPWA,
       }}
     >
       {children}

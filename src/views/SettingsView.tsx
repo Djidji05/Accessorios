@@ -34,6 +34,7 @@ import { useApp } from '../context/AppContext';
 import { Language } from '../i18n/translations';
 import { ServiceType, OperatorCode } from '../types';
 import { OperatorBadge } from '../components/OperatorBadge';
+import { PWAInstallCard } from '../components/PWAInstallCard';
 
 export const SettingsView: React.FC = () => {
   const { 
@@ -511,6 +512,9 @@ export const SettingsView: React.FC = () => {
 
 
 
+          {/* SECTION APPLICATION MOBILE & INSTALLATION PWA */}
+          <PWAInstallCard />
+
           {/* Boutons d'Action (Sauvegarde & Déconnexion) */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-200/80">
             <button
@@ -722,6 +726,9 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
+          {/* SECTION APPLICATION MOBILE & INSTALLATION PWA */}
+          <PWAInstallCard />
+
           {/* Boutons d'Action (Sauvegarde & Déconnexion) */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-200/80">
             <button
@@ -779,6 +786,9 @@ export const SettingsView: React.FC = () => {
           <span>{t('Lecture seule : Seul l\'Administrateur peut modifier les paramètres généraux du système.')}</span>
         </div>
       )}
+
+      {/* SECTION APPLICATION MOBILE & INSTALLATION PWA */}
+      <PWAInstallCard />
 
       <form onSubmit={handleAdminSave} className="space-y-6">
         
