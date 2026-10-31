@@ -57,6 +57,16 @@ export interface Transaction {
   feeDOP: number;
   commissionDOP: number;
   
+  // Zelle Specific Flow & Verification
+  zelleStatus?: 'pending_admin_check' | 'approved' | 'rejected';
+  zelleProofUrl?: string;
+  zelleAdminNote?: string;
+  zelleExchangeRate?: number;
+  zelleFeeUSD?: number;
+  zelleCommissionUSD?: number;
+  netPayoutAmount?: number;
+  netPayoutCurrency?: 'DOP' | 'HTG' | 'USD';
+
   // Distributed System Node Tracing
   createdByNode: string;
   createdByName: string;

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, CheckCircle2, Clock, Share2, Check, FileText, AlertTriangle, XCircle } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, Clock, Share2, Check, FileText, AlertTriangle, XCircle, Eye } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorBadge } from './OperatorBadge';
 import { downloadReceiptPDF, shareReceiptPDF } from '../utils/receiptGenerator';
+import { ImageViewerModal } from './ImageViewerModal';
 
 export const ReceiptModal: React.FC = () => {
   const { selectedReceiptTx, setSelectedReceiptTx, showToast, transactions, t } = useApp();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   if (!selectedReceiptTx) return null;
 
@@ -20,7 +22,7 @@ export const ReceiptModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-sm w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 my-auto">
+      <div className={`bg-white rounded-3xl ${tx.proofUrl ? 'max-w-md' : 'max-w-sm'} w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 my-auto`}>
         
         {/* Close Button */}
         <button
@@ -132,19 +134,39 @@ export const ReceiptModal: React.FC = () => {
           {/* Preuve de Paiement / Clôture Section */}
           {(tx.proofNotes || tx.proofUrl) && (
             <div className="bg-blue-50/90 p-3.5 rounded-2xl border border-blue-200 text-left space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] font-black text-blue-950 uppercase tracking-wider">
-                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Preuve Photo & Validation :</span>
+              <div className="flex items-center justify-between text-[11px] font-black text-blue-950 uppercase tracking-wider">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Preuve Photo & Validation :</span>
+                </div>
+                {tx.proofUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setLightboxUrl(tx.proofUrl || null)}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Agrandir</span>
+                  </button>
+                )}
               </div>
 
               {tx.proofUrl ? (
-                <div className="rounded-2xl overflow-hidden border border-blue-300/80 bg-slate-950 flex flex-col items-center justify-center p-1.5 space-y-1 shadow-inner">
+                <div 
+                  onClick={() => setLightboxUrl(tx.proofUrl || null)}
+                  className="rounded-2xl overflow-hidden border border-blue-300/80 bg-slate-950 flex flex-col items-center justify-center p-2 space-y-1.5 shadow-inner cursor-pointer group relative"
+                >
                   <img 
                     src={tx.proofUrl} 
                     alt="Photo Preuve Officielle" 
-                    className="max-h-48 w-auto object-contain rounded-xl"
+                    className="max-h-[360px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                   />
-                  <span className="text-[9px] font-mono text-blue-300 font-bold block text-center">📷 PREUVE PHOTO DU REÇU ENREGISTRÉE</span>
+                  <div className="flex items-center justify-between w-full px-1 text-[10px] text-blue-300 font-bold">
+                    <span>📷 PREUVE DU REÇU</span>
+                    <span className="text-white group-hover:underline flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Cliquer pour zoomer
+                    </span>
+                  </div>
                 </div>
               ) : null}
 
@@ -247,6 +269,14 @@ export const ReceiptModal: React.FC = () => {
         </div>
 
       </div>
+
+      {lightboxUrl && (
+        <ImageViewerModal
+          imageUrl={lightboxUrl}
+          title="Photo de la quittance / reçu"
+          onClose={() => setLightboxUrl(null)}
+        />
+      )}
     </div>
   );
 };

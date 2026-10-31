@@ -21,7 +21,11 @@ import {
   Clock,
   ExternalLink,
   ChevronRight,
-  XCircle
+  XCircle,
+  Camera,
+  Upload,
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
@@ -29,6 +33,8 @@ import { OperatorBadge } from '../components/OperatorBadge';
 import { MobileAgentHome } from '../components/MobileAgentHome';
 import { getOperatorLogo } from '../utils/operatorLogos';
 import { Pagination } from '../components/Pagination';
+import { ZellePayoutModal } from '../components/ZellePayoutModal';
+import { ImageViewerModal } from '../components/ImageViewerModal';
 
 const OPERATOR_VISUAL_CARDS: Record<
   OperatorCode,
@@ -129,6 +135,7 @@ export const OperationsGuichetView: React.FC = () => {
   const { 
     currentUser, 
     dopToHtgRate, 
+    usdToHtgRate,
     setDopToHtgRate,
     createTransaction, 
     killSwitchList,
@@ -146,6 +153,13 @@ export const OperationsGuichetView: React.FC = () => {
   const [senderPhone, setSenderPhone] = useState('');
   const [receiverName, setReceiverName] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
+
+  // Zelle Specific States
+  const [zelleProofImage, setZelleProofImage] = useState<string | null>(null);
+  const [zelleAmountUSD, setZelleAmountUSD] = useState<string>('100');
+  const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'HTG'>('DOP');
+  const [selectedZellePayoutTx, setSelectedZellePayoutTx] = useState<Transaction | null>(null);
+  const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
 
   const [isEditingRate, setIsEditingRate] = useState(false);
   const [tempRate, setTempRate] = useState<string>(dopToHtgRate.toString());
@@ -215,11 +229,69 @@ export const OperationsGuichetView: React.FC = () => {
     }
   };
 
+  const handleZelleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      alert("⚠️ L'image est trop volumineuse (maximum 15 Mo).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setZelleProofImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!operator) {
       setFeedback({ type: 'error', message: 'Veuillez sélectionner un opérateur (MonCash, Natcash, Digicel, Natcom, Claro, Altice, Zelle Pay) avant de continuer.' });
+      return;
+    }
+
+    // Zelle Dedicated Submission
+    if (operator === 'zelle') {
+      if (!zelleProofImage) {
+        setFeedback({ type: 'error', message: '⚠️ La photo de preuve Zelle est obligatoire pour envoyer à l\'Admin.' });
+        return;
+      }
+      const numUSD = parseFloat(zelleAmountUSD) || 0;
+      if (numUSD <= 0) {
+        setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme en USD.' });
+        return;
+      }
+      const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+      const clientName = receiverName.trim() || senderName.trim() || 'Client Zelle';
+
+      const result = createTransaction({
+        senderName: clientName,
+        senderPhone: '+1 USA Zelle',
+        receiverName: clientName,
+        receiverPhone: '+1 USA Zelle',
+        operator: 'zelle',
+        serviceType: 'transfer',
+        amountUSD: numUSD,
+        amountDOP: Math.round(numUSD * usdToDop),
+        feeDOP: Math.round(numUSD * 0.035 * usdToDop),
+        commissionDOP: Math.round(numUSD * 0.015 * usdToDop),
+        proofUrl: zelleProofImage,
+        zelleProofUrl: zelleProofImage,
+        payoutCurrency: zellePayoutCurrency,
+      });
+
+      if (result.success && result.transaction) {
+        setFeedback({ type: 'success', message: result.message });
+        setSelectedZellePayoutTx(result.transaction);
+        setOperator(null);
+        setZelleProofImage(null);
+        setZelleAmountUSD('100');
+        setReceiverName('');
+        setSenderName('');
+      } else {
+        setFeedback({ type: 'error', message: result.message });
+      }
       return;
     }
 
@@ -450,8 +522,7 @@ export const OperationsGuichetView: React.FC = () => {
                 const conf = OPERATOR_VISUAL_CARDS[opKey];
                 const ks = killSwitchList.find(k => k.operator === opKey);
                 const isForbiddenForGestionnaire = currentUser.role === 'gestionnaire' && (opKey === 'natcash' || opKey === 'natcom');
-                const isForbiddenZelleNonAdmin = opKey === 'zelle' && currentUser.role !== 'admin';
-                const isLocked = (ks && !ks.enabled) || isForbiddenForGestionnaire || isForbiddenZelleNonAdmin;
+                const isLocked = (ks && !ks.enabled) || isForbiddenForGestionnaire;
                 const isSelected = operator === opKey;
 
                 return (
@@ -469,7 +540,7 @@ export const OperationsGuichetView: React.FC = () => {
                           ? `${conf.activeBorder} scale-102 cursor-pointer` 
                           : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs cursor-pointer'
                     }`}
-                    title={isForbiddenZelleNonAdmin ? "Service Zelle Pay (USD) réservé exclusivement à l'Administrateur" : isForbiddenForGestionnaire ? "Service restreint : Un gestionnaire/superviseur ne peut pas effectuer d'opérations Natcash ou Natcom" : undefined}
+                    title={isForbiddenForGestionnaire ? "Service restreint : Un gestionnaire/superviseur ne peut pas effectuer d'opérations Natcash ou Natcom" : undefined}
                   >
                     <div className="flex items-start justify-between">
                       {/* Logo Emblem Image */}
@@ -486,11 +557,7 @@ export const OperationsGuichetView: React.FC = () => {
 
                       {/* Country Flag & Locked indicator */}
                       <div className="flex items-center gap-1.5">
-                        {isForbiddenZelleNonAdmin ? (
-                          <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-900 font-extrabold text-[9px]" title="Réservé Administrateur">
-                            Admin Only
-                          </span>
-                        ) : isForbiddenForGestionnaire ? (
+                        {isForbiddenForGestionnaire ? (
                           <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-extrabold text-[9px]" title="Non autorisé Superviseur">
                             Restreint
                           </span>
@@ -510,7 +577,7 @@ export const OperationsGuichetView: React.FC = () => {
                         {conf.name}
                       </span>
                       <span className="text-[10px] font-semibold text-slate-500 block truncate">
-                        {isForbiddenZelleNonAdmin ? "Réservé Administrateur" : isForbiddenForGestionnaire ? "Non disponible Superviseur" : conf.category}
+                        {isForbiddenForGestionnaire ? "Non disponible Superviseur" : conf.category}
                       </span>
                     </div>
                   </button>
@@ -526,177 +593,450 @@ export const OperationsGuichetView: React.FC = () => {
             )}
           </div>
 
-          {/* Client Details Card */}
-          {(() => {
-            const isTelecom = operator ? ['natcom', 'claro', 'digicel', 'altice'].includes(operator) : false;
-            const opLabel = operator ? operator.toUpperCase() : '';
-            return (
-              <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+          {/* Client Details Card or Zelle Proof Card */}
+          {operator === 'zelle' ? (
+            <div className="bg-white p-6 rounded-3xl border border-purple-200/80 shadow-2xs space-y-5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-purple-950 uppercase tracking-wider flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-purple-600" />
+                  <span>2. Preuve de Virement Zelle & Client (Obligatoire)</span>
+                </label>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                  Vérification Admin Requise
+                </span>
+              </div>
+
+              {/* Upload Container */}
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                    {t('step2_parties', '2. Informations Récepteur')} {opLabel ? `(${opLabel})` : ''}
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Capture d'écran ou Photo du reçu Zelle :</span>
                   </label>
-                  <span className="text-[11px] font-bold text-slate-400">
-                    {isTelecom ? 'Entrez uniquement le numéro de téléphone à recharger' : t('receiver_info', 'Saisissez les informations du compte récepteur')}
-                  </span>
+                  {zelleProofImage && (
+                    <button
+                      type="button"
+                      onClick={() => setZelleProofImage(null)}
+                      className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Changer la photo</span>
+                    </button>
+                  )}
                 </div>
 
-                <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-4">
-                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
-                    {isTelecom ? `Recharge Directe (${opLabel})` : t('receiver_info', 'Bénéficiaire Récepteur (Haïti 🇭🇹)')}
-                  </span>
+                {!zelleProofImage ? (
+                  <label className="relative flex flex-col items-center justify-center p-8 border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-3xl bg-purple-50/40 hover:bg-purple-50/70 transition-all cursor-pointer group text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform mb-3 border border-purple-100">
+                      <Camera className="w-7 h-7" />
+                    </div>
+                    <span className="text-xs font-black text-slate-900 mb-1">
+                      Cliquez pour ajouter la preuve Zelle (Capture / Reçu)
+                    </span>
+                    <span className="text-[11px] text-slate-500 max-w-sm">
+                      Prenez une photo nette du téléphone du client ou importez la capture d'écran du transfert.
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleZelleProofUpload}
+                      className="hidden"
+                      required={!zelleProofImage}
+                    />
+                  </label>
+                ) : (
+                  <div className="relative rounded-3xl overflow-hidden border-2 border-purple-400 bg-slate-900 group shadow-md">
+                    <img
+                      src={zelleProofImage}
+                      alt="Preuve Zelle"
+                      className="w-full max-h-[360px] object-contain mx-auto"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setZelleLightboxUrl(zelleProofImage)}
+                        className="px-4 py-2 bg-white/95 text-slate-900 text-xs font-black rounded-xl shadow-lg flex items-center gap-1.5 hover:bg-white cursor-pointer"
+                      >
+                        <Eye className="w-4 h-4 text-purple-600" />
+                        <span>Agrandir en Plein Écran</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setZelleProofImage(null)}
+                        className="px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 hover:bg-rose-700 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
+                    <div className="absolute bottom-2 left-2 px-2.5 py-1 bg-black/70 backdrop-blur-md rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Preuve attachée avec succès</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                  <div className={`grid grid-cols-1 ${isTelecom ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-4`}>
-                    {!isTelecom && (
+              {/* Client Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-purple-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <User className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Nom du client / titulaire du compte Zelle :</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: Carlos Rodriguez"
+                    value={receiverName}
+                    onChange={(e) => setReceiverName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Téléphone / Email Zelle (Optionnel) :</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: +1 305 000 0000 ou email"
+                    value={receiverPhone}
+                    onChange={(e) => setReceiverPhone(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            (() => {
+              const isTelecom = operator ? ['natcom', 'claro', 'digicel', 'altice'].includes(operator) : false;
+              const opLabel = operator ? operator.toUpperCase() : '';
+              return (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                      {t('step2_parties', '2. Informations Récepteur')} {opLabel ? `(${opLabel})` : ''}
+                    </label>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      {isTelecom ? 'Entrez uniquement le numéro de téléphone à recharger' : t('receiver_info', 'Saisissez les informations du compte récepteur')}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-4">
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block">
+                      {isTelecom ? `Recharge Directe (${opLabel})` : t('receiver_info', 'Bénéficiaire Récepteur (Haïti 🇭🇹)')}
+                    </span>
+
+                    <div className={`grid grid-cols-1 ${isTelecom ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-4`}>
+                      {!isTelecom && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                            <User className="w-3.5 h-3.5 text-blue-500" />
+                            <span>{t('receiver_name', 'Nom complet du bénéficiaire')}</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="ex: Jean-Baptiste Pierre"
+                            value={receiverName}
+                            onChange={(e) => setReceiverName(e.target.value)}
+                            className="w-full bg-white border border-blue-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          />
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                          <User className="w-3.5 h-3.5 text-blue-500" />
-                          <span>{t('receiver_name', 'Nom complet du bénéficiaire')}</span>
+                          <Phone className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{isTelecom ? `Numéro de Téléphone à Recharger (${opLabel})` : t('receiver_phone', 'Numéro Portefeuille / Compte')}</span>
                         </label>
                         <input
-                          type="text"
+                          type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           required
-                          placeholder="ex: Jean-Baptiste Pierre"
-                          value={receiverName}
-                          onChange={(e) => setReceiverName(e.target.value)}
-                          className="w-full bg-white border border-blue-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          placeholder={isTelecom ? "ex: 37000000 ou 8090000000" : "+509 37000000"}
+                          value={receiverPhone}
+                          onChange={(e) => setReceiverPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
+                          className="w-full bg-white border border-blue-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                         />
                       </div>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{isTelecom ? `Numéro de Téléphone à Recharger (${opLabel})` : t('receiver_phone', 'Numéro Portefeuille / Compte')}</span>
-                      </label>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        required
-                        placeholder={isTelecom ? "ex: 37000000 ou 8090000000" : "+509 37000000"}
-                        value={receiverPhone}
-                        onChange={(e) => setReceiverPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
-                        className="w-full bg-white border border-blue-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()
+          )}
 
         </div>
 
         {/* Real-time Rate Calculator & Summary (Right Column) */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-5">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Calculator className="w-4 h-4 text-emerald-600" />
-                <span>{t('step3_amounts', '3. Saisie Financière & Conversion')}</span>
-              </label>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                Temps Réel
-              </span>
-            </div>
-
-            {/* Amount in DOP */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                {t('amount_dop', 'Montant en Pesos dominicains (DOP) versé :')}
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  step="1"
-                  value={amountDOP}
-                  onChange={(e) => setAmountDOP(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 font-mono text-2xl font-black text-slate-900 pl-4 pr-16 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:bg-white"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 font-mono">
-                  DOP
+          {operator === 'zelle' ? (
+            <div className="bg-white p-6 rounded-3xl border border-purple-200/80 shadow-2xs space-y-5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-purple-950 uppercase tracking-wider flex items-center gap-1.5">
+                  <DollarSign className="w-4 h-4 text-purple-600" />
+                  <span>3. Montant Zelle & Conversion</span>
+                </label>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
+                  Devise USD 🇺🇸
                 </span>
               </div>
-            </div>
 
-            {/* Quick Amount Preset Pills */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                {t('quick_amounts', 'Montants rapides au comptoir :')}
-              </span>
-              <div className="grid grid-cols-3 gap-1.5">
-                {QUICK_AMOUNTS_DOP.map((preset) => (
+              {/* Amount in USD */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Somme exacte reçue par Zelle (USD) :
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    step="any"
+                    value={zelleAmountUSD}
+                    onChange={(e) => setZelleAmountUSD(e.target.value)}
+                    className="w-full bg-purple-50/50 border border-purple-200 font-mono text-2xl font-black text-slate-900 pl-4 pr-16 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:bg-white"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-purple-600 font-mono">
+                    USD $
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick USD Presets */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                  Montants Zelle fréquents :
+                </span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[50, 100, 200, 300, 500, 1000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setZelleAmountUSD(preset.toString())}
+                      className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer ${
+                        parseFloat(zelleAmountUSD) === preset
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      ${preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payout Currency Choice */}
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-bold text-slate-700">
+                  Devise de remise au client :
+                </label>
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    key={preset}
                     type="button"
-                    onClick={() => setAmountDOP(preset.toString())}
-                    className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer ${
-                      numAmountDOP === preset
+                    onClick={() => setZellePayoutCurrency('DOP')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                      zellePayoutCurrency === 'DOP'
                         ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    {preset.toLocaleString()}
+                    <span>🇩🇴 Pesos (DOP)</span>
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setZellePayoutCurrency('HTG')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                      zellePayoutCurrency === 'HTG'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>🇭🇹 Gourdes (HTG)</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Live Calculations Breakdown */}
+              {(() => {
+                const numUSD = parseFloat(zelleAmountUSD) || 0;
+                const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+                const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
+                const netUSD = Math.max(0, numUSD - feeUSD);
+                const netDOP = Math.round(netUSD * usdToDop);
+                const netHTG = Math.round(netUSD * (usdToHtgRate || 135));
+                const netPayout = zellePayoutCurrency === 'DOP' ? netDOP : netHTG;
+
+                return (
+                  <div className="p-4 bg-purple-50/70 rounded-2xl space-y-3 text-xs border border-purple-200/70 font-sans">
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span className="font-medium">Taux de conversion :</span>
+                      <span className="font-mono font-bold text-slate-900">
+                        {zellePayoutCurrency === 'DOP'
+                          ? `1 USD = ${usdToDop.toFixed(2)} DOP`
+                          : `1 USD = ${usdToHtgRate.toFixed(2)} HTG`}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                      <span>Frais Zelle (3.5%) :</span>
+                      <span className="font-mono font-bold text-slate-700">-${feeUSD.toFixed(2)} USD</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 pt-2 border-t border-purple-200 text-slate-900">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-xs uppercase tracking-tight text-purple-950">
+                          Montant net à remettre au client :
+                        </span>
+                        <span className="font-mono font-black text-emerald-600 text-xl">
+                          {netPayout.toLocaleString()} {zellePayoutCurrency}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 italic">
+                        (Soit {netUSD.toFixed(2)} USD après déduction des frais de 3.5%)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Routing Notice */}
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl text-xs space-y-1 text-amber-950">
+                <p className="font-black flex items-center gap-1.5 text-amber-900">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <span>Validation bancaire obligatoire</span>
+                </p>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  L'Administrateur recevra l'alerte pour vérifier son compte Zelle et cliquer sur <strong>OUI</strong> ou <strong>NON</strong>. Dès validation, votre fiche de remise s'actualise avec les frais, le taux et le montant net à payer.
+                </p>
+              </div>
+
+              {/* Submission Button */}
+              <button
+                type="submit"
+                disabled={isOperatorLocked || !zelleProofImage}
+                className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                  isOperatorLocked || !zelleProofImage
+                    ? 'bg-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/25 hover:shadow-xl hover:shadow-purple-600/30 active:scale-[0.99]'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+                <span>Valider et Envoyer pour Vérification Admin</span>
+              </button>
             </div>
-
-            {/* Calculations Breakdown */}
-            <div className="p-4 bg-slate-50/90 rounded-2xl space-y-3 text-xs border border-slate-200/70 font-sans">
-              <div className="flex justify-between items-center text-slate-600">
-                <span className="whitespace-nowrap font-medium">{t('rate_label', 'Taux appliqué')} :</span>
-                <span className="font-mono font-bold text-slate-900 whitespace-nowrap">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-slate-200/70 text-slate-900">
-                <span className="font-black text-xs uppercase tracking-tight whitespace-nowrap">{t('received_htg', 'Montant net en Haïti :')}</span>
-                <span className="font-mono font-black text-blue-600 text-lg whitespace-nowrap">
-                  {computedHTG.toLocaleString()} HTG
+          ) : (
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calculator className="w-4 h-4 text-emerald-600" />
+                  <span>{t('step3_amounts', '3. Saisie Financière & Conversion')}</span>
+                </label>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  Temps Réel
                 </span>
               </div>
 
-              <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
-                <span className="whitespace-nowrap">{t('fees', 'Frais de service (3%)')} :</span>
-                <span className="font-mono font-bold whitespace-nowrap">{feeDOP.toLocaleString()} DOP</span>
+              {/* Amount in DOP */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {t('amount_dop', 'Montant en Pesos dominicains (DOP) versé :')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    step="1"
+                    value={amountDOP}
+                    onChange={(e) => setAmountDOP(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 font-mono text-2xl font-black text-slate-900 pl-4 pr-16 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:bg-white"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 font-mono">
+                    DOP
+                  </span>
+                </div>
               </div>
 
-              <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                <span className="whitespace-nowrap">{t('admin_comm', 'Commission agence')} :</span>
-                <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{commissionDOP.toLocaleString()} DOP</span>
+              {/* Quick Amount Preset Pills */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                  {t('quick_amounts', 'Montants rapides au comptoir :')}
+                </span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {QUICK_AMOUNTS_DOP.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setAmountDOP(preset.toString())}
+                      className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all border cursor-pointer ${
+                        numAmountDOP === preset
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {preset.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Routing Destination Indicator */}
-            <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl text-xs space-y-1 text-blue-950">
-              <p className="font-extrabold flex items-center gap-1.5 text-blue-900">
-                <Zap className="w-4 h-4 text-blue-600" />
-                <span>Destination du flux :</span>
-              </p>
-              <p className="text-[11px] text-blue-800 font-medium">
-                {operator === 'moncash' || operator === 'natcash' 
-                  ? 'Transmis instantanément à l\'Agent Haïti pour décaissement sur portefeuille mobile.' 
-                  : 'Transmis au Gestionnaire de flotte pour exécution et recharge numérique immédiate.'}
-              </p>
-            </div>
+              {/* Calculations Breakdown */}
+              <div className="p-4 bg-slate-50/90 rounded-2xl space-y-3 text-xs border border-slate-200/70 font-sans">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span className="whitespace-nowrap font-medium">{t('rate_label', 'Taux appliqué')} :</span>
+                  <span className="font-mono font-bold text-slate-900 whitespace-nowrap">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
+                </div>
 
-            {/* Submission Button: Valider et Envoyer au Flux */}
-            <button
-              type="submit"
-              disabled={isOperatorLocked}
-              className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
-                isOperatorLocked 
-                  ? 'bg-slate-400 cursor-not-allowed shadow-none' 
-                  : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 active:scale-[0.99]'
-              }`}
-            >
-              <Send className="w-4 h-4" />
-              <span>{t('validate_transaction', 'Valider et Envoyer au Flux')}</span>
-            </button>
-          </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-slate-200/70 text-slate-900">
+                  <span className="font-black text-xs uppercase tracking-tight whitespace-nowrap">{t('received_htg', 'Montant net en Haïti :')}</span>
+                  <span className="font-mono font-black text-blue-600 text-lg whitespace-nowrap">
+                    {computedHTG.toLocaleString()} HTG
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
+                  <span className="whitespace-nowrap">{t('fees', 'Frais de service (3%)')} :</span>
+                  <span className="font-mono font-bold whitespace-nowrap">{feeDOP.toLocaleString()} DOP</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-500 text-[11px]">
+                  <span className="whitespace-nowrap">{t('admin_comm', 'Commission agence')} :</span>
+                  <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{commissionDOP.toLocaleString()} DOP</span>
+                </div>
+              </div>
+
+              {/* Routing Destination Indicator */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl text-xs space-y-1 text-blue-950">
+                <p className="font-extrabold flex items-center gap-1.5 text-blue-900">
+                  <Zap className="w-4 h-4 text-blue-600" />
+                  <span>Destination du flux :</span>
+                </p>
+                <p className="text-[11px] text-blue-800 font-medium">
+                  {operator === 'moncash' || operator === 'natcash' 
+                    ? 'Transmis instantanément à l\'Agent Haïti pour décaissement sur portefeuille mobile.' 
+                    : 'Transmis au Gestionnaire de flotte pour exécution et recharge numérique immédiate.'}
+                </p>
+              </div>
+
+              {/* Submission Button: Valider et Envoyer au Flux */}
+              <button
+                type="submit"
+                disabled={isOperatorLocked}
+                className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                  isOperatorLocked 
+                    ? 'bg-slate-400 cursor-not-allowed shadow-none' 
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 active:scale-[0.99]'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+                <span>{t('validate_transaction', 'Valider et Envoyer au Flux')}</span>
+              </button>
+            </div>
+          )}
         </div>
 
       </form>
@@ -782,7 +1122,24 @@ export const OperationsGuichetView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3 text-center">
-                      {tx.status === 'cancelled' ? (
+                      {tx.operator === 'zelle' ? (
+                        tx.zelleStatus === 'approved' || isCompleted ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Validé Admin (À Payer)
+                          </span>
+                        ) : tx.zelleStatus === 'rejected' || tx.status === 'cancelled' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                            Refusé Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300 animate-pulse">
+                            <Clock className="w-3 h-3 text-purple-600" />
+                            Attente Vérif. Admin
+                          </span>
+                        )
+                      ) : tx.status === 'cancelled' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
                           <XCircle className="w-3 h-3 text-rose-600" />
                           {t('cancelled', 'Annulé')}
@@ -801,20 +1158,31 @@ export const OperationsGuichetView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3 text-center">
-                      <button
-                        onClick={() => setSelectedReceiptTx(tx)}
-                        className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer ${
-                          tx.status === 'cancelled'
-                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
-                            : isCompleted
-                            ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
-                        title={tx.status === 'cancelled' ? "Consulter le reçu d'annulation" : isCompleted ? "Télécharger ou partager le reçu PDF" : "Bordereau provisoire"}
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>{tx.status === 'cancelled' ? t('cancelled', 'Annulé') : isCompleted ? t('certified_receipt', 'Reçu (PDF)') : t('details', 'Bordereau')}</span>
-                      </button>
+                      {tx.operator === 'zelle' ? (
+                        <button
+                          onClick={() => setSelectedZellePayoutTx(tx)}
+                          className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                          title="Ouvrir la fiche de décaissement Zelle avec preuve et validation"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Fiche Zelle</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedReceiptTx(tx)}
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer ${
+                            tx.status === 'cancelled'
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                              : isCompleted
+                              ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
+                          title={tx.status === 'cancelled' ? "Consulter le reçu d'annulation" : isCompleted ? "Télécharger ou partager le reçu PDF" : "Bordereau provisoire"}
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{tx.status === 'cancelled' ? t('cancelled', 'Annulé') : isCompleted ? t('certified_receipt', 'Reçu (PDF)') : t('details', 'Bordereau')}</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -839,6 +1207,23 @@ export const OperationsGuichetView: React.FC = () => {
       </div>
 
       </div>
+
+      {/* Certified Zelle Payout & Admin Verification Modal */}
+      {selectedZellePayoutTx && (
+        <ZellePayoutModal
+          tx={selectedZellePayoutTx}
+          onClose={() => setSelectedZellePayoutTx(null)}
+        />
+      )}
+
+      {/* Full-Screen Image Lightbox */}
+      {zelleLightboxUrl && (
+        <ImageViewerModal
+          imageUrl={zelleLightboxUrl}
+          title="Preuve de transaction Zelle"
+          onClose={() => setZelleLightboxUrl(null)}
+        />
+      )}
     </>
   );
 };

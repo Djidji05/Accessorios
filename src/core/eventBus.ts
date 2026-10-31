@@ -13,7 +13,10 @@ export type EventType =
   | 'TREASURY_RECHARGED'
   | 'USER_CREATED'
   | 'USER_UPDATED'
-  | 'TRANSACTION_UPDATED';
+  | 'TRANSACTION_UPDATED'
+  | 'ZELLE_SUBMITTED'
+  | 'ZELLE_APPROVED'
+  | 'ZELLE_REJECTED';
 
 export interface SystemEvent<T = any> {
   id: string;

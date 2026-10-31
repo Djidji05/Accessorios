@@ -800,7 +800,7 @@ export const MobileGestionnaireHome: React.FC = () => {
                     <img 
                       src={proofImage} 
                       alt="Preuve" 
-                      className="max-h-48 mx-auto rounded-xl border border-slate-300 dark:border-slate-700 object-contain shadow-md"
+                      className="max-h-80 w-full mx-auto rounded-2xl border border-slate-300 dark:border-slate-700 object-contain shadow-md bg-slate-900"
                     />
                     <button
                       onClick={() => setProofImage(null)}

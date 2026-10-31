@@ -49,6 +49,8 @@ import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { compressImage } from '../utils/imageCompressor';
 import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/exportUtils';
 import { Pagination } from '../components/Pagination';
+import { ImageViewerModal } from '../components/ImageViewerModal';
+import { ZellePayoutModal } from '../components/ZellePayoutModal';
 
 export const TaskQueueView: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<DateRange>({
@@ -64,6 +66,7 @@ export const TaskQueueView: React.FC = () => {
     cancelTransaction, 
     updateTransaction,
     createTransaction,
+    validateZelleTransaction,
     dopToHtgRate,
     setSelectedReceiptTx,
     setActiveTab,
@@ -83,6 +86,8 @@ export const TaskQueueView: React.FC = () => {
 
   // Full-page transaction view state (NO modal popups)
   const [selectedTxForDetails, setSelectedTxForDetails] = useState<Transaction | null>(null);
+  const [queueLightboxUrl, setQueueLightboxUrl] = useState<string | null>(null);
+  const [queueZelleTx, setQueueZelleTx] = useState<Transaction | null>(null);
 
   // Dedicated Agent Haïti Modal & Workflow States
   const [haitiDetailTx, setHaitiDetailTx] = useState<Transaction | null>(null);
@@ -1496,14 +1501,14 @@ export const TaskQueueView: React.FC = () => {
                           <span>{t('Preuve / Reçu Enregistré :', 'Preuve / Reçu Enregistré :')}</span>
                         </span>
                         {currentHaitiTx.proofUrl && (
-                          <a 
-                            href={currentHaitiTx.proofUrl} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-blue-600 dark:text-blue-400 font-bold hover:underline text-[11px]"
+                          <button
+                            type="button" 
+                            onClick={() => setQueueLightboxUrl(currentHaitiTx.proofUrl || null)}
+                            className="text-blue-600 dark:text-blue-400 font-bold hover:underline text-[11px] flex items-center gap-1 cursor-pointer"
                           >
-                            {t('Plein écran ↗', 'Plein écran ↗')}
-                          </a>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>{t('Plein écran', 'Plein écran')}</span>
+                          </button>
                         )}
                       </div>
 
@@ -1514,12 +1519,21 @@ export const TaskQueueView: React.FC = () => {
                       )}
 
                       {currentHaitiTx.proofUrl && (
-                        <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black/5 dark:bg-black/30 flex justify-center p-1">
+                        <div 
+                          onClick={() => setQueueLightboxUrl(currentHaitiTx.proofUrl || null)}
+                          className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950 flex flex-col items-center justify-center p-2 group cursor-pointer shadow-md hover:border-blue-400 transition-all"
+                        >
                           <img
                             src={currentHaitiTx.proofUrl}
                             alt={t('Photo de la preuve de transfert', 'Photo de la preuve de transfert')}
-                            className="max-h-56 sm:max-h-64 w-auto object-contain rounded-lg shadow-xs"
+                            className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                           />
+                          <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold">
+                            <span>📷 PREUVE HAÏTI</span>
+                            <span className="text-white group-hover:underline flex items-center gap-1">
+                              <Eye className="w-3 h-3" /> Cliquer pour agrandir en plein écran
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1744,6 +1758,23 @@ export const TaskQueueView: React.FC = () => {
 
             </div>
           </div>
+        )}
+
+        {/* Certified Zelle Payout Details Modal */}
+        {queueZelleTx && (
+          <ZellePayoutModal
+            tx={queueZelleTx}
+            onClose={() => setQueueZelleTx(null)}
+          />
+        )}
+
+        {/* Full-Screen Image Lightbox */}
+        {queueLightboxUrl && (
+          <ImageViewerModal
+            imageUrl={queueLightboxUrl}
+            title="Preuve de transaction"
+            onClose={() => setQueueLightboxUrl(null)}
+          />
         )}
 
       </div>
@@ -2308,20 +2339,44 @@ export const TaskQueueView: React.FC = () => {
                 </div>
 
                 {/* Proof / Quittance Haïti si disponible */}
-                {tx.proofNotes && (
+                {(tx.proofNotes || tx.proofUrl) && (
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                    <span className="font-bold text-slate-700 block">{t('Quittance / Confirmation de Décaissement :', 'Quittance / Confirmation de Décaissement :')}</span>
-                    <p className="font-mono text-slate-800 bg-white p-2.5 rounded-xl border border-slate-200">
-                      {tx.proofNotes}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-700 block">{t('Quittance / Confirmation de Décaissement :', 'Quittance / Confirmation de Décaissement :')}</span>
+                      {tx.proofUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setQueueLightboxUrl(tx.proofUrl || null)}
+                          className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{t('Plein écran', 'Plein écran')}</span>
+                        </button>
+                      )}
+                    </div>
+                    {tx.proofNotes && (
+                      <p className="font-mono text-slate-800 bg-white p-2.5 rounded-xl border border-slate-200">
+                        {tx.proofNotes}
+                      </p>
+                    )}
                     {tx.proofUrl && (
-                      <div className="pt-2">
-                        <span className="text-[11px] font-bold text-slate-500 block mb-1">{t('Photo de la quittance :', 'Photo de la quittance :')}</span>
-                        <img
-                          src={tx.proofUrl}
-                          alt={t('Preuve quittance', 'Preuve quittance')}
-                          className="max-h-40 rounded-xl border border-slate-200 object-contain bg-black/5"
-                        />
+                      <div 
+                        onClick={() => setQueueLightboxUrl(tx.proofUrl || null)}
+                        className="pt-2 group cursor-pointer"
+                      >
+                        <div className="rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-950 flex flex-col items-center justify-center p-2 shadow-md">
+                          <img
+                            src={tx.proofUrl}
+                            alt={t('Preuve quittance', 'Preuve quittance')}
+                            className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
+                          />
+                          <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold">
+                            <span>📷 PREUVE QUITTANCE</span>
+                            <span className="text-white group-hover:underline flex items-center gap-1">
+                              <Eye className="w-3 h-3" /> Cliquer pour agrandir
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2682,12 +2737,160 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
             {/* Preuve & Formulaire de Validation */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
-              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <Upload className="w-4 h-4 text-blue-600" />
-                <span>{t('Preuve de Décaissement & Validation', 'Preuve de Décaissement & Validation')}</span>
+              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-purple-600" />
+                  <span>{tx.operator === 'zelle' ? 'Vérification Preuve Bancaire Zelle' : t('Preuve de Décaissement & Validation', 'Preuve de Décaissement & Validation')}</span>
+                </div>
+                {tx.operator === 'zelle' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                    Service Zelle Direct
+                  </span>
+                )}
               </h3>
 
-              {tx.proofNotes ? (
+              {tx.operator === 'zelle' ? (
+                <div className="space-y-4">
+                  {/* Proof Photo Display */}
+                  {(tx.zelleProofUrl || tx.proofUrl) && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Camera className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Photo Preuve de Virement Zelle :</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setQueueLightboxUrl(tx.zelleProofUrl || tx.proofUrl || null)}
+                          className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Plein écran</span>
+                        </button>
+                      </div>
+
+                      <div 
+                        onClick={() => setQueueLightboxUrl(tx.zelleProofUrl || tx.proofUrl || null)}
+                        className="rounded-2xl overflow-hidden border-2 border-purple-200 bg-slate-950 p-2 shadow-md cursor-pointer group flex flex-col items-center justify-center"
+                      >
+                        <img
+                          src={tx.zelleProofUrl || tx.proofUrl}
+                          alt="Preuve Zelle"
+                          className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
+                        />
+                        <div className="flex items-center justify-between w-full px-2 pt-2 text-[10px] text-purple-300 font-bold">
+                          <span>📷 PREUVE REÇUE DU GUICHET</span>
+                          <span className="text-white group-hover:underline flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> Cliquer pour zoomer
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Financial Breakdown Card */}
+                  <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-2.5 text-xs">
+                    <div className="flex justify-between items-center text-slate-700">
+                      <span>Somme reçue par Zelle :</span>
+                      <span className="font-mono font-black text-slate-900 text-sm">${(tx.amountUSD || 0).toLocaleString()} USD</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                      <span>Frais de service (3.5%) :</span>
+                      <span className="font-mono font-bold text-slate-700">-${((tx.zelleFeeUSD || (tx.amountUSD || 0) * 0.035)).toFixed(2)} USD</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                      <span>Taux appliqué :</span>
+                      <span className="font-mono font-bold text-slate-700">
+                        1 USD = {(tx.zelleExchangeRate || (tx.amountDOP / (tx.amountUSD || 1))).toFixed(2)} {tx.netPayoutCurrency || 'DOP'}
+                      </span>
+                    </div>
+                    <div className="pt-2 border-t border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <span className="font-black text-xs uppercase tracking-tight text-purple-950">
+                        Montant net à remettre au client :
+                      </span>
+                      <span className="font-mono font-black text-emerald-600 text-xl">
+                        {(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.netPayoutCurrency || 'DOP'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Admin OUI / NON Action Box */}
+                  {currentUser.role === 'admin' && (tx.zelleStatus === 'pending_admin_check' || tx.status === 'in_progress') ? (
+                    <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                        <span>Avez-vous bien vu le virement Zelle sur votre compte bancaire ?</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        Vérifiez vos notifications bancaires pour le montant de <strong>${(tx.amountUSD || 0).toLocaleString()} USD</strong>. Cliquez sur OUI pour autoriser immédiatement l'agent à verser les fonds, ou NON pour refuser.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const res = validateZelleTransaction(tx.id, true);
+                            if (res.success) {
+                              setSelectedTxForDetails({ ...tx, status: 'completed', zelleStatus: 'approved' });
+                            }
+                          }}
+                          className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>OUI, J'ai bien vu (Valider)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const reason = prompt("Précisez le motif du refus (ex: Zelle non reçu sur le compte) :", "Virement Zelle non constaté sur le compte bancaire");
+                            if (reason !== null) {
+                              const res = validateZelleTransaction(tx.id, false, reason);
+                              if (res.success) {
+                                setSelectedTxForDetails({ ...tx, status: 'cancelled', zelleStatus: 'rejected', zelleAdminNote: reason });
+                              }
+                            }
+                          }}
+                          className="py-3.5 px-4 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span>NON, Pas reçu (Refuser)</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : tx.zelleStatus === 'approved' || tx.status === 'completed' ? (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-900">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                      <div>
+                        <p className="font-black">✓ Zelle Validé & Confirmé par l'Administrateur</p>
+                        <p className="text-[11px] text-emerald-800">
+                          L'Agent est autorisé à remettre <strong>{(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.netPayoutCurrency || 'DOP'}</strong> au client.
+                        </p>
+                      </div>
+                    </div>
+                  ) : tx.zelleStatus === 'rejected' || tx.status === 'cancelled' ? (
+                    <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-900">
+                      <XCircle className="w-6 h-6 text-rose-600 flex-shrink-0" />
+                      <div>
+                        <p className="font-black">✕ Zelle Refusé par l'Administrateur</p>
+                        <p className="text-[11px] text-rose-800">
+                          Motif : {tx.zelleAdminNote || 'Virement Zelle non reçu.'} — Aucun paiement autorisé.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-xs text-amber-900">
+                      <Clock className="w-6 h-6 text-amber-600 flex-shrink-0 animate-pulse" />
+                      <div>
+                        <p className="font-black">⏳ En Attente de Vérification Bancaire Admin</p>
+                        <p className="text-[11px] text-amber-800">
+                          Un message a été envoyé à l'Administrateur pour vérifier la réception des fonds. Ne remettez pas l'argent avant validation !
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : tx.proofNotes ? (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl font-mono text-xs text-blue-900 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-blue-800 flex items-center gap-1.5">
@@ -2711,20 +2914,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                       <span className="text-[10px] font-black uppercase text-blue-800 tracking-wider block mb-1.5 font-sans">
                         {t('Capture / Quittance de paiement associée :', 'Capture / Quittance de paiement associée :')}
                       </span>
-                      <div className="relative inline-block group">
+                      <div 
+                        onClick={() => setQueueLightboxUrl(tx.proofUrl || null)}
+                        className="relative rounded-2xl overflow-hidden border-2 border-blue-300 bg-slate-950 p-2 shadow-md cursor-pointer group"
+                      >
                         <img 
                           src={tx.proofUrl} 
                           alt={t('Quittance de transaction', 'Quittance de transaction')} 
-                          className="w-36 h-36 object-cover rounded-xl border-2 border-blue-300 shadow-sm group-hover:scale-105 transition-transform bg-white"
+                          className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                         />
-                        <a 
-                          href={tx.proofUrl} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 rounded-xl flex items-center justify-center text-[11px] font-bold transition-opacity font-sans"
-                        >
-                          {t('Agrandir ↗', 'Agrandir ↗')}
-                        </a>
+                        <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold font-sans">
+                          <span>📷 QUITTANCE ENREGISTRÉE</span>
+                          <span className="text-white group-hover:underline flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> {t('Agrandir en plein écran', 'Agrandir en plein écran')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2833,6 +3037,23 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </div>
 
         </div>
+
+        {/* Certified Zelle Payout Details Modal */}
+        {queueZelleTx && (
+          <ZellePayoutModal
+            tx={queueZelleTx}
+            onClose={() => setQueueZelleTx(null)}
+          />
+        )}
+
+        {/* Full-Screen Image Lightbox */}
+        {queueLightboxUrl && (
+          <ImageViewerModal
+            imageUrl={queueLightboxUrl}
+            title="Preuve de transaction"
+            onClose={() => setQueueLightboxUrl(null)}
+          />
+        )}
 
       </div>
     );
@@ -3267,9 +3488,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               {/* Preuve de validation si existante */}
               {(gestionnaireDetailTx.proofNotes || gestionnaireDetailTx.proofUrl) && (
                 <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-400">
-                    <ShieldCheck className="w-4 h-4 text-blue-600" />
-                    <span>{t("Preuve de Clôture & Validation :", "Preuve de Clôture & Validation :")}</span>
+                  <div className="flex items-center justify-between text-xs font-bold text-blue-800 dark:text-blue-400">
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-blue-600" />
+                      <span>{t("Preuve de Clôture & Validation :", "Preuve de Clôture & Validation :")}</span>
+                    </div>
+                    {gestionnaireDetailTx.proofUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setQueueLightboxUrl(gestionnaireDetailTx.proofUrl || null)}
+                        className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{t("Plein écran", "Plein écran")}</span>
+                      </button>
+                    )}
                   </div>
                   {gestionnaireDetailTx.proofNotes && (
                     <p className="text-[11px] font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 break-words">
@@ -3277,12 +3510,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </p>
                   )}
                   {gestionnaireDetailTx.proofUrl && (
-                    <div className="mt-2 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-52 bg-slate-900 flex items-center justify-center p-1">
+                    <div 
+                      onClick={() => setQueueLightboxUrl(gestionnaireDetailTx.proofUrl || null)}
+                      className="mt-2 rounded-2xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-[500px] bg-slate-950 flex flex-col items-center justify-center p-2 group cursor-pointer shadow-md"
+                    >
                       <img 
                         src={gestionnaireDetailTx.proofUrl} 
                         alt="Preuve de transaction" 
-                        className="max-h-48 w-auto object-contain rounded-lg"
+                        className="max-h-[460px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                       />
+                      <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold">
+                        <span>📷 PREUVE TRANSACTION</span>
+                        <span className="text-white group-hover:underline flex items-center gap-1">
+                          <Eye className="w-3 h-3" /> Cliquer pour agrandir
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3781,6 +4023,23 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         {/* Modal Validation (if opened from card or table) */}
         {renderGestionnaireProofModal()}
 
+        {/* Certified Zelle Payout Details Modal */}
+        {queueZelleTx && (
+          <ZellePayoutModal
+            tx={queueZelleTx}
+            onClose={() => setQueueZelleTx(null)}
+          />
+        )}
+
+        {/* Full-Screen Image Lightbox */}
+        {queueLightboxUrl && (
+          <ImageViewerModal
+            imageUrl={queueLightboxUrl}
+            title="Preuve de transaction"
+            onClose={() => setQueueLightboxUrl(null)}
+          />
+        )}
+
       </div>
     );
   }
@@ -4032,7 +4291,25 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                       {/* 6. Quick Action / Open Details Arrow */}
                       <div className="col-span-1 flex items-center justify-end">
-                        {isInProgress ? (
+                        {tx.operator === 'zelle' ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQueueZelleTx(tx);
+                            }}
+                            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                              tx.zelleStatus === 'pending_admin_check' || isInProgress
+                                ? 'bg-purple-600 hover:bg-purple-700 text-white animate-pulse'
+                                : tx.zelleStatus === 'approved' || isCompleted
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                : 'bg-rose-600 hover:bg-rose-700 text-white'
+                            }`}
+                            title="Ouvrir la fiche de vérification Zelle"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>{isAdmin && (tx.zelleStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier (OUI/NON)' : 'Fiche Zelle'}</span>
+                          </button>
+                        ) : isInProgress ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -4165,7 +4442,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                   {/* Action button */}
                   <div className="flex items-center justify-end gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                    {isInProgress ? (
+                    {tx.operator === 'zelle' ? (
+                      <button
+                        onClick={() => setQueueZelleTx(tx)}
+                        className={`w-full py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                          tx.zelleStatus === 'pending_admin_check' || isInProgress
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white animate-pulse'
+                            : tx.zelleStatus === 'approved' || isCompleted
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-rose-600 hover:bg-rose-700 text-white'
+                        }`}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>{isAdmin && (tx.zelleStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier Zelle (OUI / NON)' : 'Consulter Fiche Zelle'}</span>
+                      </button>
+                    ) : isInProgress ? (
                       <button
                         onClick={() => setSelectedTxForDetails(tx)}
                         className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
@@ -4506,6 +4797,23 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
           </div>
         </div>
+      )}
+
+      {/* Certified Zelle Payout Details Modal */}
+      {queueZelleTx && (
+        <ZellePayoutModal
+          tx={queueZelleTx}
+          onClose={() => setQueueZelleTx(null)}
+        />
+      )}
+
+      {/* Full-Screen Image Lightbox */}
+      {queueLightboxUrl && (
+        <ImageViewerModal
+          imageUrl={queueLightboxUrl}
+          title="Preuve de transaction"
+          onClose={() => setQueueLightboxUrl(null)}
+        />
       )}
 
     </div>

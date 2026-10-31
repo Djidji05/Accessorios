@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Camera,
   FileText,
-  Download
+  Download,
+  Eye
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/exportUtils';
@@ -19,6 +20,8 @@ import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction } from '../types';
 import { compressImage } from '../utils/imageCompressor';
 import { Pagination } from '../components/Pagination';
+import { ImageViewerModal } from '../components/ImageViewerModal';
+import { ZellePayoutModal } from '../components/ZellePayoutModal';
 
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
@@ -29,6 +32,8 @@ export const HistoryView: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>('all');
   const [operatorFilter, setOperatorFilter] = useState<string>('all');
   const [historyPage, setHistoryPage] = useState<number>(1);
+  const [historyLightboxUrl, setHistoryLightboxUrl] = useState<string | null>(null);
+  const [historyZelleTx, setHistoryZelleTx] = useState<Transaction | null>(null);
   const HISTORY_PAGE_SIZE = 10;
 
   React.useEffect(() => {
@@ -262,9 +267,21 @@ export const HistoryView: React.FC = () => {
             {/* Proof Section in Details */}
             {(tx.proofNotes || tx.proofUrl) && (
               <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-400">
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  <span>{t('Preuve de Clôture & Validation :', 'Preuve de Clôture & Validation :')}</span>
+                <div className="flex items-center justify-between text-xs font-bold text-blue-800 dark:text-blue-400">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <span>{t('Preuve de Clôture & Validation :', 'Preuve de Clôture & Validation :')}</span>
+                  </div>
+                  {tx.proofUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setHistoryLightboxUrl(tx.proofUrl || null)}
+                      className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{t('Plein écran', 'Plein écran')}</span>
+                    </button>
+                  )}
                 </div>
                 {tx.proofNotes && (
                   <p className="text-[11px] font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 break-words">
@@ -272,12 +289,21 @@ export const HistoryView: React.FC = () => {
                   </p>
                 )}
                 {tx.proofUrl && (
-                  <div className="mt-2 rounded-xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-52 bg-slate-900 flex items-center justify-center p-1">
+                  <div 
+                    onClick={() => setHistoryLightboxUrl(tx.proofUrl || null)}
+                    className="mt-2 rounded-2xl overflow-hidden border border-blue-300 dark:border-blue-700 max-h-[500px] bg-slate-950 flex flex-col items-center justify-center p-2 group cursor-pointer shadow-md"
+                  >
                     <img 
                       src={tx.proofUrl} 
                       alt={t('Preuve de transaction', 'Preuve de transaction')} 
-                      className="max-h-48 w-auto object-contain rounded-lg"
+                      className="max-h-[460px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                     />
+                    <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold">
+                      <span>📷 PREUVE OFFICIELLE</span>
+                      <span className="text-white group-hover:underline flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> Cliquer pour agrandir
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -287,6 +313,17 @@ export const HistoryView: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="space-y-2 pt-2">
+          {tx.operator === 'zelle' && (
+            <button
+              type="button"
+              onClick={() => setHistoryZelleTx(tx)}
+              className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Consulter la Fiche de Décaissement Zelle (Taux & Net)</span>
+            </button>
+          )}
+
           {!isCancelled && !isCompleted && (currentUser.role === 'admin' || currentUser.role === 'gestionnaire' || currentUser.role === 'agent_haiti') && (
             <button
               type="button"
@@ -933,6 +970,23 @@ export const HistoryView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Certified Zelle Payout Details Modal */}
+      {historyZelleTx && (
+        <ZellePayoutModal
+          tx={historyZelleTx}
+          onClose={() => setHistoryZelleTx(null)}
+        />
+      )}
+
+      {/* Full-Screen Image Lightbox */}
+      {historyLightboxUrl && (
+        <ImageViewerModal
+          imageUrl={historyLightboxUrl}
+          title="Preuve de transaction"
+          onClose={() => setHistoryLightboxUrl(null)}
+        />
       )}
     </div>
   );

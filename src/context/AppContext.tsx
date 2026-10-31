@@ -91,8 +91,13 @@ interface AppContextType {
     amountDOP: number;
     feeDOP: number;
     commissionDOP: number;
+    amountUSD?: number;
+    proofUrl?: string;
+    zelleProofUrl?: string;
+    payoutCurrency?: 'DOP' | 'HTG' | 'USD';
   }) => { success: boolean; message: string; transaction?: Transaction };
   
+  validateZelleTransaction: (transactionId: string, approved: boolean, note?: string) => { success: boolean; message: string };
   completeTask: (transactionId: string, proofNotes: string, proofUrl?: string) => { success: boolean; message: string };
   cancelTransaction: (transactionId: string, reason: string) => { success: boolean; message: string };
   updateTransaction: (transactionId: string, updatedFields: Partial<Transaction>) => { success: boolean; message: string };
@@ -1010,6 +1015,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     amountDOP: number;
     feeDOP: number;
     commissionDOP: number;
+    amountUSD?: number;
+    proofUrl?: string;
+    zelleProofUrl?: string;
+    payoutCurrency?: 'DOP' | 'HTG' | 'USD';
   }) => {
     // 1. Check Kill-Switch for this operator
     const ks = killSwitchList.find((k) => k.operator === data.operator);
@@ -1020,13 +1029,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    // 1b. Check Zelle Restriction (Zelle is STRICTLY Admin only)
-    if (data.operator === 'zelle' && currentUser.role !== 'admin') {
-      return {
-        success: false,
-        message: `Le service Zelle Pay est réservé à l'administrateur.`,
-      };
-    }
+    const isZelle = data.operator === 'zelle';
 
     // 1c. Check Operator Restrictions (Gestionnaire / Superviseur cannot do Natcash / Natcom)
     const isGestionnaire = currentUser.role === 'gestionnaire';
@@ -1048,7 +1051,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    if (userPerm && data.amountDOP > userPerm.maxSingleTransactionDOP) {
+    if (userPerm && !isZelle && data.amountDOP > userPerm.maxSingleTransactionDOP) {
       eventBus.publish(
         'PERMISSIONS_UPDATED',
         currentUser.nodeId,
@@ -1061,21 +1064,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
+    // Calculs spécifiques Zelle si applicable
+    const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+    const finalAmountUSD = data.amountUSD || (isZelle && data.amountDOP > 0 ? Math.round((data.amountDOP / usdToDop) * 100) / 100 : 0);
+    const finalAmountDOP = isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP;
+    const finalAmountHTG = isZelle ? Math.round(finalAmountUSD * (usdToHtgRate || 140.5)) : Math.round(data.amountDOP * dopToHtgRate);
+
+    const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
+    const zelleFeeRate = 3.5; // 3.5% Frais guichet / virement
+    const zelleFeeUSD = isZelle ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
+    const zelleCommissionUSD = isZelle ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
+
+    const payoutCurrency = data.payoutCurrency || 'DOP';
+    const netUSD = finalAmountUSD - zelleFeeUSD;
+    const netPayoutAmount = payoutCurrency === 'DOP'
+      ? Math.round(netUSD * usdToDop)
+      : payoutCurrency === 'HTG'
+      ? Math.round(netUSD * (usdToHtgRate || 140.5))
+      : Math.round(netUSD * 100) / 100;
+
+    const finalFeeDOP = isZelle ? Math.round(zelleFeeUSD * usdToDop) : data.feeDOP;
+    const finalCommDOP = isZelle ? Math.round(zelleCommissionUSD * usdToDop) : data.commissionDOP;
+
     // 3. Determine Channel & Intelligent Task Routing :
+    // - Zelle Direct -> Admin pour vérification bancaire
     // - Haïti Cash / Mobile Money (MonCash, Natcash, Natcom) -> Agent Haïti
     // - Télécoms & Numériques (Digicel, Claro, Altice) -> Gestionnaire
     const isHaitiCashChannel = data.operator === 'moncash' || data.operator === 'natcash' || data.operator === 'natcom';
     const channel: ChannelType = isHaitiCashChannel ? 'haiti_cash' : 'digital_telecom';
     
-    const assignedRole: Role = isHaitiCashChannel ? 'agent_haiti' : 'gestionnaire';
+    const assignedRole: Role = isZelle ? 'admin' : (isHaitiCashChannel ? 'agent_haiti' : 'gestionnaire');
     const assignedUser = availableUsers.find((u) => u.role === assignedRole);
-    const assignedNodeId = assignedUser ? assignedUser.nodeId : (isHaitiCashChannel ? 'node-agent-haiti-01' : 'node-gestionnaire-01');
-    const assignedName = assignedUser ? assignedUser.name : (isHaitiCashChannel ? 'Agent Haïti' : 'Gestionnaire');
+    const assignedNodeId = assignedUser ? assignedUser.nodeId : (isZelle ? 'node-admin-01' : (isHaitiCashChannel ? 'node-agent-haiti-01' : 'node-gestionnaire-01'));
+    const assignedName = assignedUser ? assignedUser.name : (isZelle ? 'Administrateur' : (isHaitiCashChannel ? 'Agent Haïti' : 'Gestionnaire'));
 
     const newTxId = `tx_${Date.now()}`;
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const refNum = `#TX-${dateStr}-${randomSuffix}`;
+    const refNum = isZelle ? `#ZEL-${dateStr}-${randomSuffix}` : `#TX-${dateStr}-${randomSuffix}`;
+    const proofImg = data.proofUrl || data.zelleProofUrl;
 
     const newTx: Transaction = {
       id: newTxId,
@@ -1087,12 +1114,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       operator: data.operator,
       serviceType: data.serviceType,
       channel,
-      amountDOP: data.amountDOP,
-      amountHTG: Math.round(data.amountDOP * dopToHtgRate),
-      exchangeRate: dopToHtgRate,
-      feeDOP: data.feeDOP,
-      commissionDOP: data.commissionDOP,
+      amountDOP: finalAmountDOP,
+      amountHTG: finalAmountHTG,
+      amountUSD: isZelle ? finalAmountUSD : data.amountUSD,
+      exchangeRate: isZelle ? usdToDop : dopToHtgRate,
+      feeDOP: finalFeeDOP,
+      commissionDOP: finalCommDOP,
       
+      // Zelle Specific Flow
+      zelleStatus: isZelle ? 'pending_admin_check' : undefined,
+      zelleProofUrl: isZelle ? proofImg : undefined,
+      zelleExchangeRate: isZelle ? usdToDop : undefined,
+      zelleFeeUSD: isZelle ? zelleFeeUSD : undefined,
+      zelleCommissionUSD: isZelle ? zelleCommissionUSD : undefined,
+      netPayoutAmount: isZelle ? netPayoutAmount : undefined,
+      netPayoutCurrency: isZelle ? payoutCurrency : undefined,
+      
+      proofUrl: proofImg,
+      proofNotes: isZelle ? `Preuve Zelle ($${finalAmountUSD} USD) soumise par ${currentUser.name}. En attente de vérification bancaire par l'Administrateur.` : undefined,
+
       createdByNode: currentUser.nodeId,
       createdByName: currentUser.name,
       createdByRole: currentUser.role,
@@ -1109,22 +1149,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTransactions((prev) => [newTx, ...prev]);
 
     // Update balances: Natcom shares the Natcash balance and decredits directly from it
-    setAccountBalances((prev) =>
-      prev.map((b) => {
-        const targetOperator = data.operator === 'natcom' ? 'natcash' : data.operator;
-        if (b.operator === targetOperator) {
-          return { ...b, balance: Math.max(0, b.balance - data.amountDOP), lastUpdated: new Date().toISOString() };
-        }
-        return b;
-      })
-    );
+    if (!isZelle) {
+      setAccountBalances((prev) =>
+        prev.map((b) => {
+          const targetOperator = data.operator === 'natcom' ? 'natcash' : data.operator;
+          if (b.operator === targetOperator) {
+            return { ...b, balance: Math.max(0, b.balance - data.amountDOP), lastUpdated: new Date().toISOString() };
+          }
+          return b;
+        })
+      );
+    }
 
     // Audit log & Event bus broadcast
-    const logDetails = currentUser.role === 'admin' 
-      ? `[GUICHET ADMIN] Transaction ${refNum} créée par Admin (${currentUser.name}) -> Routée vers ${assignedName}`
-      : `Transaction ${refNum} créée par ${currentUser.name} (${currentUser.role}) -> Routée vers ${assignedName}`;
+    const logDetails = isZelle
+      ? `[ZELLE PAY] Demande de virement de $${finalAmountUSD} USD créée par ${currentUser.name} (${currentUser.role}) -> Transmise à l'Admin pour vérification de compte`
+      : currentUser.role === 'admin' 
+        ? `[GUICHET ADMIN] Transaction ${refNum} créée par Admin (${currentUser.name}) -> Routée vers ${assignedName}`
+        : `Transaction ${refNum} créée par ${currentUser.name} (${currentUser.role}) -> Routée vers ${assignedName}`;
 
-    eventBus.publish('TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
+    eventBus.publish(isZelle ? 'ZELLE_SUBMITTED' : 'TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
 
     // Persistance dans le Backend SQLite
     api.transactions.create({
@@ -1134,14 +1178,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       receiverPhone: data.receiverPhone,
       operator: data.operator,
       serviceType: data.serviceType,
-      amountDOP: data.amountDOP,
-      feeDOP: data.feeDOP,
-      commissionDOP: data.commissionDOP,
+      amountDOP: finalAmountDOP,
+      feeDOP: finalFeeDOP,
+      commissionDOP: finalCommDOP,
       currentUserId: currentUser.id,
     }).then((res) => {
       if (res.transaction) {
         setTransactions((prev) => [
-          res.transaction,
+          { ...res.transaction, ...newTx, id: res.transaction.id },
           ...prev.filter((t) => t.id !== newTxId && t.id !== res.transaction.id),
         ]);
       }
@@ -1149,17 +1193,95 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('API createTransaction error, fallback mémoire actif:', err);
     });
 
-    const toastMsg = isHaitiCashChannel
-      ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP (${Math.round(data.amountDOP * dopToHtgRate).toLocaleString()} HTG).`
-      : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP.`;
-    showToast(toastMsg, 'success');
+    const toastMsg = isZelle
+      ? `Preuve Zelle ($${finalAmountUSD} USD) enregistrée ! Transmise à l'Admin pour vérification de compte. Ne donnez pas l'argent avant validation.`
+      : isHaitiCashChannel
+        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP (${Math.round(data.amountDOP * dopToHtgRate).toLocaleString()} HTG).`
+        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP.`;
+    showToast(toastMsg, isZelle ? 'info' : 'success');
 
     return {
       success: true,
-      message: isHaitiCashChannel
-        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise à l'agent en Haïti pour validation avec photo de preuve.`
-        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise au Gestionnaire pour validation avec photo de preuve.`,
+      message: isZelle
+        ? `Virement Zelle de $${finalAmountUSD} USD soumis ! Un message a été envoyé à l'Admin pour vérifier son compte. Attendez sa validation.`
+        : isHaitiCashChannel
+          ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise à l'agent en Haïti pour validation avec photo de preuve.`
+          : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise au Gestionnaire pour validation avec photo de preuve.`,
       transaction: newTx,
+    };
+  };
+
+  // Validate Zelle Transaction by Admin (OUI ou NON)
+  const validateZelleTransaction = (transactionId: string, approved: boolean, note?: string) => {
+    const tx = transactions.find((t) => t.id === transactionId);
+    if (!tx) {
+      return { success: false, message: 'Transaction Zelle introuvable.' };
+    }
+
+    if (approved) {
+      const payoutText = `${tx.netPayoutAmount ? tx.netPayoutAmount.toLocaleString() : tx.amountDOP.toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`;
+      const proofNotes = `[ZELLE CONFIRMÉ PAR L'ADMIN ${currentUser.name}] Virement de $${tx.amountUSD || 0} USD vérifié et validé sur le compte bancaire. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
+
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id === transactionId) {
+            return {
+              ...t,
+              status: 'completed',
+              zelleStatus: 'approved',
+              completedAt: new Date().toISOString(),
+              proofNotes,
+            };
+          }
+          return t;
+        })
+      );
+
+      // Audit log & Event bus
+      eventBus.publish(
+        'TRANSACTION_COMPLETED',
+        currentUser.nodeId,
+        currentUser.role,
+        `[ZELLE VALIDÉ PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} approuvée. Montant net à verser au client: ${payoutText}`
+      );
+
+      showToast(`✅ Zelle ${tx.referenceNumber} validé ! L'agent peut remettre ${payoutText} au client.`, 'success');
+
+      return {
+        success: true,
+        message: `Zelle validé avec succès ! L'agent a été notifié qu'il peut remettre ${payoutText} au client.`
+      };
+    } else {
+      const cancellationReason = note || "Virement Zelle non reçu / non visible sur le compte bancaire de l'Administrateur.";
+
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id === transactionId) {
+            return {
+              ...t,
+              status: 'cancelled',
+              zelleStatus: 'rejected',
+              cancelledAt: new Date().toISOString(),
+              cancellationReason,
+            };
+          }
+          return t;
+        })
+      );
+
+      eventBus.publish(
+        'TRANSACTION_CANCELLED',
+        currentUser.nodeId,
+        currentUser.role,
+        `[ZELLE REFUSÉ PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} refusée. Motif: ${cancellationReason}`
+      );
+
+      showToast(`❌ Zelle ${tx.referenceNumber} refusé. L'agent a été averti de ne pas remettre d'argent.`, 'error');
+
+      return {
+        success: true,
+        message: `Zelle refusé. L'agent a été notifié de ne pas payer le client.`
+      };
     };
   };
 
@@ -1658,6 +1780,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateOperatorCommission,
         recordAgentDeposit,
         createTransaction,
+        validateZelleTransaction,
         completeTask,
         cancelTransaction,
         updateTransaction,

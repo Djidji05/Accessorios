@@ -19,6 +19,7 @@ import { useApp } from '../context/AppContext';
 import { OperatorBadge } from '../components/OperatorBadge';
 import { Transaction } from '../types';
 import { Pagination } from '../components/Pagination';
+import { ZellePayoutModal } from '../components/ZellePayoutModal';
 
 export type NotificationFilterType = 'all' | 'transactions' | 'rate' | 'security';
 
@@ -38,6 +39,7 @@ export const NotificationsView: React.FC = () => {
   } = useApp();
 
   const [activeFilter, setActiveFilter] = useState<NotificationFilterType>('all');
+  const [selectedZelleNotifTx, setSelectedZelleNotifTx] = useState<Transaction | null>(null);
   const [page, setPage] = useState<number>(1);
   const NOTIF_PAGE_SIZE = 10;
 
@@ -84,6 +86,71 @@ export const NotificationsView: React.FC = () => {
 
     // 1. Transactions notifications
     roleScopedTxs.forEach((tx) => {
+      const formatTime = (dateStr: string) => {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return t('Récent', 'Récemment');
+        return d.toLocaleDateString(notifLocale, {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      };
+
+      // Zelle Dedicated Notification Workflow
+      if (tx.operator === 'zelle') {
+        const numUSD = tx.amountUSD || 0;
+        const netFormatted = `${(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`;
+
+        if (tx.zelleStatus === 'pending_admin_check' || tx.status === 'in_progress') {
+          list.push({
+            id: `notif_tx_${tx.id}`,
+            category: 'transactions',
+            title: currentUser.role === 'admin'
+              ? `🚨 Vérification Zelle : $${numUSD} USD reçus ?`
+              : `⏳ Zelle $${numUSD} USD envoyé pour vérification`,
+            message: currentUser.role === 'admin'
+              ? `L'Agent ${tx.createdByName || 'RD'} vous demande de confirmer la bonne réception du virement Zelle de $${numUSD} USD. Cliquez pour vérifier la preuve et répondre OUI ou NON.`
+              : `Votre transaction Zelle de $${numUSD} USD est en cours de vérification bancaire par l'Administrateur. Ne remettez pas l'argent avant validation.`,
+            time: formatTime(tx.createdAt),
+            icon: Clock,
+            color: 'text-purple-600 bg-purple-500/10 border-purple-500/20',
+            badgeText: currentUser.role === 'admin' ? 'Vérifier OUI / NON' : 'Attente Admin',
+            badgeColor: 'bg-purple-100 text-purple-900 border border-purple-300 font-black animate-pulse',
+            tx
+          });
+          return;
+        } else if (tx.zelleStatus === 'approved' || tx.status === 'completed') {
+          list.push({
+            id: `notif_tx_${tx.id}`,
+            category: 'transactions',
+            title: `✅ Zelle Confirmé : Remettre ${netFormatted}`,
+            message: `L'Admin a confirmé avoir vu le Zelle de $${numUSD} USD. Vous pouvez remettre ${netFormatted} au client (${tx.receiverName}). Taux et frais certifiés.`,
+            time: formatTime(tx.completedAt || tx.createdAt),
+            icon: CheckCircle2,
+            color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+            badgeText: 'Paiement Autorisé',
+            badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold',
+            tx
+          });
+          return;
+        } else if (tx.zelleStatus === 'rejected' || tx.status === 'cancelled') {
+          list.push({
+            id: `notif_tx_${tx.id}`,
+            category: 'transactions',
+            title: `❌ Zelle Refusé : Ne pas verser d'argent`,
+            message: `L'Admin n'a pas vu le Zelle de $${numUSD} USD sur son compte bancaire. Motif: ${tx.zelleAdminNote || 'Non reçu'}. Ne remettez pas d'argent.`,
+            time: formatTime(tx.createdAt),
+            icon: ShieldAlert,
+            color: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
+            badgeText: 'Refusé Admin',
+            badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold',
+            tx
+          });
+          return;
+        }
+      }
+
       let icon = Clock;
       let color = 'text-amber-500 bg-amber-500/10 border-amber-500/20';
       let badgeText = t('in_progress_count');
@@ -103,17 +170,6 @@ export const NotificationsView: React.FC = () => {
         badgeColor = 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300';
         title = `${t('Transfert', 'Transfert')} ${tx.operator.toUpperCase()} ${t('Annulé')}`;
       }
-
-      const formatTime = (dateStr: string) => {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return t('Récent', 'Récemment');
-        return d.toLocaleDateString(notifLocale, {
-          day: '2-digit',
-          month: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      };
 
       list.push({
         id: `notif_tx_${tx.id}`,
@@ -255,7 +311,11 @@ export const NotificationsView: React.FC = () => {
                   markNotificationAsRead(notif.id);
                   if (notif.tx) {
                     const freshTx = transactions.find((t) => t.id === notif.tx?.id) || notif.tx;
-                    setSelectedReceiptTx(freshTx);
+                    if (freshTx.operator === 'zelle') {
+                      setSelectedZelleNotifTx(freshTx);
+                    } else {
+                      setSelectedReceiptTx(freshTx);
+                    }
                   }
                 }}
                 className="p-4 sm:p-5 rounded-3xl border transition-all cursor-pointer space-y-3 bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs hover:shadow-xs group"
@@ -331,6 +391,14 @@ export const NotificationsView: React.FC = () => {
           />
         )}
       </div>
+
+      {/* Certified Zelle Payout Details & Admin Action Modal */}
+      {selectedZelleNotifTx && (
+        <ZellePayoutModal
+          tx={selectedZelleNotifTx}
+          onClose={() => setSelectedZelleNotifTx(null)}
+        />
+      )}
     </div>
   );
 };
