@@ -751,7 +751,7 @@ export const SettingsView: React.FC = () => {
   // VUE PARAMÈTRES : ADMINISTRATEUR & GESTIONNAIRE
   // =========================================================================
   return (
-    <div className="p-3 sm:p-6 space-y-6 w-full max-w-[1600px] mx-auto font-sans animate-in fade-in pb-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 w-full max-w-[1600px] mx-auto font-sans animate-in fade-in pb-28 md:pb-6">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

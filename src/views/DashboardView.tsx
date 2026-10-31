@@ -17,7 +17,7 @@ export const DashboardView: React.FC = () => {
   });
 
   return (
-    <div className="p-3 sm:p-6 space-y-5 max-w-[1600px] mx-auto pb-24 md:pb-6 font-sans animate-in fade-in">
+    <div className="p-3 sm:p-6 space-y-5 max-w-[1600px] mx-auto pb-28 md:pb-6 font-sans animate-in fade-in">
       {/* Welcome Banner & Date Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

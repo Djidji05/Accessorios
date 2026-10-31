@@ -186,7 +186,7 @@ export const NotificationsView: React.FC = () => {
   );
 
   return (
-    <div className="p-4 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in pb-28">
+    <div className="p-4 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in pb-28 md:pb-6">
       
       {/* Top Bar with Back Button & Mark All Read (Sticky Navbar en mode Mobile) */}
       <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">

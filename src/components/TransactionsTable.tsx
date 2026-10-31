@@ -124,8 +124,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
         </div>
       </div>
 
-      {/* Body */}
-      <div className="overflow-x-auto">
+      {/* 1. DESKTOP TABLE VIEW (hidden md:block) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/50">
@@ -212,6 +212,67 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* 2. MOBILE CARD VIEW (md:hidden) */}
+      <div className="md:hidden divide-y divide-slate-100">
+        {paginatedTransactions.map((tx) => {
+          const commRate = serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0;
+          const opCommDOP = tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
+
+          return (
+            <div
+              key={tx.id}
+              onClick={() => setSelectedReceiptTx(tx)}
+              className="p-3.5 space-y-2.5 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              {/* Top: Reference + Operator + SLA status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-black text-slate-900 text-xs bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                    {tx.referenceNumber}
+                  </span>
+                  <OperatorBadge operator={tx.operator} size="sm" />
+                </div>
+                {getSlaStatus(tx.createdAt, tx.status)}
+              </div>
+
+              {/* Receiver Info */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-extrabold text-slate-900 text-xs block">{tx.receiverName}</span>
+                  <span className="text-[11px] text-slate-500 font-mono font-semibold">{tx.receiverPhone}</span>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="font-black text-emerald-600 text-sm block leading-tight">
+                    {tx.amountHTG.toLocaleString()} HTG
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    ({tx.amountDOP.toLocaleString()} DOP)
+                  </span>
+                </div>
+              </div>
+
+              {/* Commission & Action */}
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+                  Com. : <strong className="text-emerald-700">+{opCommDOP.toLocaleString()} DOP</strong> ({commRate}%)
+                </span>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedReceiptTx(tx);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer font-bold text-xs"
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Reçu PDF</span>
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Pagination */}

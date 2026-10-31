@@ -3791,12 +3791,12 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
   const queuePaginatedTasks = filteredTasks.slice((queuePage - 1) * QUEUE_PAGE_SIZE, queuePage * QUEUE_PAGE_SIZE);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto font-sans">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto font-sans pb-28 md:pb-6">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <span>
                 {isAgentHaiti 
                   ? t("File des Décaissements Haïti", "File des Décaissements Haïti")
@@ -3819,12 +3819,12 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </div>
 
         {/* Top Header Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <DateRangePicker value={selectedRange} onChange={setSelectedRange} />
           {(isAdmin || isGestionnaire) && (
             <button
               onClick={() => setIsAddTxModalOpen(true)}
-              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl text-xs font-black flex items-center gap-2 shadow-md shadow-purple-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl sm:rounded-2xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer whitespace-nowrap"
               title={t("Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)", "Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)")}
             >
               <PlusCircle className="w-4 h-4" />
@@ -3834,55 +3834,55 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         </div>
       </div>
 
-      {/* KPI Stream Overview Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex items-center justify-between">
+      {/* KPI Stream Overview Bar (2 columns on mobile, 4 on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500">{t("Tâches En Cours", "Tâches En Cours")}</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{inProgressCount}</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500">{t("Tâches En Cours", "Tâches En Cours")}</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">{inProgressCount}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
-            <Clock className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500">{t("Canal Haïti (Cash-out)", "Canal Haïti (Cash-out)")}</p>
-            <p className="text-2xl font-black text-emerald-600 mt-0.5">{haitiCashCount}</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 truncate">{t("Canal Haïti (Cash)", "Canal Haïti (Cash)")}</p>
+            <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5">{haitiCashCount}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
-            <span className="text-base font-black">🇭🇹</span>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shrink-0">
+            <span className="text-sm sm:text-base font-black">🇭🇹</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500">{t("Canal Numérique (MonCash)", "Canal Numérique (MonCash)")}</p>
-            <p className="text-2xl font-black text-blue-600 mt-0.5">{digitalTelecomCount}</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 truncate">{t("Canal Numérique", "Canal Numérique")}</p>
+            <p className="text-xl sm:text-2xl font-black text-blue-600 mt-0.5">{digitalTelecomCount}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
-            <Zap className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 shrink-0">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500">{t("Clôturées Aujourd'hui", "Clôturées Aujourd'hui")}</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{completedCount}</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500 truncate">{t("Clôturées", "Clôturées")}</p>
+            <p className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">{completedCount}</p>
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
           </div>
         </div>
       </div>
 
       {/* Control Bar: Filters & Search */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80 w-full lg:w-auto">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80 w-full lg:w-auto overflow-x-auto">
           <button
             onClick={() => setSelectedStatusFilter('in_progress')}
-            className={`flex-1 lg:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 lg:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               selectedStatusFilter === 'in_progress' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -3890,7 +3890,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </button>
           <button
             onClick={() => setSelectedStatusFilter('completed')}
-            className={`flex-1 lg:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 lg:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               selectedStatusFilter === 'completed' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -3898,15 +3898,15 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           </button>
           <button
             onClick={() => setSelectedStatusFilter('all')}
-            className={`flex-1 lg:flex-none px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex-1 lg:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               selectedStatusFilter === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {t("Toutes les Tâches", "Toutes les Tâches")}
+            {t("Toutes", "Toutes")}
           </button>
         </div>
 
-        <div className="flex items-center gap-2 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
           {isGestionnaire ? (
             <select
               value={selectedOperatorFilter}
@@ -3945,129 +3945,256 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         </div>
       </div>
 
-      {/* CLEAN OVERFLOW-FREE TABLE CONTAINER */}
+      {/* DUAL VIEW: DESKTOP TABLE (hidden md:block) & MOBILE CARDS (md:hidden) */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
+        
+        {/* 1. DESKTOP TABLE VIEW */}
+        <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[900px]">
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/80 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
-          <div className="col-span-2">{t("Référence & Horodatage", "Référence & Horodatage")}</div>
-          <div className="col-span-2">{t("Opérateur", "Opérateur")}</div>
-          <div className="col-span-3">{t("Bénéficiaire / Téléphone", "Bénéficiaire / Téléphone")}</div>
-          <div className="col-span-2">{t("Attribué À", "Attribué À")}</div>
-          <div className="col-span-2 text-right">{t("Montant (HTG)", "Montant (HTG)")}</div>
-          <div className="col-span-1 text-center">{t("Action", "Action")}</div>
+              <div className="col-span-2">{t("Référence & Horodatage", "Référence & Horodatage")}</div>
+              <div className="col-span-2">{t("Opérateur", "Opérateur")}</div>
+              <div className="col-span-3">{t("Bénéficiaire / Téléphone", "Bénéficiaire / Téléphone")}</div>
+              <div className="col-span-2">{t("Attribué À", "Attribué À")}</div>
+              <div className="col-span-2 text-right">{t("Montant (HTG)", "Montant (HTG)")}</div>
+              <div className="col-span-1 text-center">{t("Action", "Action")}</div>
+            </div>
+
+            {filteredTasks.length === 0 ? (
+              <div className="p-12 text-center space-y-3">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                <h3 className="font-bold text-slate-900 text-sm">{t("Aucune tâche en attente dans ce filtre !", "Aucune tâche en attente dans ce filtre !")}</h3>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {queuePaginatedTasks.map((tx) => {
+                  const elapsed = getElapsedInfo(tx.createdAt);
+                  const isCompleted = tx.status === 'completed';
+                  const isCancelled = tx.status === 'cancelled';
+                  const isInProgress = tx.status === 'in_progress';
+
+                  return (
+                    <div 
+                      key={tx.id}
+                      onClick={() => setSelectedTxForDetails(tx)}
+                      className={`grid grid-cols-12 gap-3 px-5 py-3.5 text-xs items-center cursor-pointer transition-colors hover:bg-slate-100/70 group ${
+                        elapsed.isStagnant && isInProgress 
+                          ? 'bg-rose-50/40 border-l-4 border-l-rose-500' 
+                          : isCompleted 
+                            ? 'bg-emerald-50/20' 
+                            : isCancelled 
+                              ? 'bg-slate-50/70 opacity-75' 
+                              : 'bg-white'
+                      }`}
+                      title={t("Cliquer pour ouvrir la page de transaction et modifier si besoin", "Cliquer pour ouvrir la page de transaction et modifier si besoin")}
+                    >
+                      
+                      {/* 1. ID Transaction & Temps */}
+                      <div className="col-span-2 flex items-center gap-2">
+                        <span className="font-mono font-extrabold text-slate-900 text-xs">
+                          {tx.referenceNumber}
+                        </span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                          {elapsed.text}
+                        </span>
+                      </div>
+
+                      {/* 2. Opérateur */}
+                      <div className="col-span-2 flex items-center">
+                        <OperatorBadge operator={tx.operator} />
+                      </div>
+
+                      {/* 3. Bénéficiaire & Tel */}
+                      <div className="col-span-3 flex items-center gap-1.5 min-w-0">
+                        <span className="font-bold text-slate-900 truncate">{tx.receiverName}</span>
+                        <span className="font-mono text-slate-500 text-[11px]">({tx.receiverPhone})</span>
+                        <button
+                          onClick={(e) => copyToClipboard(e, tx.receiverPhone, tx.id)}
+                          className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
+                          title={t("Copier le numéro", "Copier le numéro")}
+                        >
+                          {copiedId === tx.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+
+                      {/* 4. Attribué À */}
+                      <div className="col-span-2 flex items-center gap-1 font-semibold text-slate-800 truncate">
+                        <UserCheck className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                        <span className="truncate">{tx.assignedToName}</span>
+                      </div>
+
+                      {/* 5. Montant à payer HTG */}
+                      <div className="col-span-2 text-right font-mono flex items-center justify-end gap-1.5 whitespace-nowrap">
+                        <span className="font-black text-emerald-600 text-sm">{tx.amountHTG.toLocaleString()} HTG</span>
+                        <span className="text-[10px] font-bold text-slate-400">({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})</span>
+                      </div>
+
+                      {/* 6. Quick Action / Open Details Arrow */}
+                      <div className="col-span-1 flex items-center justify-end">
+                        {isInProgress ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTxForDetails(tx);
+                            }}
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                            title={t("Prendre en charge, valider et clôturer avec quittance", "Prendre en charge, valider et clôturer avec quittance")}
+                          >
+                            <span>{t("Traiter", "Traiter")}</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        ) : isCompleted ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedReceiptTx(tx);
+                            }}
+                            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
+                            title={t("Consulter et télécharger le reçu", "Consulter et télécharger le reçu")}
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>{t("Reçu", "Reçu")}</span>
+                          </button>
+                        ) : (
+                          <div className="w-7 h-7 rounded-xl bg-slate-100 group-hover:bg-slate-900 group-hover:text-white text-slate-500 flex items-center justify-center transition-all">
+                            <ChevronRight className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {filteredTasks.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-            <h3 className="font-bold text-slate-900 text-sm">{t("Aucune tâche en attente dans ce filtre !", "Aucune tâche en attente dans ce filtre !")}</h3>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {queuePaginatedTasks.map((tx) => {
+        {/* 2. MOBILE CARD STACK VIEW (md:hidden) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredTasks.length === 0 ? (
+            <div className="p-8 text-center space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+              <h3 className="font-bold text-slate-900 text-xs">{t("Aucune tâche en attente dans ce filtre !", "Aucune tâche en attente dans ce filtre !")}</h3>
+            </div>
+          ) : (
+            queuePaginatedTasks.map((tx) => {
               const elapsed = getElapsedInfo(tx.createdAt);
               const isCompleted = tx.status === 'completed';
               const isCancelled = tx.status === 'cancelled';
               const isInProgress = tx.status === 'in_progress';
 
               return (
-                <div 
+                <div
                   key={tx.id}
                   onClick={() => setSelectedTxForDetails(tx)}
-                  className={`grid grid-cols-12 gap-3 px-5 py-3.5 text-xs items-center cursor-pointer transition-colors hover:bg-slate-100/70 group ${
+                  className={`p-3.5 space-y-2.5 transition-colors cursor-pointer ${
                     elapsed.isStagnant && isInProgress 
-                      ? 'bg-rose-50/40 border-l-4 border-l-rose-500' 
+                      ? 'bg-rose-50/50 border-l-4 border-l-rose-500' 
                       : isCompleted 
                         ? 'bg-emerald-50/20' 
                         : isCancelled 
                           ? 'bg-slate-50/70 opacity-75' 
-                          : 'bg-white'
+                          : 'bg-white hover:bg-slate-50'
                   }`}
-                  title={t("Cliquer pour ouvrir la page de transaction et modifier si besoin", "Cliquer pour ouvrir la page de transaction et modifier si besoin")}
                 >
-                  
-                  {/* 1. ID Transaction & Temps */}
-                  <div className="col-span-2 flex items-center gap-2">
-                    <span className="font-mono font-extrabold text-slate-900 text-xs">
-                      {tx.referenceNumber}
+                  {/* Top row: Reference + Elapsed pill + Status badge */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-black text-slate-900 text-xs bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                        {tx.referenceNumber}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                        elapsed.isStagnant && isInProgress
+                          ? 'bg-rose-100 text-rose-700 font-black'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {elapsed.text}
+                      </span>
+                    </div>
+
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
+                      isCompleted
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : isCancelled
+                          ? 'bg-slate-200 text-slate-700'
+                          : 'bg-amber-100 text-amber-900 border border-amber-300'
+                    }`}>
+                      {isCompleted ? t('Validé', 'Validé') : isCancelled ? t('Annulé', 'Annulé') : t('En cours', 'En cours')}
                     </span>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-                      {elapsed.text}
-                    </span>
                   </div>
 
-                  {/* 2. Opérateur */}
-                  <div className="col-span-2 flex items-center">
-                    <OperatorBadge operator={tx.operator} />
+                  {/* Operator and Receiver Info */}
+                  <div className="flex items-start justify-between gap-2 pt-0.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-slate-900 text-xs truncate">{tx.receiverName}</p>
+                      <div className="flex items-center gap-1 mt-0.5 text-[11px] text-slate-500 font-mono">
+                        <span>{tx.receiverPhone}</span>
+                        <button
+                          onClick={(e) => copyToClipboard(e, tx.receiverPhone, tx.id)}
+                          className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors"
+                          title={t("Copier le numéro", "Copier le numéro")}
+                        >
+                          {copiedId === tx.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      <OperatorBadge operator={tx.operator} />
+                    </div>
                   </div>
 
-                  {/* 3. Bénéficiaire & Tel */}
-                  <div className="col-span-3 flex items-center gap-1.5 min-w-0">
-                    <span className="font-bold text-slate-900 truncate">{tx.receiverName}</span>
-                    <span className="font-mono text-slate-500 text-[11px]">({tx.receiverPhone})</span>
-                    <button
-                      onClick={(e) => copyToClipboard(e, tx.receiverPhone, tx.id)}
-                      className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
-                      title={t("Copier le numéro", "Copier le numéro")}
-                    >
-                      {copiedId === tx.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                    </button>
+                  {/* Amounts & Assigned Agent */}
+                  <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                    <div className="flex items-center gap-1 text-[11px] text-slate-600 truncate max-w-[150px]">
+                      <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">{tx.assignedToName || tx.createdByName || t('Non assigné')}</span>
+                    </div>
+
+                    <div className="text-right font-mono">
+                      <span className="font-black text-emerald-600 text-sm block leading-tight">
+                        {tx.amountHTG.toLocaleString()} HTG
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        ({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})
+                      </span>
+                    </div>
                   </div>
 
-                  {/* 4. Attribué À */}
-                  <div className="col-span-2 flex items-center gap-1 font-semibold text-slate-800 truncate">
-                    <UserCheck className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                    <span className="truncate">{tx.assignedToName}</span>
-                  </div>
-
-                  {/* 5. Montant à payer HTG */}
-                  <div className="col-span-2 text-right font-mono flex items-center justify-end gap-1.5 whitespace-nowrap">
-                    <span className="font-black text-emerald-600 text-sm">{tx.amountHTG.toLocaleString()} HTG</span>
-                    <span className="text-[10px] font-bold text-slate-400">({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})</span>
-                  </div>
-
-                  {/* 6. Quick Action / Open Details Arrow */}
-                  <div className="col-span-1 flex items-center justify-end">
+                  {/* Action button */}
+                  <div className="flex items-center justify-end gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                     {isInProgress ? (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTxForDetails(tx);
-                        }}
-                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer"
-                        title={t("Prendre en charge, valider et clôturer avec quittance", "Prendre en charge, valider et clôturer avec quittance")}
+                        onClick={() => setSelectedTxForDetails(tx)}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
                       >
-                        <span>{t("Traiter", "Traiter")}</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <span>{t("Traiter la tâche", "Traiter la tâche")}</span>
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     ) : isCompleted ? (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedReceiptTx(tx);
-                        }}
-                        className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
-                        title={t("Consulter et télécharger le reçu", "Consulter et télécharger le reçu")}
+                        onClick={() => setSelectedReceiptTx(tx)}
+                        className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        <span>{t("Reçu", "Reçu")}</span>
+                        <span>{t("Consulter le Reçu", "Consulter le Reçu")}</span>
                       </button>
                     ) : (
-                      <div className="w-7 h-7 rounded-xl bg-slate-100 group-hover:bg-slate-900 group-hover:text-white text-slate-500 flex items-center justify-center transition-all">
+                      <button
+                        onClick={() => setSelectedTxForDetails(tx)}
+                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>{t("Détails", "Détails")}</span>
                         <ChevronRight className="w-4 h-4" />
-                      </div>
+                      </button>
                     )}
                   </div>
-
                 </div>
               );
-            })}
-          </div>
-        )}
-
-          </div>
+            })
+          )}
         </div>
 
         {/* General Queue Pagination */}

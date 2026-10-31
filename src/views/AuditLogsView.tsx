@@ -140,7 +140,7 @@ export const AuditLogsView: React.FC = () => {
   /* -------------------------------------------------------------------------- */
   if (inspectedLog) {
     return (
-      <div className="p-6 space-y-6 max-w-[1400px] mx-auto animate-in fade-in">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto animate-in fade-in pb-28 md:pb-6">
         
         {/* Navigation Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
@@ -233,7 +233,7 @@ export const AuditLogsView: React.FC = () => {
   /* MAIN AUDIT LOGS LIST                                                       */
   /* -------------------------------------------------------------------------- */
   return (
-    <div className="p-3 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto pb-28 md:pb-6">
       
       {/* 1. HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
@@ -349,46 +349,114 @@ export const AuditLogsView: React.FC = () => {
           <span className="text-[11px] text-slate-400 font-mono">Append-Only Immuable</span>
         </div>
 
-        {/* Table Header Row */}
-        <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
-          <div className="col-span-2">{t('timestamp_header', 'Horodatage')}</div>
-          <div className="col-span-2">{t('priority_header', 'Priorité')}</div>
-          <div className="col-span-2">{t('actor_role_header', 'Acteur / Rôle')}</div>
-          <div className="col-span-2">{t('event_header', 'Événement')}</div>
-          <div className="col-span-3">{t('traceability_details_header', 'Détails Traçabilité')}</div>
-          <div className="col-span-1 text-center">{t('action_header', 'Action')}</div>
+        {/* 1. DESKTOP 12-COLUMN TABLE (hidden md:block) */}
+        <div className="hidden md:block overflow-x-auto">
+          <div className="min-w-[900px]">
+            {/* Table Header Row */}
+            <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
+              <div className="col-span-2">{t('timestamp_header', 'Horodatage')}</div>
+              <div className="col-span-2">{t('priority_header', 'Priorité')}</div>
+              <div className="col-span-2">{t('actor_role_header', 'Acteur / Rôle')}</div>
+              <div className="col-span-2">{t('event_header', 'Événement')}</div>
+              <div className="col-span-3">{t('traceability_details_header', 'Détails Traçabilité')}</div>
+              <div className="col-span-1 text-center">{t('action_header', 'Action')}</div>
+            </div>
+
+            {/* Table Body Rows */}
+            <div className="divide-y divide-slate-100 text-xs font-medium">
+              {paginatedLogs.map((log) => (
+                <div 
+                  key={log.id} 
+                  onClick={() => setInspectedLog(log)}
+                  className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
+                  title={t('click_view_audit_sheet', "Cliquer pour voir la fiche d'audit complète")}
+                >
+                  
+                  {/* 1. Horodatage */}
+                  <div className="col-span-2 font-mono text-[11px] text-slate-500 whitespace-nowrap truncate">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    <span className="text-[10px] text-slate-400 ml-1">({new Date(log.timestamp).toLocaleDateString()})</span>
+                  </div>
+
+                  {/* 2. Priority */}
+                  <div className="col-span-2">
+                    {getPriorityBadge(log.priority, log.action)}
+                  </div>
+
+                  {/* 3. Acteur / Rôle */}
+                  <div className="col-span-2 min-w-0">
+                    <p className="font-bold text-slate-900 truncate">{log.actorName}</p>
+                    <p className="text-[10px] text-slate-400 truncate capitalize font-mono">{log.actorRole.replace('_', ' ')}</p>
+                  </div>
+
+                  {/* 4. Événement */}
+                  <div className="col-span-2 whitespace-nowrap">
+                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase font-mono ${
+                      log.action.includes('TRANSACTION') ? 'bg-blue-100 text-blue-900 border border-blue-200' :
+                      log.action.includes('KILL_SWITCH') ? 'bg-rose-100 text-rose-900 border border-rose-200' :
+                      log.action.includes('USER') ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+                      'bg-slate-100 text-slate-800 border border-slate-200'
+                    }`}>
+                      {log.action}
+                    </span>
+                  </div>
+
+                  {/* 5. Détails Traçabilité */}
+                  <div className="col-span-3 text-slate-700 truncate font-mono text-[11px]">
+                    {log.details}
+                  </div>
+
+                  {/* 6. Action Voir */}
+                  <div className="col-span-1 text-center" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setInspectedLog(log)}
+                      className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-bold transition-all shadow-xs flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                      title={t('view_audit_sheet', "Voir la Fiche d'Audit Complète")}
+                    >
+                      <Eye className="w-3.5 h-3.5 text-white" />
+                      <span>{t('view_btn', 'Voir')}</span>
+                    </button>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Table Body Rows */}
-        <div className="divide-y divide-slate-100 text-xs font-medium">
+        {/* 2. MOBILE CARD VIEW (md:hidden) */}
+        <div className="md:hidden divide-y divide-slate-100">
           {paginatedLogs.map((log) => (
-            <div 
-              key={log.id} 
+            <div
+              key={log.id}
               onClick={() => setInspectedLog(log)}
-              className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
-              title={t('click_view_audit_sheet', "Cliquer pour voir la fiche d'audit complète")}
+              className="p-3.5 space-y-2.5 hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              
-              {/* 1. Horodatage */}
-              <div className="col-span-2 font-mono text-[11px] text-slate-500 whitespace-nowrap truncate">
-                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                <span className="text-[10px] text-slate-400 ml-1">({new Date(log.timestamp).toLocaleDateString()})</span>
-              </div>
-
-              {/* 2. Priority */}
-              <div className="col-span-2">
+              {/* Top: Timestamp & Priority */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                  <span className="text-slate-400">({new Date(log.timestamp).toLocaleDateString()})</span>
+                </div>
                 {getPriorityBadge(log.priority, log.action)}
               </div>
 
-              {/* 3. Acteur / Rôle */}
-              <div className="col-span-2 min-w-0">
-                <p className="font-bold text-slate-900 truncate">{log.actorName}</p>
-                <p className="text-[10px] text-slate-400 truncate capitalize font-mono">{log.actorRole.replace('_', ' ')}</p>
-              </div>
+              {/* Actor and Action */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-lg bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                    {log.actorName.charAt(0)}
+                  </div>
+                  <div className="truncate">
+                    <span className="font-extrabold text-slate-900 text-xs block truncate leading-tight">{log.actorName}</span>
+                    <span className="text-[10px] text-slate-400 font-mono capitalize">{log.actorRole.replace('_', ' ')}</span>
+                  </div>
+                </div>
 
-              {/* 4. Événement */}
-              <div className="col-span-2 whitespace-nowrap">
-                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase font-mono ${
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase font-mono shrink-0 ${
                   log.action.includes('TRANSACTION') ? 'bg-blue-100 text-blue-900 border border-blue-200' :
                   log.action.includes('KILL_SWITCH') ? 'bg-rose-100 text-rose-900 border border-rose-200' :
                   log.action.includes('USER') ? 'bg-purple-100 text-purple-900 border border-purple-200' :
@@ -398,23 +466,22 @@ export const AuditLogsView: React.FC = () => {
                 </span>
               </div>
 
-              {/* 5. Détails Traçabilité */}
-              <div className="col-span-3 text-slate-700 truncate font-mono text-[11px]">
+              {/* Details snippet */}
+              <p className="text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-mono text-[11px] leading-relaxed break-words">
                 {log.details}
-              </div>
+              </p>
 
-              {/* 6. Action Voir */}
-              <div className="col-span-1 text-center" onClick={(e) => e.stopPropagation()}>
+              {/* Inspect action */}
+              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400" onClick={(e) => e.stopPropagation()}>
+                <span className="font-mono text-[10px]">{log.nodeId}</span>
                 <button
                   onClick={() => setInspectedLog(log)}
-                  className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-bold transition-all shadow-xs flex items-center justify-center gap-1 mx-auto"
-                  title={t('view_audit_sheet', "Voir la Fiche d'Audit Complète")}
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Eye className="w-3.5 h-3.5 text-white" />
+                  <Eye className="w-3.5 h-3.5" />
                   <span>{t('view_btn', 'Voir')}</span>
                 </button>
               </div>
-
             </div>
           ))}
         </div>

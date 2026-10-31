@@ -797,10 +797,10 @@ export const UserManagementView: React.FC = () => {
     };
 
     return (
-      <div className="p-6 space-y-6 max-w-[1400px] mx-auto animate-in fade-in">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto animate-in fade-in pb-28 md:pb-6">
         
         {/* Navigation Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -815,7 +815,7 @@ export const UserManagementView: React.FC = () => {
               <span className="whitespace-nowrap">Retour à la Liste</span>
             </button>
             <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <span>Fiche Profil Employé Nœud</span>
                 <span className="font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg text-sm border border-blue-200">
                   {inspectedUser.nodeId}
@@ -827,7 +827,7 @@ export const UserManagementView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-nowrap flex-shrink-0">
+          <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
             {currentUser.role === 'admin' && (
               <button
                 onClick={() => {
@@ -1704,7 +1704,7 @@ export const UserManagementView: React.FC = () => {
   /* MAIN USER MANAGEMENT VIEW                                                  */
   /* -------------------------------------------------------------------------- */
   return (
-    <div className="p-3 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto pb-28 md:pb-6">
       
       {/* 1. PAGE HEADER & SUBTAB NAVIGATION */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">

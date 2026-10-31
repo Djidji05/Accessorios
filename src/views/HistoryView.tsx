@@ -445,16 +445,16 @@ export const HistoryView: React.FC = () => {
   /* MAIN CLEAN TRANSACTION LIST VIEW WITH TIME FILTERS                         */
   /* -------------------------------------------------------------------------- */
   return (
-    <div className="p-4 sm:p-6 w-full max-w-[1600px] mx-auto space-y-6 font-sans animate-in fade-in pb-28">
+    <div className="p-3.5 sm:p-6 w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 font-sans animate-in fade-in pb-28 md:pb-6">
       
       {/* Header Title, Count & Export Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 py-1">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-black shadow-xs">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-black shadow-xs shrink-0">
             <FolderArchive className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               {t('Historique des Transactions', 'Historique des Transactions')}
             </h2>
             <p className="text-xs text-slate-400 font-medium">
@@ -463,10 +463,10 @@ export const HistoryView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => exportTransactionsToCSV(filteredTransactions)}
-            className="px-4 py-2.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-xs cursor-pointer"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-xs cursor-pointer"
             title={t('Export CSV', 'Export CSV')}
           >
             <Download className="w-4 h-4 text-slate-500" />
@@ -475,7 +475,7 @@ export const HistoryView: React.FC = () => {
 
           <button
             onClick={() => exportTransactionsToPDF(filteredTransactions)}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-900 shadow-sm hover:shadow-md cursor-pointer"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-900 shadow-sm hover:shadow-md cursor-pointer"
             title={t('Export PDF', 'Export PDF')}
           >
             <Download className="w-4 h-4 text-emerald-400" />
