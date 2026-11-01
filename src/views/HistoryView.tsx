@@ -593,20 +593,19 @@ export const HistoryView: React.FC = () => {
         <>
           {/* 1. DESKTOP VIEW: High-Density Full-Width Enterprise Data Table (hidden on mobile, visible md+) */}
           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="w-full">
+              <table className="w-full text-left text-xs border-collapse table-auto">
                 <thead>
                   <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/70 dark:bg-slate-950/50">
-                    <th className="py-4 px-5">{t('Réf Transaction', 'Réf Transaction')}</th>
-                    <th className="py-4 px-5">{t('Date & Heure', 'Date & Heure')}</th>
-                    <th className="py-4 px-5">{t('Opérateur', 'Opérateur')}</th>
-                    <th className="py-4 px-5">{t('Expéditeur (RD)', 'Expéditeur (RD)')}</th>
-                    <th className="py-4 px-5">{t('Bénéficiaire (Haïti)', 'Bénéficiaire (Haïti)')}</th>
-                    <th className="py-4 px-5 text-right">{t('Montant DOP', 'Montant DOP')}</th>
-                    <th className="py-4 px-5 text-right">{t('Montant HTG', 'Montant HTG')}</th>
-                    <th className="py-4 px-5 text-right text-blue-600 dark:text-blue-400">{t('Commission Admin', 'Commission Admin')}</th>
-                    <th className="py-4 px-5 text-center">{t('Statut', 'Statut')}</th>
-                    <th className="py-4 px-5 text-center">{t('actions', 'Actions')}</th>
+                    <th className="py-3 px-3">{t('Réf Transaction', 'Réf')}</th>
+                    <th className="py-3 px-3">{t('Date & Heure', 'Date')}</th>
+                    <th className="py-3 px-2.5">{t('Opérateur', 'Opérateur')}</th>
+                    <th className="py-3 px-3">{t('Expéditeur (RD)', 'Expéditeur')}</th>
+                    <th className="py-3 px-3">{t('Bénéficiaire (Haïti)', 'Bénéficiaire')}</th>
+                    <th className="py-3 px-3 text-right">{t('Montants (DOP / HTG)', 'Montants (DOP / HTG)')}</th>
+                    <th className="py-3 px-3 text-right text-blue-600 dark:text-blue-400">{t('Commission Admin', 'Comm. Admin')}</th>
+                    <th className="py-3 px-2.5 text-center">{t('Statut', 'Statut')}</th>
+                    <th className="py-3 px-3 text-center">{t('actions', 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-sans">
@@ -616,95 +615,94 @@ export const HistoryView: React.FC = () => {
                       className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group"
                     >
                       {/* Référence */}
-                      <td className="py-3.5 px-5 font-mono font-black text-slate-900 dark:text-white text-xs">
-                        <span className="bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <td className="py-2.5 px-3 font-mono font-black text-slate-900 dark:text-white text-xs whitespace-nowrap">
+                        <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                           {tx.referenceNumber}
                         </span>
                       </td>
 
                       {/* Date */}
-                      <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px] font-medium">
+                      <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px] font-medium">
                         {new Date(tx.createdAt).toLocaleDateString(dateLocale, {
                           day: '2-digit',
                           month: 'short',
-                          year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </td>
 
                       {/* Opérateur */}
-                      <td className="py-3.5 px-5 whitespace-nowrap">
+                      <td className="py-2.5 px-2.5 whitespace-nowrap">
                         <OperatorBadge operator={tx.operator} size="sm" />
                       </td>
 
                       {/* Expéditeur */}
-                      <td className="py-3.5 px-5">
-                        <div className="font-extrabold text-slate-900 dark:text-white truncate max-w-[160px]">{tx.senderName}</div>
-                        <div className="text-[10px] text-slate-400 font-mono font-medium">{tx.senderPhone || '—'}</div>
+                      <td className="py-2.5 px-3 max-w-[140px]">
+                        <div className="font-extrabold text-slate-900 dark:text-white truncate text-xs">{tx.senderName}</div>
+                        <div className="text-[10px] text-slate-400 font-mono font-medium truncate">{tx.senderPhone || '—'}</div>
                       </td>
 
                       {/* Bénéficiaire */}
-                      <td className="py-3.5 px-5">
-                        <div className="font-extrabold text-slate-900 dark:text-white truncate max-w-[160px]">{tx.receiverName}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-bold bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                      <td className="py-2.5 px-3 max-w-[140px]">
+                        <div className="font-extrabold text-slate-900 dark:text-white truncate text-xs">{tx.receiverName}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-bold bg-slate-50 dark:bg-slate-800 px-1 py-0.2 rounded inline-block mt-0.5">
                           {tx.receiverPhone}
                         </div>
                       </td>
 
-                      {/* Montant DOP */}
-                      <td className="py-3.5 px-5 text-right font-black font-mono text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                        {tx.amountDOP.toLocaleString()} DOP
-                      </td>
-
-                      {/* Montant HTG */}
-                      <td className="py-3.5 px-5 text-right font-black font-mono text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
-                        {tx.amountHTG.toLocaleString()} HTG
+                      {/* Montants DOP & HTG empilés élégamment */}
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                        <div className="font-black font-mono text-slate-900 dark:text-white text-xs leading-tight">
+                          {tx.amountDOP.toLocaleString()} <span className="text-[10px] text-slate-400">DOP</span>
+                        </div>
+                        <div className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-[11px] leading-tight mt-0.5">
+                          {tx.amountHTG.toLocaleString()} <span className="text-[10px] text-emerald-500">HTG</span>
+                        </div>
                       </td>
 
                       {/* Commission Admin */}
-                      <td className="py-3.5 px-5 text-right font-black font-mono text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">
                         +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
                       </td>
 
                       {/* Statut */}
-                      <td className="py-3.5 px-5 text-center whitespace-nowrap">
+                      <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                         {tx.status === 'completed' ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800">
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                             <span>{t('completed', 'Clôturé')}</span>
                           </span>
                         ) : tx.status === 'in_progress' || tx.status === 'pending_routing' ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2.5 py-1 rounded-full border border-orange-300 dark:border-orange-800">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-orange-900 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/80 px-2 py-0.5 rounded-full border border-orange-300 dark:border-orange-800">
                             <Clock className="w-3 h-3 animate-pulse text-orange-600" />
                             <span>{t('pending', 'En attente')}</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/60 dark:border-rose-800">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-800">
                             {t('cancelled', 'Annulé')}
                           </span>
                         )}
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-5 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={() => setInspectedTx(tx)}
-                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                             title={t('details', 'Détails')}
                           >
-                            {t('Détails', 'Détails')}
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => setSelectedReceiptTx(tx)}
-                            className="px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                            className="px-2 py-1.5 rounded-lg bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white text-[11px] font-bold transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
                             title={t('Télécharger ou partager le reçu PDF', 'Télécharger ou partager le reçu PDF')}
                           >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>{t('Reçu PDF', 'Reçu PDF')}</span>
+                            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>PDF</span>
                           </button>
                         </div>
                       </td>

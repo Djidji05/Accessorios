@@ -383,7 +383,12 @@ export const WeeklySettlementsView: React.FC = () => {
       return;
     }
 
-    const res = recordAgentDeposit(selectedSettlementForDeposit.id, amount, 'Versement en espèces / virement');
+    const res = recordAgentDeposit(
+      selectedSettlementForDeposit.id, 
+      amount, 
+      'Versement en espèces / virement',
+      selectedSettlementForDeposit
+    );
     if (res.success) {
       setFeedback({ type: 'success', message: res.message });
       closeModal();

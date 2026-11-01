@@ -249,7 +249,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
   };
 
   return (
-    <div className="relative inline-block text-left" ref={containerRef}>
+    <div className={`relative inline-block text-left ${isOpen ? 'z-50' : 'z-20'}`} ref={containerRef}>
       {/* Date Filter Pill Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -267,10 +267,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ value, onChang
 
       {/* Popover Wrapper (Modal overlay on mobile, dropdown popover on desktop) */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:z-auto animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:z-50 animate-in fade-in duration-150">
           <div 
             id="date-range-picker-popover"
-            className="w-full max-w-[360px] sm:max-w-none sm:w-[560px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/90 rounded-3xl sm:rounded-2xl shadow-2xl p-4 sm:p-5 sm:absolute sm:right-0 sm:top-full sm:mt-2 space-y-3 sm:space-y-4 max-h-[92vh] overflow-y-auto sm:max-h-none sm:overflow-visible"
+            className="w-full max-w-[360px] sm:max-w-none sm:w-[560px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/90 rounded-3xl sm:rounded-2xl shadow-2xl p-4 sm:p-5 sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:z-[100] space-y-3 sm:space-y-4 max-h-[92vh] overflow-y-auto sm:max-h-none sm:overflow-visible"
           >
             {/* Mobile-Only Dialog Header */}
             <div className="flex items-center justify-between sm:hidden border-b border-slate-100 dark:border-slate-800 pb-2.5">

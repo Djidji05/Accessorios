@@ -50,56 +50,68 @@ export const AuditLogsView: React.FC = () => {
     setPage(1);
   }, [searchQuery, selectedCategory, selectedPriority, selectedRange]);
 
-  const getPriorityBadge = (p?: string, action?: string) => {
-    let priority = p;
-    if (!priority && action) {
-      if (action.includes('KILL_SWITCH') || action.includes('SECURITY_CRITICAL')) priority = 'Critical';
-      else if (action.includes('SECURITY') || action.includes('PERMISSION_DENIED')) priority = 'High';
-      else if (action.includes('USER') || action.includes('PERMISSION') || action.includes('TREASURY')) priority = 'Medium';
-      else priority = 'Low';
+  const resolveLogPriority = (p?: string, action?: string): 'Critical' | 'High' | 'Medium' | 'Low' => {
+    const raw = (p || '').toString().trim().toLowerCase();
+    if (raw.includes('critiq') || raw.includes('critic') || raw.includes('kritik')) {
+      return 'Critical';
     }
+    if (raw.includes('elev') || raw.includes('élev') || raw.includes('high') || raw.includes('alta') || raw.includes('wo')) {
+      return 'High';
+    }
+    if (raw.includes('moyen') || raw.includes('med') || raw.includes('media') || raw.includes('mwayen') || raw.includes('normal')) {
+      return 'Medium';
+    }
+    if (raw.includes('faibl') || raw.includes('low') || raw.includes('baja') || raw.includes('ba')) {
+      return 'Low';
+    }
+    // Déduction contextuelle par l'action enregistrée
+    if (action) {
+      const act = action.toUpperCase();
+      if (act.includes('KILL_SWITCH') || act.includes('SECURITY_CRITICAL') || act.includes('48H')) return 'Critical';
+      if (act.includes('SECURITY') || act.includes('PERMISSION_DENIED') || act.includes('24H') || act.includes('ANNULATION')) return 'High';
+      if (act.includes('USER') || act.includes('PERMISSION') || act.includes('TREASURY') || act.includes('TRANSACTION')) return 'Medium';
+    }
+    return 'Low';
+  };
+
+  const getPriorityBadge = (p?: string, action?: string) => {
+    const priority = resolveLogPriority(p, action);
 
     switch (priority) {
       case 'Critical':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-red-600 text-white shadow-sm shadow-red-600/30 border border-red-700 ring-2 ring-red-400/30 animate-pulse">
-            <AlertTriangle className="w-3 h-3 text-white fill-white shrink-0" />
-            <span>{t('critical_priority', 'Critical')}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-red-600 text-white shadow-sm shadow-red-600/30 border border-red-700 ring-2 ring-red-400/30 animate-pulse">
+            <AlertTriangle className="w-3.5 h-3.5 text-white fill-white shrink-0" />
+            <span>{t('critical_priority', 'Critique')}</span>
           </span>
         );
       case 'High':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-orange-500 text-white shadow-sm shadow-orange-500/30 border border-orange-600">
-            <Flag className="w-3 h-3 text-white fill-white shrink-0" />
-            <span>{t('high_priority', 'High')}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-orange-500 text-white shadow-sm shadow-orange-500/30 border border-orange-600">
+            <Flag className="w-3.5 h-3.5 text-white fill-white shrink-0" />
+            <span>{t('high_priority', 'Élevée')}</span>
           </span>
         );
       case 'Medium':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-amber-400 text-amber-950 shadow-xs border border-amber-500">
-            <Flag className="w-3 h-3 text-amber-950 fill-amber-950 shrink-0" />
-            <span>{t('medium_priority', 'Medium')}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-amber-400 text-amber-950 shadow-xs border border-amber-500">
+            <Flag className="w-3.5 h-3.5 text-amber-950 fill-amber-950 shrink-0" />
+            <span>{t('medium_priority', 'Moyenne')}</span>
           </span>
         );
       case 'Low':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 border border-emerald-600">
-            <Flag className="w-3 h-3 text-white fill-white shrink-0" />
-            <span>{t('low_priority', 'Low')}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 border border-emerald-600">
+            <Flag className="w-3.5 h-3.5 text-white fill-white shrink-0" />
+            <span>{t('low_priority', 'Faible')}</span>
           </span>
         );
     }
   };
 
   const getPriorityRowBorder = (p?: string, action?: string) => {
-    let priority = p;
-    if (!priority && action) {
-      if (action.includes('KILL_SWITCH') || action.includes('SECURITY_CRITICAL')) priority = 'Critical';
-      else if (action.includes('SECURITY') || action.includes('PERMISSION_DENIED')) priority = 'High';
-      else if (action.includes('USER') || action.includes('PERMISSION') || action.includes('TREASURY')) priority = 'Medium';
-      else priority = 'Low';
-    }
+    const priority = resolveLogPriority(p, action);
     if (priority === 'Critical') return 'border-l-4 border-l-red-600 bg-red-50/30 hover:bg-red-50/50';
     if (priority === 'High') return 'border-l-4 border-l-orange-500 bg-orange-50/20 hover:bg-orange-50/40';
     if (priority === 'Medium') return 'border-l-4 border-l-amber-400 bg-amber-50/15 hover:bg-amber-50/30';
@@ -129,7 +141,7 @@ export const AuditLogsView: React.FC = () => {
 
     let matchesPriority = true;
     if (selectedPriority !== 'all') {
-      const p = log.priority || (log.action.includes('KILL_SWITCH') ? 'Critical' : log.action.includes('SECURITY') ? 'High' : log.action.includes('USER') ? 'Medium' : 'Low');
+      const p = resolveLogPriority(log.priority, log.action);
       matchesPriority = p === selectedPriority;
     }
 

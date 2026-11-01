@@ -105,7 +105,7 @@ interface AppContextType {
   toggleKillSwitch: (operator: OperatorCode, reason?: string) => void;
   updateUserPermissions: (userId: string, newPermissions: Partial<UserPermissionMatrix>) => void;
   rechargeAccount: (accountId: string, amount: number, note?: string) => Promise<{ success: boolean; message: string }>;
-  recordAgentDeposit: (settlementId: string, amount: number, note: string) => { success: boolean; message: string };
+  recordAgentDeposit: (settlementId: string, amount: number, note: string, settlementData?: Partial<WeeklySettlement>) => { success: boolean; message: string };
   
   // Receipt Modal State
   selectedReceiptTx: Transaction | null;
@@ -492,6 +492,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_SETTLEMENTS;
   });
 
+  useEffect(() => {
+    if (settlements && settlements.length > 0) {
+      try {
+        localStorage.setItem('dalexis_settlements', JSON.stringify(settlements));
+      } catch (err) {
+        console.error('Erreur écriture dalexis_settlements:', err);
+      }
+    }
+  }, [settlements]);
+
   // Notifications Tracking (Persist read notifications in localStorage)
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
     try {
@@ -585,10 +595,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Commissions de l'opérateur ${operator.toUpperCase()} mises à jour avec succès.`, 'success');
   };
   
-  const recordAgentDeposit = (settlementId: string, amount: number, note: string) => {
-    setSettlements((prev) =>
-      prev.map((s) => {
-        if (s.id === settlementId) {
+  const recordAgentDeposit = (
+    settlementId: string, 
+    amount: number, 
+    note: string, 
+    settlementData?: Partial<WeeklySettlement>
+  ) => {
+    setSettlements((prev) => {
+      let found = false;
+      const updated = prev.map((s) => {
+        const matchesId = s.id === settlementId;
+        const matchesWeekAndAgent = settlementData && 
+          s.weekLabel === settlementData.weekLabel && 
+          s.agentName.toLowerCase() === settlementData.agentName?.toLowerCase();
+
+        if (matchesId || matchesWeekAndAgent) {
+          found = true;
           const newDeposited = s.amountDeposited + amount;
           const newRemaining = Math.max(0, s.netAmountToPay - newDeposited);
           const newStatus: 'paid' | 'partial' | 'pending' =
@@ -597,7 +619,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             id: `dep_${Date.now()}`,
             amount,
             date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            note: note || 'Versement hebdomadaire enregistré par l\'Admin',
+            note: note || 'Versement enregistré',
             recordedBy: currentUser.name,
           };
 
@@ -610,14 +632,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         }
         return s;
-      })
-    );
+      });
 
-    const logDetails = `[VERSEMENT HEBDO] Admin (${currentUser.name}) a enregistré un dépôt de ${amount.toLocaleString()} pour la liquidation ${settlementId}.`;
+      if (!found) {
+        // La liquidation n'existait que dynamiquement d'après les transactions en direct
+        const baseNet = settlementData?.netAmountToPay ?? (settlementData?.totalCollected ? Math.max(0, settlementData.totalCollected - (settlementData.totalCommission || 0)) : amount);
+        const newDeposited = (settlementData?.amountDeposited || 0) + amount;
+        const newRemaining = Math.max(0, baseNet - newDeposited);
+        const newStatus: 'paid' | 'partial' | 'pending' =
+          newRemaining === 0 ? 'paid' : newDeposited > 0 ? 'partial' : 'pending';
+        const newDepositRecord = {
+          id: `dep_${Date.now()}`,
+          amount,
+          date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          note: note || 'Versement enregistré',
+          recordedBy: currentUser.name,
+        };
+
+        const newSettlement: WeeklySettlement = {
+          id: settlementId,
+          agentId: settlementData?.agentId || currentUser.id,
+          agentName: settlementData?.agentName || currentUser.name,
+          agentRole: settlementData?.agentRole || 'agent_rd',
+          weekLabel: settlementData?.weekLabel || 'Semaine En Cours',
+          startDate: settlementData?.startDate || new Date().toISOString().split('T')[0],
+          endDate: settlementData?.endDate || new Date().toISOString().split('T')[0],
+          currency: settlementData?.currency || 'DOP',
+          totalCollected: settlementData?.totalCollected || baseNet,
+          totalCommission: settlementData?.totalCommission || 0,
+          netAmountToPay: baseNet,
+          amountDeposited: newDeposited,
+          remainingBalance: newRemaining,
+          status: newStatus,
+          deposits: [newDepositRecord, ...(settlementData?.deposits || [])],
+        };
+
+        updated.unshift(newSettlement);
+      }
+
+      try {
+        localStorage.setItem('dalexis_settlements', JSON.stringify(updated));
+      } catch (err) {
+        console.error('Erreur écriture dalexis_settlements:', err);
+      }
+
+      return updated;
+    });
+
+    const logDetails = `[VERSEMENT HEBDO] Admin (${currentUser.name}) a enregistré un versement de ${amount.toLocaleString()} pour l'agent (Réf ${settlementId}).`;
     eventBus.publish('TREASURY_RECHARGED', currentUser.nodeId, currentUser.role, logDetails);
     showToast(`Dépôt de ${amount.toLocaleString()} enregistré pour l'agent avec succès.`, 'success');
 
-    return { success: true, message: 'Dépôt hebdomadaire enregistré avec succès et solde de l\'agent recalculé !' };
+    return { success: true, message: 'Dépôt hebdomadaire enregistré avec succès et solde restant recalculé !' };
   };
   
   const [selectedReceiptTx, setSelectedReceiptTx] = useState<Transaction | null>(null);

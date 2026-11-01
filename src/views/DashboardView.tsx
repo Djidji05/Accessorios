@@ -19,7 +19,7 @@ export const DashboardView: React.FC = () => {
   return (
     <div className="p-3 sm:p-6 space-y-5 max-w-[1600px] mx-auto pb-28 md:pb-6 font-sans animate-in fade-in">
       {/* Welcome Banner & Date Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="relative z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             {t('hello')}, {currentUser.name} <span className="text-xl">👋</span>
@@ -49,7 +49,7 @@ export const DashboardView: React.FC = () => {
       </div>
 
       {/* Bottom Section: Transactions Table */}
-      <div className="w-full overflow-x-auto -mx-1 sm:mx-0">
+      <div className="w-full -mx-1 sm:mx-0">
         <TransactionsTable dateRange={selectedRange} />
       </div>
     </div>

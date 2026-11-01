@@ -125,19 +125,18 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       </div>
 
       {/* 1. DESKTOP TABLE VIEW (hidden md:block) */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+      <div className="hidden md:block w-full">
+        <table className="w-full text-left text-xs border-collapse table-auto">
           <thead>
             <tr className="border-b border-slate-200/80 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/50">
-              <th className="py-3.5 px-5">{t('reference', 'Réf Transaction')}</th>
-              <th className="py-3.5 px-5">{t('operator', 'Opérateur')}</th>
-              <th className="py-3.5 px-5 text-center text-emerald-700">{t('admin_comm', 'Commission Opérateur')}</th>
-              <th className="py-3.5 px-5">{t('beneficiary', 'Bénéficiaire (Haïti)')}</th>
-              <th className="py-3.5 px-5 text-right">{t('amount_dop', 'Montant Pesos')}</th>
-              <th className="py-3.5 px-5 text-right text-blue-600">{t('admin_comm', 'Commission Admin')}</th>
-              <th className="py-3.5 px-5 text-right">{t('received_htg', 'Montant HTG')}</th>
-              <th className="py-3.5 px-5 text-center">{t('status', 'Suivi SLA & Statut')}</th>
-              <th className="py-3.5 px-5 text-center">{t('actions', 'Action Reçu')}</th>
+              <th className="py-3 px-3">{t('reference', 'Réf Transaction')}</th>
+              <th className="py-3 px-2.5">{t('operator', 'Opérateur')}</th>
+              <th className="py-3 px-2.5 text-center text-emerald-700">{t('admin_comm', 'Commission Opérateur')}</th>
+              <th className="py-3 px-3">{t('beneficiary', 'Bénéficiaire (Haïti)')}</th>
+              <th className="py-3 px-3 text-right">{t('amounts_dop_htg', 'Montants (DOP / HTG)')}</th>
+              <th className="py-3 px-3 text-right text-blue-600">{t('admin_comm', 'Commission Admin')}</th>
+              <th className="py-3 px-2.5 text-center">{t('status', 'Suivi SLA & Statut')}</th>
+              <th className="py-3 px-3 text-center">{t('actions', 'Action Reçu')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-sans">
@@ -149,58 +148,58 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                 <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
                   
                   {/* Réf */}
-                  <td className="py-3.5 px-5">
+                  <td className="py-2.5 px-3 whitespace-nowrap">
                     <span className="font-mono font-black text-slate-900 text-xs bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                       {tx.referenceNumber}
                     </span>
                   </td>
 
                   {/* Opérateur Badge */}
-                  <td className="py-3.5 px-5">
+                  <td className="py-2.5 px-2.5 whitespace-nowrap">
                     <OperatorBadge operator={tx.operator} size="sm" />
                   </td>
 
                   {/* Commission Opérateur */}
-                  <td className="py-3.5 px-5 text-center">
-                    <span className="font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-block">
+                  <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
+                    <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 inline-block text-[11px]">
                       +{opCommDOP.toLocaleString()} DOP
                     </span>
-                    <div className="text-[10px] text-slate-400 font-semibold mt-0.5">Taux: {commRate}%</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">Taux: {commRate}%</div>
                   </td>
 
                   {/* Bénéficiaire */}
-                  <td className="py-3.5 px-5">
-                    <div className="font-bold text-slate-900">{tx.receiverName}</div>
-                    <div className="text-[10px] text-slate-600 font-mono font-bold bg-slate-50 px-1.5 py-0.5 rounded inline-block">
+                  <td className="py-2.5 px-3 max-w-[150px]">
+                    <div className="font-bold text-slate-900 truncate text-xs">{tx.receiverName}</div>
+                    <div className="text-[10px] text-slate-600 font-mono font-bold bg-slate-50 px-1 py-0.2 rounded inline-block mt-0.5">
                       {tx.receiverPhone}
                     </div>
                   </td>
 
-                  {/* Montant DOP */}
-                  <td className="py-3.5 px-5 text-right font-bold text-slate-900">
-                    {tx.amountDOP.toLocaleString()} DOP
+                  {/* Montants DOP & HTG empilés élégamment */}
+                  <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                    <div className="font-black font-mono text-slate-900 text-xs leading-tight">
+                      {tx.amountDOP.toLocaleString()} <span className="text-[10px] text-slate-400">DOP</span>
+                    </div>
+                    <div className="font-bold font-mono text-emerald-600 text-[11px] leading-tight mt-0.5">
+                      {tx.amountHTG.toLocaleString()} <span className="text-[10px] text-emerald-500">HTG</span>
+                    </div>
                   </td>
 
                   {/* Commission Admin */}
-                  <td className="py-3.5 px-5 text-right font-black text-blue-600">
+                  <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 text-xs whitespace-nowrap">
                     +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
                   </td>
 
-                  {/* Montant HTG */}
-                  <td className="py-3.5 px-5 text-right font-black text-emerald-600">
-                    {tx.amountHTG.toLocaleString()} HTG
-                  </td>
-
                   {/* SLA Badge */}
-                  <td className="py-3.5 px-5 text-center">
+                  <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                     {getSlaStatus(tx.createdAt, tx.status)}
                   </td>
 
                   {/* Action Reçu PDF */}
-                  <td className="py-3.5 px-5 text-center">
+                  <td className="py-2.5 px-3 text-center whitespace-nowrap">
                     <button
                       onClick={() => setSelectedReceiptTx(tx)}
-                      className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer font-bold text-xs"
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer font-bold text-xs"
                       title="Télécharger ou partager le Reçu PDF"
                     >
                       <FileText className="w-3.5 h-3.5 text-emerald-400" />
