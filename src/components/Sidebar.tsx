@@ -111,9 +111,9 @@ export const Sidebar: React.FC = () => {
           <>
             <div className="flex items-center gap-2.5 overflow-hidden">
               <img 
-                src="/images/alexis-emblem.png" 
+                src="/images/logo1.jpeg" 
                 alt="Alexis Transferencia" 
-                className="w-8 h-8 rounded-xl object-contain shadow-sm ring-1 ring-slate-900/10 flex-shrink-0 bg-slate-950 p-0.5" 
+                className="w-8 h-8 rounded-xl object-contain shadow-sm ring-1 ring-slate-900/10 flex-shrink-0 bg-white p-0.5" 
               />
               <div className="truncate">
                 <span className="font-extrabold text-slate-900 text-xs tracking-tight block leading-tight">
@@ -153,7 +153,7 @@ export const Sidebar: React.FC = () => {
             title="Agrandir la barre latérale"
             aria-label="Agrandir la barre latérale"
           >
-            <img src="/images/alexis-emblem.png" alt="Alexis" className="w-full h-full object-contain group-hover:hidden" />
+            <img src="/images/logo1.jpeg" alt="Alexis" className="w-full h-full object-contain group-hover:hidden bg-white rounded-md" />
             <PanelLeftOpen className="w-4 h-4 hidden group-hover:block text-white" />
           </button>
         )}

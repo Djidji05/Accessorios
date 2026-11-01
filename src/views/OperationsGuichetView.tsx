@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, 
   AlertTriangle, 
@@ -25,7 +25,8 @@ import {
   Camera,
   Upload,
   Trash2,
-  Eye
+  Eye,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
@@ -160,6 +161,8 @@ export const OperationsGuichetView: React.FC = () => {
   const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'HTG'>('DOP');
   const [selectedZellePayoutTx, setSelectedZellePayoutTx] = useState<Transaction | null>(null);
   const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
+  const zelleCameraInputRef = useRef<HTMLInputElement>(null);
+  const zelleFileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditingRate, setIsEditingRate] = useState(false);
   const [tempRate, setTempRate] = useState<string>(dopToHtgRate.toString());
@@ -606,7 +609,7 @@ export const OperationsGuichetView: React.FC = () => {
                 </span>
               </div>
 
-              {/* Upload Container */}
+              {/* Upload Container with Dual Camera & Import Buttons */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -625,26 +628,53 @@ export const OperationsGuichetView: React.FC = () => {
                   )}
                 </div>
 
+                {/* Hidden input elements */}
+                <input
+                  ref={zelleCameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleZelleProofUpload}
+                  className="hidden"
+                />
+                <input
+                  ref={zelleFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleZelleProofUpload}
+                  className="hidden"
+                />
+
                 {!zelleProofImage ? (
-                  <label className="relative flex flex-col items-center justify-center p-8 border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-3xl bg-purple-50/40 hover:bg-purple-50/70 transition-all cursor-pointer group text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform mb-3 border border-purple-100">
-                      <Camera className="w-7 h-7" />
+                  <div className="p-6 border-2 border-dashed border-purple-300 rounded-3xl bg-purple-50/40 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-purple-600 mx-auto border border-purple-100">
+                      <Camera className="w-6 h-6" />
                     </div>
-                    <span className="text-xs font-black text-slate-900 mb-1">
-                      Cliquez pour ajouter la preuve Zelle (Capture / Reçu)
-                    </span>
-                    <span className="text-[11px] text-slate-500 max-w-sm">
-                      Prenez une photo nette du téléphone du client ou importez la capture d'écran du transfert.
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleZelleProofUpload}
-                      className="hidden"
-                      required={!zelleProofImage}
-                    />
-                  </label>
+                    <div>
+                      <p className="text-xs font-black text-slate-900">Ajouter la preuve de virement Zelle</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Choisissez de prendre une photo en direct ou d'importer une image de la galerie.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto pt-1">
+                      <button
+                        type="button"
+                        onClick={() => zelleCameraInputRef.current?.click()}
+                        className="py-3 px-4 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Prendre Photo (Caméra)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => zelleFileInputRef.current?.click()}
+                        className="py-3 px-4 rounded-2xl bg-white hover:bg-purple-50 text-purple-700 font-extrabold text-xs border-2 border-purple-300 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        <span>Importer Image (Galerie)</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="relative rounded-3xl overflow-hidden border-2 border-purple-400 bg-slate-900 group shadow-md">
                     <img
@@ -678,33 +708,14 @@ export const OperationsGuichetView: React.FC = () => {
                 )}
               </div>
 
-              {/* Client Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-purple-100">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-purple-600" />
-                    <span>Nom du client / titulaire du compte Zelle :</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="ex: Carlos Rodriguez"
-                    value={receiverName}
-                    onChange={(e) => setReceiverName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white"
-                  />
+              {/* Notice : Pas besoin de nom de client */}
+              <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-purple-600" />
-                    <span>Téléphone / Email Zelle (Optionnel) :</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="ex: +1 305 000 0000 ou email"
-                    value={receiverPhone}
-                    onChange={(e) => setReceiverPhone(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 px-3.5 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white"
-                  />
+                <div className="text-xs">
+                  <p className="font-bold text-purple-950">Pas de nom de client requis pour Zelle</p>
+                  <p className="text-[11px] text-purple-700 mt-0.5">Le virement est identifié directement sur le compte de destination et certifié par la preuve bancaire transmise à l'Admin.</p>
                 </div>
               </div>
             </div>
@@ -886,18 +897,14 @@ export const OperationsGuichetView: React.FC = () => {
                       <span className="font-mono font-bold text-slate-700">-${feeUSD.toFixed(2)} USD</span>
                     </div>
 
-                    <div className="flex flex-col gap-1 pt-2 border-t border-purple-200 text-slate-900">
-                      <div className="flex items-center justify-between">
-                        <span className="font-black text-xs uppercase tracking-tight text-purple-950">
-                          Montant net à remettre au client :
-                        </span>
-                        <span className="font-mono font-black text-emerald-600 text-xl">
-                          {netPayout.toLocaleString()} {zellePayoutCurrency}
-                        </span>
+                    <div className="p-3.5 bg-purple-100/80 rounded-2xl border border-purple-300 text-purple-950 space-y-1.5">
+                      <div className="flex items-center gap-2 font-black text-xs text-purple-900">
+                        <Lock className="w-4 h-4 text-purple-700 shrink-0" />
+                        <span>Montant à remettre : Bloqué en attente Admin</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 italic">
-                        (Soit {netUSD.toFixed(2)} USD après déduction des frais de 3.5%)
-                      </span>
+                      <p className="text-[11px] leading-relaxed text-purple-800">
+                        ⚠️ <strong>Ne remettez aucun argent au client pour l'instant !</strong> Le montant net à décaisser sera débloqué et affiché uniquement après que l'Administrateur aura vérifié son compte et validé la transaction (OUI).
+                      </p>
                     </div>
                   </div>
                 );

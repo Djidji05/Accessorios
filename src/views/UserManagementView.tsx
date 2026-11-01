@@ -800,8 +800,8 @@ export const UserManagementView: React.FC = () => {
       <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto animate-in fade-in pb-28 md:pb-6">
         
         {/* Navigation Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               onClick={() => {
                 setInspectedUser(null);
@@ -809,25 +809,28 @@ export const UserManagementView: React.FC = () => {
                 setSaveUserMsg(null);
                 setPasswordMsg(null);
               }}
-              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center gap-1.5 font-bold text-xs whitespace-nowrap flex-shrink-0"
+              className="p-2 sm:px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center gap-1.5 font-bold text-xs whitespace-nowrap flex-shrink-0 cursor-pointer"
+              title="Retour à la Liste"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="whitespace-nowrap">Retour à la Liste</span>
+              <span className="hidden sm:inline whitespace-nowrap">Retour à la Liste</span>
             </button>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Fiche Profil Employé Nœud</span>
-                <span className="font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg text-sm border border-blue-200">
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span className="hidden sm:inline">Fiche Profil Employé Nœud</span>
+                <span className="sm:hidden">Profil Employé</span>
+                <span className="font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg text-xs sm:text-sm border border-blue-200 shrink-0">
                   {inspectedUser.nodeId}
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Supervision des privilèges, gestion du mot de passe et modification des informations agent.
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 truncate sm:whitespace-normal">
+                <span className="hidden sm:inline">Supervision des privilèges, gestion du mot de passe et modification des informations agent.</span>
+                <span className="sm:hidden">Gestion des accès & privilèges</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          <div className="flex items-center gap-2 flex-nowrap self-end sm:self-auto shrink-0">
             {currentUser.role === 'admin' && (
               <button
                 onClick={() => {
@@ -837,14 +840,15 @@ export const UserManagementView: React.FC = () => {
                     handleStartEdit(inspectedUser);
                   }
                 }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
+                className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 cursor-pointer ${
                   isEditingUser
                     ? 'bg-slate-800 hover:bg-slate-900 text-white'
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
+                title={isEditingUser ? 'Fermer le Mode Édition' : 'Modifier les Informations'}
               >
                 <Edit3 className="w-4 h-4" />
-                <span>{isEditingUser ? 'Fermer le Mode Édition' : 'Modifier les Informations'}</span>
+                <span className="hidden sm:inline">{isEditingUser ? 'Fermer le Mode Édition' : 'Modifier les Informations'}</span>
               </button>
             )}
 
@@ -857,14 +861,15 @@ export const UserManagementView: React.FC = () => {
                     status: isOffline ? 'online' : 'offline'
                   });
                 }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
+                className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 cursor-pointer ${
                   isOffline 
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
                     : 'bg-rose-600 hover:bg-rose-700 text-white'
                 }`}
+                title={isOffline ? 'Activer le Compte' : 'Désactiver le Compte'}
               >
                 <Power className="w-4 h-4" />
-                <span>{isOffline ? 'Activer le Compte' : 'Désactiver le Compte'}</span>
+                <span className="hidden sm:inline">{isOffline ? 'Activer le Compte' : 'Désactiver le Compte'}</span>
               </button>
             )}
           </div>
@@ -1108,14 +1113,14 @@ export const UserManagementView: React.FC = () => {
                     {currentUser.role === 'admin' && (
                       <button
                         onClick={() => handleStartEdit(inspectedUser)}
-                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors font-bold text-xs flex items-center gap-1 border border-slate-200 whitespace-nowrap flex-shrink-0"
+                        className="p-2 sm:px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors font-bold text-xs flex items-center gap-1 border border-slate-200 whitespace-nowrap flex-shrink-0 cursor-pointer"
                         title="Modifier les données de cet agent"
                       >
                         <Edit3 className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                        <span className="whitespace-nowrap">Modifier</span>
+                        <span className="hidden sm:inline whitespace-nowrap">Modifier</span>
                       </button>
                     )}
-                    <span className={`px-3 py-1 rounded-xl text-xs font-extrabold uppercase tracking-wider whitespace-nowrap flex-shrink-0 ${
+                    <span className={`px-2.5 sm:px-3 py-1 rounded-xl text-[10px] sm:text-xs font-extrabold uppercase tracking-wider whitespace-nowrap flex-shrink-0 ${
                       inspectedUser.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
                       inspectedUser.role === 'agent_rd' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
                       inspectedUser.role === 'agent_haiti' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
@@ -1123,11 +1128,12 @@ export const UserManagementView: React.FC = () => {
                     }`}>
                       {inspectedUser.role.replace('_', ' ')}
                     </span>
-                    <span className={`px-3 py-1 text-xs font-extrabold rounded-xl inline-flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                    <span className={`px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-extrabold rounded-xl inline-flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                       isOffline ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
                     }`}>
                       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
-                      <span className="whitespace-nowrap">{isOffline ? 'INACTIF' : 'ACTIF EN LIGNE'}</span>
+                      <span className="hidden sm:inline whitespace-nowrap">{isOffline ? 'INACTIF' : 'ACTIF EN LIGNE'}</span>
+                      <span className="sm:hidden whitespace-nowrap">{isOffline ? 'OFF' : 'ON'}</span>
                     </span>
                   </div>
                 </div>
@@ -1140,12 +1146,14 @@ export const UserManagementView: React.FC = () => {
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-600" />
-                        <h4 className="font-black text-slate-900 text-sm tracking-tight">
-                          Statistiques d'Activité & Bilan Financier
+                        <h4 className="font-black text-slate-900 text-xs sm:text-sm tracking-tight">
+                          <span className="hidden sm:inline">Statistiques d'Activité & Bilan Financier</span>
+                          <span className="sm:hidden">Activité & Bilan Financier</span>
                         </h4>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-medium">
-                        Filtrage par semaine avec division par service.
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">
+                        <span className="hidden sm:inline">Filtrage par semaine avec division par service.</span>
+                        <span className="sm:hidden">Filtrage hebdomadaire par service.</span>
                       </p>
                     </div>
 
@@ -1153,11 +1161,11 @@ export const UserManagementView: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleDownloadPDF}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95 self-start sm:self-auto"
+                      className="p-2 sm:px-3.5 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 self-start sm:self-auto"
                       title="Télécharger le rapport complet au format PDF"
                     >
                       <FileDown className="w-4 h-4 text-blue-200" />
-                      <span>Télécharger PDF</span>
+                      <span className="hidden sm:inline">Télécharger PDF</span>
                     </button>
                   </div>
 

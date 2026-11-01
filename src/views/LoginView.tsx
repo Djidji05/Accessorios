@@ -82,9 +82,9 @@ export const LoginView: React.FC = () => {
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <img 
-            src="/images/alexis-emblem.png" 
+            src="/images/logo1.jpeg" 
             alt="Alexis Transferencia" 
-            className="w-10 h-10 rounded-2xl shadow-lg ring-1 ring-blue-500/20 object-contain bg-slate-950 p-1"
+            className="w-10 h-10 rounded-2xl shadow-lg ring-1 ring-blue-500/20 object-contain bg-white p-0.5"
           />
           <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
             Alexis <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-extrabold uppercase tracking-wider">Transferencia</span>
@@ -103,9 +103,9 @@ export const LoginView: React.FC = () => {
             <div className="relative group max-w-md">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-600 rounded-3xl blur-xl opacity-20 group-hover:opacity-35 transition duration-1000" />
               <img 
-                src="/images/alexis-banner.png" 
+                src="/images/logo1.jpeg" 
                 alt="Alexis Transferencia Logo" 
-                className="relative w-full rounded-2xl shadow-2xl border border-slate-800/30 object-contain bg-slate-950/60"
+                className="relative w-full max-h-72 rounded-2xl shadow-2xl border border-slate-200/40 object-contain bg-white/90 p-4"
               />
             </div>
 
@@ -179,9 +179,9 @@ export const LoginView: React.FC = () => {
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-4 lg:hidden">
                 <img 
-                  src="/images/alexis-emblem.png" 
+                  src="/images/logo1.jpeg" 
                   alt="Alexis Transferencia" 
-                  className="w-11 h-11 rounded-2xl shadow-md object-contain bg-slate-950 p-1 ring-1 ring-blue-500/20"
+                  className="w-11 h-11 rounded-2xl shadow-md object-contain bg-white p-1 ring-1 ring-blue-500/20"
                 />
                 <div>
                   <h3 className="text-base font-black text-slate-900 leading-tight">Alexis Transferencia</h3>

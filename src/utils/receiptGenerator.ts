@@ -68,7 +68,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
       img.onerror = reject;
-      img.src = '/images/alexis-emblem.png';
+      img.src = '/images/logo1.jpeg';
     });
     ctx.save();
     ctx.beginPath();

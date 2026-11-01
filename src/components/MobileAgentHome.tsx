@@ -171,9 +171,10 @@ export const MobileAgentHome: React.FC = () => {
   const [zelleProofImage, setZelleProofImage] = useState<string | null>(null);
   const [zelleAmountUSD, setZelleAmountUSD] = useState<string>('100');
   const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'HTG'>('DOP');
-  const [zelleClientName, setZelleClientName] = useState<string>('');
   const [selectedZellePayoutTx, setSelectedZellePayoutTx] = useState<Transaction | null>(null);
   const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
+  const zelleCameraInputRef = React.useRef<HTMLInputElement | null>(null);
+  const zelleFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
@@ -423,7 +424,7 @@ export const MobileAgentHome: React.FC = () => {
     }
 
     const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
-    const clientName = zelleClientName.trim() || 'Client Zelle';
+    const clientName = 'Client Zelle';
 
     const res = createTransaction({
       senderName: clientName,
@@ -446,7 +447,6 @@ export const MobileAgentHome: React.FC = () => {
       setSelectedService(null);
       setZelleProofImage(null);
       setZelleAmountUSD('100');
-      setZelleClientName('');
     } else {
       setFeedback({ type: 'error', message: res.message });
     }
@@ -553,25 +553,57 @@ export const MobileAgentHome: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-purple-300 dark:border-purple-800/80 hover:border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 rounded-2xl p-6 flex flex-col items-center justify-center gap-2.5 cursor-pointer transition-all active:scale-98">
+                <div className="border-2 border-dashed border-purple-300 dark:border-purple-800/80 bg-purple-50/50 dark:bg-purple-950/20 rounded-2xl p-6 flex flex-col items-center justify-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center shadow-xs">
                     <Camera className="w-6 h-6" />
                   </div>
                   <div className="text-center">
                     <span className="text-xs font-black text-purple-900 dark:text-purple-200 block">
-                      Prendre en photo ou importer la capture Zelle
+                      Preuve de Virement Zelle
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                      Capture d'écran du virement Zelle (PNG, JPG)
+                      Prenez une photo de l'écran du client ou importez une capture
                     </span>
                   </div>
+
+                  {/* 2 Boutons distincts : Prendre une Photo OU Importer une Image */}
+                  <div className="grid grid-cols-2 gap-2.5 w-full max-w-xs mt-1">
+                    <button
+                      type="button"
+                      onClick={() => zelleCameraInputRef.current?.click()}
+                      className="py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Prendre Photo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => zelleFileInputRef.current?.click()}
+                      className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border-2 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-200 hover:bg-purple-50 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4 text-purple-600" />
+                      <span>Importer Image</span>
+                    </button>
+                  </div>
+
+                  {/* Inputs cachés : un avec caméra activée et un pour galerie/fichiers */}
                   <input
+                    ref={zelleCameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleZelleProofUpload}
+                    className="hidden"
+                  />
+                  <input
+                    ref={zelleFileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleZelleProofUpload}
                     className="hidden"
                   />
-                </label>
+                </div>
               )}
             </div>
 
@@ -652,36 +684,34 @@ export const MobileAgentHome: React.FC = () => {
                 </div>
               </div>
 
-              {/* Nom Client */}
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
-                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-                  Nom du Client / Bénéficiaire au comptoir :
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Jean-Marc Baptiste (Optionnel)"
-                  value={zelleClientName}
-                  onChange={(e) => setZelleClientName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                />
-              </div>
-
             </div>
 
-            {/* 3. CALCULS EN DIRECT & MONTANT ESTIMÉ */}
+            {/* 3. VÉRIFICATION SÉCURISÉE & MONTANT MASQUÉ EN ATTENTE DE VALIDATION ADMIN */}
             <div className="bg-purple-950 text-white p-5 rounded-3xl space-y-3 shadow-md border border-purple-900">
               <div className="flex items-center justify-between text-xs text-purple-300">
-                <span className="font-bold uppercase tracking-wider">Montant Net Prévu au Client</span>
-                <span className="font-mono text-[11px]">Frais 3.5% (-${feeUSD.toFixed(2)})</span>
+                <span className="font-bold uppercase tracking-wider">Vérification Requise par l'Admin</span>
+                <span className="font-mono text-[11px]">Frais service 3.5%</span>
               </div>
 
-              <p className="text-3xl font-black font-mono text-emerald-400 tracking-tight">
-                {displayPayout}
-              </p>
+              <div className="p-3.5 rounded-2xl bg-purple-900/60 border border-purple-700/60 space-y-1.5">
+                <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs">
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Montant net à décaisser masqué</span>
+                </div>
+                <p className="text-[11px] text-purple-200/90 leading-relaxed pl-6">
+                  Le montant exact en {zellePayoutCurrency} à verser au client sera calculé et débloqué sur votre fiche <strong>dès que l'Administrateur aura vérifié son compte bancaire et cliqué sur OUI</strong>.
+                </p>
+                <div className="mt-1 pl-6">
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[10px]">
+                    ⛔ Ne remettez aucun argent au client avant validation
+                  </span>
+                </div>
+              </div>
 
-              <p className="text-[11px] text-purple-300/80 leading-relaxed">
-                Ce montant sera confirmé à l'agent dès que l'Administrateur aura cliqué sur <strong>OUI</strong> après vérification de son compte bancaire.
-              </p>
+              <div className="flex items-center justify-between text-xs font-mono text-purple-300 pt-1 border-t border-purple-800/80">
+                <span>Virement Zelle déclaré :</span>
+                <span className="font-bold text-white font-mono">${numUSD.toFixed(2)} USD</span>
+              </div>
             </div>
 
             {/* BOUTON VALIDATION */}
@@ -1394,7 +1424,7 @@ export const MobileAgentHome: React.FC = () => {
         
         {/* Subtle Brand Logo Watermark */}
         <div className="absolute -bottom-6 -right-6 w-36 h-36 opacity-15 pointer-events-none select-none">
-          <img src="/images/alexis-emblem.png" alt="" className="w-full h-full object-contain" />
+          <img src="/images/logo1.jpeg" alt="" className="w-full h-full object-contain" />
         </div>
 
         <div className="relative space-y-2">
@@ -1597,7 +1627,11 @@ export const MobileAgentHome: React.FC = () => {
                   {/* Right: Amounts & Receipt Action */}
                   <div className="text-right flex-shrink-0">
                     <span className="font-mono font-black text-slate-900 dark:text-white text-xs block">
-                      {isZelleTx && tx.netPayoutAmount ? `${tx.netPayoutAmount.toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}` : `${tx.amountDOP.toLocaleString()} DOP`}
+                      {isZelleTx 
+                        ? (tx.zelleStatus === 'approved' || isCompleted 
+                            ? `${(tx.netPayoutAmount || 0).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}` 
+                            : `$${tx.amountUSD || 0} USD`)
+                        : `${tx.amountDOP.toLocaleString()} DOP`}
                     </span>
                     
                     <div className="flex items-center gap-1.5 justify-end mt-0.5">

@@ -25,7 +25,27 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     return tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
   };
 
-  // Helper pour générer 7 points de données temporels réels basés sur les transactions du système
+  // Filtrer les transactions selon la plage de dates sélectionnée dans le calendrier du Dashboard
+  const scopedTransactions = React.useMemo(() => {
+    if (!dateRange || !dateRange.startDate || !dateRange.endDate) {
+      return transactions;
+    }
+    const start = new Date(dateRange.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.endDate);
+    end.setHours(23, 59, 59, 999);
+
+    return transactions.filter((tx) => {
+      try {
+        const txDate = new Date(tx.createdAt);
+        return txDate >= start && txDate <= end;
+      } catch (e) {
+        return true;
+      }
+    });
+  }, [transactions, dateRange]);
+
+  // Helper pour générer les points de données temporels basés sur les transactions filtrées
   const getDailyMetrics = (txList: typeof transactions) => {
     const now = new Date();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -72,9 +92,11 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
 
   // Dynamic KPI numbers based on selected period & role
   const getCardsData = () => {
+    const periodLabel = dateRange?.label ? `(${dateRange.label})` : '';
+
     // 1. Spécifique Agent RD
     if (currentUser.role === 'agent_rd') {
-      const myTxs = transactions.filter(tx => tx.createdByName === currentUser.name || tx.createdByRole === 'agent_rd');
+      const myTxs = scopedTransactions.filter(tx => tx.createdByName === currentUser.name || tx.createdByRole === 'agent_rd');
       const myVolDOP = myTxs.reduce((acc, tx) => acc + tx.amountDOP, 0);
       const myCompleted = myTxs.filter(tx => tx.status === 'completed').length;
       const { txCounts, txVolumes } = getDailyMetrics(myTxs);
@@ -84,7 +106,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           title: t('global_transactions'),
           value: myTxs.length.toString(),
           percentage: `+${myCompleted} ${t('settled')}`,
-          comparison: t('au guichet', 'au guichet'),
+          comparison: periodLabel || t('au guichet', 'au guichet'),
           isPositive: true,
           sparklineColor: '#10B981',
           gradientId: 'gradCard1',
@@ -94,7 +116,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           title: t('global_volume'),
           value: `${myVolDOP.toLocaleString()} DOP`,
           percentage: '100%',
-          comparison: t('in_cash'),
+          comparison: periodLabel || t('in_cash'),
           isPositive: true,
           sparklineColor: '#14B8A6',
           gradientId: 'gradCard2',
@@ -115,7 +137,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
 
     // 2. Spécifique Agent Haïti
     if (currentUser.role === 'agent_haiti') {
-      const htTxs = transactions.filter(tx => tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash' || tx.operator === 'natcom');
+      const htTxs = scopedTransactions.filter(tx => tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash' || tx.operator === 'natcom');
       const htVolHTG = htTxs.filter(tx => tx.status === 'completed').reduce((acc, tx) => acc + tx.amountHTG, 0);
       const htPending = htTxs.filter(tx => tx.status === 'in_progress').length;
       const { txCounts, txVolumes } = getDailyMetrics(htTxs);
@@ -125,7 +147,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           title: t('global_volume'),
           value: `${htVolHTG.toLocaleString()} HTG`,
           percentage: t('Fonds versés', 'Fonds versés'),
-          comparison: t('en Haïti', 'en Haïti'),
+          comparison: periodLabel || t('en Haïti', 'en Haïti'),
           isPositive: true,
           sparklineColor: '#10B981',
           gradientId: 'gradCard1',
@@ -135,7 +157,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           title: t('global_transactions'),
           value: htTxs.filter(tx => tx.status === 'completed').length.toString(),
           percentage: t('settled'),
-          comparison: '',
+          comparison: periodLabel,
           isPositive: true,
           sparklineColor: '#14B8A6',
           gradientId: 'gradCard2',
@@ -145,7 +167,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
           title: t('pending'),
           value: htPending.toString(),
           percentage: htPending > 0 ? t('in_progress_count') : t('node_connected'),
-          comparison: '',
+          comparison: periodLabel,
           isPositive: htPending === 0,
           sparklineColor: htPending > 0 ? '#F59E0B' : '#10B981',
           gradientId: 'gradCard3',
@@ -155,24 +177,24 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     }
 
     // 3. Admin / Gestionnaire
-    const totalCount = transactions.length;
-    const completedCount = transactions.filter(tx => tx.status === 'completed').length;
-    const pendingCount = transactions.filter(tx => tx.status === 'in_progress').length;
-    const totalVolumeDOP = transactions.reduce((acc, tx) => acc + tx.amountDOP, 0);
+    const totalCount = scopedTransactions.length;
+    const completedCount = scopedTransactions.filter(tx => tx.status === 'completed').length;
+    const pendingCount = scopedTransactions.filter(tx => tx.status === 'in_progress').length;
+    const totalVolumeDOP = scopedTransactions.reduce((acc, tx) => acc + (tx.amountDOP || 0), 0);
 
-    const totalCommissionDOP = transactions.reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
-    const completedCommissionDOP = transactions
+    const totalCommissionDOP = scopedTransactions.reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
+    const completedCommissionDOP = scopedTransactions
       .filter(tx => tx.status === 'completed')
       .reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
 
-    const { txCounts, txVolumes, txCommissions } = getDailyMetrics(transactions);
+    const { txCounts, txVolumes, txCommissions } = getDailyMetrics(scopedTransactions);
 
     return [
       {
         title: t('global_transactions'),
         value: totalCount.toString(),
         percentage: `${completedCount} ${t('settled')}`,
-        comparison: `• ${pendingCount} ${t('in_progress_count')}`,
+        comparison: periodLabel ? `${periodLabel} • ${pendingCount} ${t('in_progress_count')}` : `• ${pendingCount} ${t('in_progress_count')}`,
         isPositive: true,
         sparklineColor: '#10B981',
         gradientId: 'gradCard1',
@@ -182,7 +204,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
         title: t('global_volume'),
         value: `${totalVolumeDOP.toLocaleString()} DOP`,
         percentage: '100%',
-        comparison: t('in_cash'),
+        comparison: periodLabel || t('in_cash'),
         isPositive: true,
         sparklineColor: '#14B8A6',
         gradientId: 'gradCard2',
@@ -192,7 +214,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
         title: t('admin_commissions'),
         value: `${totalCommissionDOP.toLocaleString()} DOP`,
         percentage: `+${completedCommissionDOP.toLocaleString()} DOP`,
-        comparison: t('settled'),
+        comparison: periodLabel || t('settled'),
         isPositive: true,
         sparklineColor: '#3B82F6',
         gradientId: 'gradCard3',

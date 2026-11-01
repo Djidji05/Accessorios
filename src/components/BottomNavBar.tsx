@@ -222,21 +222,7 @@ export const BottomNavBar: React.FC = () => {
             <span className="text-[9px] tracking-tight font-semibold">{t('Espace Opérations', 'Opérations')}</span>
           </button>
 
-          {/* 4. Trésorerie & Soldes Flottes */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('treasury')}
-            className={`flex flex-col items-center gap-0.5 py-1 px-1.5 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'treasury'
-                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
-            }`}
-          >
-            <Wallet className="w-5 h-5" />
-            <span className="text-[9px] tracking-tight font-semibold">{t('nav_treasury', 'Trésorerie')}</span>
-          </button>
-
-          {/* 5. Historique & Archives */}
+          {/* 4. Historique & Archives */}
           <button
             type="button"
             onClick={() => setActiveTab('history')}

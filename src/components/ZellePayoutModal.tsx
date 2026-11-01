@@ -184,43 +184,58 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             </div>
           )}
 
-          {/* 🌟 ENCADRÉ GÉANT DU MONTANT NET À REMETTRE AU CLIENT (VISIBLE PAR L'AGENT ET L'ADMIN) */}
-          <div className={`p-4 sm:p-5 rounded-3xl border-2 space-y-3 transition-all ${
-            isApproved 
-              ? 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-md' 
-              : 'bg-slate-50 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white'
-          }`}>
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <span>Montant Net à Remettre au Client</span>
-              </span>
-              <span className="font-mono text-[11px] font-semibold">
-                Devise : {payoutCurrency}
-              </span>
-            </div>
-
-            <div className="flex items-baseline justify-between gap-3">
-              <div>
-                <p className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {netPayout.toLocaleString()} <span className="text-lg font-bold text-slate-500 dark:text-slate-400">{payoutCurrency}</span>
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                  {isApproved ? 'Montant certifié prêt à être versé au client.' : 'Montant calculé sous réserve de validation par l\'Admin.'}
-                </p>
+          {/* 🌟 ENCADRÉ DU MONTANT NET À REMETTRE AU CLIENT (MASQUÉ AVANT VALIDATION ADMIN) */}
+          {isApproved ? (
+            <div className="p-4 sm:p-5 rounded-3xl border-2 space-y-3 transition-all bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-md">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <span>Montant Net Débloqué à Remettre au Client</span>
+                </span>
+                <span className="font-mono text-[11px] font-semibold">
+                  Devise : {payoutCurrency}
+                </span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleCopyAmount}
-                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                title="Copier le montant exact"
-              >
-                {copiedAmount ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedAmount ? 'Copié !' : 'Copier'}</span>
-              </button>
+              <div className="flex items-baseline justify-between gap-3">
+                <div>
+                  <p className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+                    {netPayout.toLocaleString()} <span className="text-lg font-bold text-slate-500 dark:text-slate-400">{payoutCurrency}</span>
+                  </p>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-semibold">
+                    ✓ Virement vérifié par l'Admin. Vous pouvez verser ce montant au client en toute sécurité.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCopyAmount}
+                  className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                  title="Copier le montant exact"
+                >
+                  {copiedAmount ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedAmount ? 'Copié !' : 'Copier'}</span>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-4 sm:p-5 rounded-3xl border-2 space-y-2.5 bg-amber-500/10 dark:bg-amber-950/30 border-amber-400 dark:border-amber-700 text-amber-950 dark:text-amber-100">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-extrabold text-sm">
+                <span className="p-1 rounded-lg bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
+                  🔒
+                </span>
+                <span>Montant à Remettre Masqué (Validation Requise)</span>
+              </div>
+              <p className="text-xs text-amber-800 dark:text-amber-300 font-medium">
+                ⛔ <strong>Sécurité Zelle :</strong> Ne versez aucun argent au client pour le moment. Le montant exact à décaisser sera débloqué et affiché ici dès que l'Administrateur aura confirmé la réception du virement sur le compte bancaire.
+              </p>
+              {isAdmin && (
+                <p className="text-[11px] font-mono text-purple-700 dark:text-purple-300 pt-1 border-t border-amber-200 dark:border-amber-800/60 font-semibold">
+                  (Aperçu Admin pour contrôle : {netPayout.toLocaleString()} {payoutCurrency})
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 📸 ZONE PHOTO PREUVE ZELLE EN GRAND (AVEC BOUTON PLEIN ÉCRAN) */}
           <div className="space-y-2">
@@ -295,9 +310,9 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               </div>
 
               <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Client / Expéditeur</span>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Type d'opération</span>
                 <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5 truncate">
-                  {tx.senderName || 'Client Comptoir'}
+                  Virement Direct Zelle USA
                 </p>
               </div>
             </div>

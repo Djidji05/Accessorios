@@ -360,99 +360,100 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleAgentRDSave} className="space-y-6">
+        <div className="space-y-6">
           
-          {/* SECTION 1: Profil & Informations Personnelles */}
+          {/* SECTION 1: Profil & Informations Personnelles (Lecture Seule pour l'Agent) */}
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6 space-y-4">
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-700" />
                 <span>{t('1. Profil & Informations Personnelles Agent R.D.')}</span>
               </h3>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                <span>{t('Défini par l\'Administrateur (Lecture seule)')}</span>
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Nom & Prénom de l\'Agent')}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    value={rdName}
-                    onChange={(e) => setRdName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder={t('Nom complet')}
+                    readOnly
+                    value={currentUser.name || rdName}
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Adresse e-mail professionnelle')}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
-                    value={rdEmail}
-                    onChange={(e) => setRdEmail(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder="email@dalexistransfer.com"
+                    readOnly
+                    value={currentUser.email || rdEmail}
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Numéro de Téléphone Guichet (R.D.)')}
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    readOnly
                     value={rdPhone}
-                    onChange={(e) => setRdPhone(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 font-mono"
-                    placeholder="+1 809 XXX XXXX"
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Agence & Emplacement')}
                 </label>
                 <div className="relative">
                   <Building className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    readOnly
                     value={rdAgency}
-                    onChange={(e) => setRdAgency(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder="Point de vente Santo Domingo / Santiago"
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-
-
-          {/* SECTION 3: Langue & Affichage Monétaire (Crucial pour la R.D.) */}
+          {/* SECTION 2: Langue (Numéro 2 Unique) */}
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6 space-y-4">
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-700" />
-                <span>{t('3. Préférences d\'Affichage & Langue (Crucial R.D.)')}</span>
+                <Globe className="w-4 h-4 text-purple-600" />
+                <span>{t('2. Langue de l\'Interface')}</span>
               </h3>
+              <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full">
+                {t('Changement instantané au clic')}
+              </span>
             </div>
 
             {/* Choix de la Langue */}
             <div className="p-4 bg-slate-50 rounded-2xl space-y-2.5 border border-slate-200/80">
               <label className="block text-xs font-bold text-slate-900">
-                {t('Langue de l\'Interface de Vente (Navigation Rapide) :')}
+                {t('Sélectionnez votre langue d\'utilisation :')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
@@ -460,10 +461,11 @@ export const SettingsView: React.FC = () => {
                   onClick={() => {
                     setRdLanguage('es');
                     setLanguage('ES');
+                    localStorage.setItem('agent_rd_lang', 'es');
                   }}
                   className={`p-3.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                     rdLanguage === 'es' || currentLang === 'ES'
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-102' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -476,10 +478,11 @@ export const SettingsView: React.FC = () => {
                   onClick={() => {
                     setRdLanguage('fr');
                     setLanguage('FR');
+                    localStorage.setItem('agent_rd_lang', 'fr');
                   }}
                   className={`p-3.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                     rdLanguage === 'fr' || currentLang === 'FR'
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-102' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -492,10 +495,11 @@ export const SettingsView: React.FC = () => {
                   onClick={() => {
                     setRdLanguage('ht');
                     setLanguage('HT');
+                    localStorage.setItem('agent_rd_lang', 'ht');
                   }}
                   className={`p-3.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                     rdLanguage === 'ht' || currentLang === 'HT'
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-102' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -504,38 +508,24 @@ export const SettingsView: React.FC = () => {
                 </button>
               </div>
             </div>
-
-
           </div>
-
-
-
-
 
           {/* SECTION APPLICATION MOBILE & INSTALLATION PWA */}
           <PWAInstallCard />
 
-          {/* Boutons d'Action (Sauvegarde & Déconnexion) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-200/80">
+          {/* Actions : Déconnexion uniquement (Pas de bouton Enregistrer) */}
+          <div className="flex items-center justify-start pt-2 border-t border-slate-200/80">
             <button
               type="button"
               onClick={logout}
-              className="px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+              className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
             >
               <LogOut className="w-4 h-4" />
               <span>{t('Se déconnecter')}</span>
             </button>
-
-            <button
-              type="submit"
-              className="bg-slate-900 text-white font-extrabold text-xs px-7 py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer hover:shadow-xl active:scale-98"
-            >
-              <Save className="w-4 h-4 text-emerald-400" />
-              <span>{t('Enregistrer Mes Paramètres')}</span>
-            </button>
           </div>
 
-        </form>
+        </div>
       </div>
     );
   }
@@ -555,85 +545,85 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleAgentHaitiSave} className="space-y-6">
+        <div className="space-y-6">
           
-          {/* SECTION 1: Profil & Informations Personnelles */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 space-y-4">
+          {/* SECTION 1: Profil & Informations Personnelles (Lecture Seule pour l'Agent) */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6 space-y-4">
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-700" />
                 <span>{t('1. Profil & Informations Personnelles')}</span>
               </h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">{t('Fiche Agent Terrain')}</span>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                <span>{t('Défini par l\'Administrateur (Lecture seule)')}</span>
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Nom complet')}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    value={haitiName}
-                    onChange={(e) => setHaitiName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder={t('Nom complet')}
+                    readOnly
+                    value={currentUser.name || haitiName}
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Adresse e-mail professionnelle')}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
-                    value={haitiEmail}
-                    onChange={(e) => setHaitiEmail(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    placeholder="email@dalexis-transfer.com"
+                    readOnly
+                    value={currentUser.email || haitiEmail}
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">Utilisée pour les quittances et notifications système.</p>
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-500 mb-1">
                   {t('Numéro de téléphone professionnel (Haïti)')}
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    readOnly
                     value={haitiPhone}
-                    onChange={(e) => setHaitiPhone(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 pl-9 pr-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 font-mono"
-                    placeholder="+509 XX XX XX XX"
+                    className="w-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 pl-9 pr-3 py-2.5 rounded-xl cursor-not-allowed select-none font-mono"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">{t('Numéro associé au terminal Natcash & Natcom de l\'agent.')}</p>
               </div>
             </div>
           </div>
 
-          {/* SECTION 3: Préférences d'Affichage & Notifications */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 space-y-4">
+          {/* SECTION 2: Langue (Numéro 2 Unique) */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6 space-y-4">
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
               <h3 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                <Globe className="w-4 h-4 text-slate-700" />
-                <span>{t('3. Préférences d\'Affichage & Notifications Flux')}</span>
+                <Globe className="w-4 h-4 text-purple-600" />
+                <span>{t('2. Langue de l\'Interface')}</span>
               </h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">{t('Alertes Natcash/Natcom')}</span>
+              <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full">
+                {t('Changement instantané au clic')}
+              </span>
             </div>
 
             {/* Choix de la Langue */}
-            <div className="p-4 bg-slate-50 rounded-xl space-y-2.5 border border-slate-200/80">
+            <div className="p-4 bg-slate-50 rounded-2xl space-y-2.5 border border-slate-200/80">
               <label className="block text-xs font-bold text-slate-900">
-                {t('Choix de la Langue de l\'Interface')}
+                {t('Sélectionnez votre langue d\'utilisation :')}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
@@ -641,14 +631,15 @@ export const SettingsView: React.FC = () => {
                   onClick={() => {
                     setHaitiLanguage('fr');
                     setLanguage('FR');
+                    localStorage.setItem('agent_haiti_lang', 'fr');
                   }}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  className={`p-3.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     haitiLanguage === 'fr' || currentLang === 'FR'
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-102' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <span>🇫🇷</span>
+                  <span className="text-base">🇫🇷</span>
                   <span>Français</span>
                 </button>
 
@@ -657,14 +648,15 @@ export const SettingsView: React.FC = () => {
                   onClick={() => {
                     setHaitiLanguage('ht');
                     setLanguage('HT');
+                    localStorage.setItem('agent_haiti_lang', 'ht');
                   }}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  className={`p-3.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     haitiLanguage === 'ht' || currentLang === 'HT'
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-102' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <span>🇭🇹</span>
+                  <span className="text-base">🇭🇹</span>
                   <span>Kreyòl Ayisyen</span>
                 </button>
 
@@ -673,55 +665,17 @@ export const SettingsView: React.FC = () => {
                   onClick={() => {
                     setHaitiLanguage('es');
                     setLanguage('ES');
+                    localStorage.setItem('agent_haiti_lang', 'es');
                   }}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  className={`p-3.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     haitiLanguage === 'es' || currentLang === 'ES'
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-102' 
                       : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <span>🇩🇴</span>
+                  <span className="text-base">🇩🇴</span>
                   <span>Español</span>
                 </button>
-              </div>
-            </div>
-
-            {/* Alertes Sonores & Visuelles */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                    <Volume2 className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{t('Alertes Sonores en Temps Réel')}</p>
-                    <p className="text-[11px] text-slate-500">{t('Émettre un signal sonore lorsqu\'une nouvelle tâche Natcash/Natcom arrive.')}</p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={haitiSoundAlerts}
-                  onChange={(e) => setHaitiSoundAlerts(e.target.checked)}
-                  className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                    <Bell className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{t('Notifications Visuelles du Navigateur')}</p>
-                    <p className="text-[11px] text-slate-500">{t('Afficher des popups/toasts à l\'écran pour les retraits urgents.')}</p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={haitiVisualNotifications}
-                  onChange={(e) => setHaitiVisualNotifications(e.target.checked)}
-                  className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer"
-                />
               </div>
             </div>
           </div>
@@ -729,27 +683,19 @@ export const SettingsView: React.FC = () => {
           {/* SECTION APPLICATION MOBILE & INSTALLATION PWA */}
           <PWAInstallCard />
 
-          {/* Boutons d'Action (Sauvegarde & Déconnexion) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-200/80">
+          {/* Actions : Déconnexion uniquement (Pas de bouton Enregistrer) */}
+          <div className="flex items-center justify-start pt-2 border-t border-slate-200/80">
             <button
               type="button"
               onClick={logout}
-              className="px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+              className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
             >
               <LogOut className="w-4 h-4" />
               <span>{t('Se déconnecter')}</span>
             </button>
-
-            <button
-              type="submit"
-              className="bg-slate-900 text-white font-extrabold text-xs px-6 py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>{t('Enregistrer Mes Paramètres')}</span>
-            </button>
           </div>
 
-        </form>
+        </div>
       </div>
     );
   }

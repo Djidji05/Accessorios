@@ -62,34 +62,48 @@ export const AuditLogsView: React.FC = () => {
     switch (priority) {
       case 'Critical':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-rose-600 text-white shadow-2xs border border-rose-700">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-red-600 text-white shadow-sm shadow-red-600/30 border border-red-700 ring-2 ring-red-400/30 animate-pulse">
             <AlertTriangle className="w-3 h-3 text-white fill-white shrink-0" />
             <span>{t('critical_priority', 'Critical')}</span>
           </span>
         );
       case 'High':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800">
-            <Flag className="w-3 h-3 text-rose-600 fill-rose-600 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-orange-500 text-white shadow-sm shadow-orange-500/30 border border-orange-600">
+            <Flag className="w-3 h-3 text-white fill-white shrink-0" />
             <span>{t('high_priority', 'High')}</span>
           </span>
         );
       case 'Medium':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800">
-            <Flag className="w-3 h-3 text-amber-600 fill-amber-600 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-amber-400 text-amber-950 shadow-xs border border-amber-500">
+            <Flag className="w-3 h-3 text-amber-950 fill-amber-950 shrink-0" />
             <span>{t('medium_priority', 'Medium')}</span>
           </span>
         );
       case 'Low':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800">
-            <Flag className="w-3 h-3 text-emerald-600 fill-emerald-600 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-black bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 border border-emerald-600">
+            <Flag className="w-3 h-3 text-white fill-white shrink-0" />
             <span>{t('low_priority', 'Low')}</span>
           </span>
         );
     }
+  };
+
+  const getPriorityRowBorder = (p?: string, action?: string) => {
+    let priority = p;
+    if (!priority && action) {
+      if (action.includes('KILL_SWITCH') || action.includes('SECURITY_CRITICAL')) priority = 'Critical';
+      else if (action.includes('SECURITY') || action.includes('PERMISSION_DENIED')) priority = 'High';
+      else if (action.includes('USER') || action.includes('PERMISSION') || action.includes('TREASURY')) priority = 'Medium';
+      else priority = 'Low';
+    }
+    if (priority === 'Critical') return 'border-l-4 border-l-red-600 bg-red-50/30 hover:bg-red-50/50';
+    if (priority === 'High') return 'border-l-4 border-l-orange-500 bg-orange-50/20 hover:bg-orange-50/40';
+    if (priority === 'Medium') return 'border-l-4 border-l-amber-400 bg-amber-50/15 hover:bg-amber-50/30';
+    return 'border-l-4 border-l-emerald-500 bg-emerald-50/10 hover:bg-emerald-50/20';
   };
 
   const filteredLogs = auditLogs.filter(log => {
@@ -318,19 +332,19 @@ export const AuditLogsView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-1.5 sm:border-l sm:border-slate-200 sm:pl-2.5 pt-2 sm:pt-0">
             <span className="text-[10px] font-black uppercase text-slate-400 mr-1">{t('priority_colon', 'Priorité:')}</span>
             {[
-              { id: 'all', label: t('all_priorities', 'Toutes'), activeClass: 'bg-slate-900 text-white' },
-              { id: 'Critical', label: t('critical_priority', 'Critical'), activeClass: 'bg-rose-600 text-white border-rose-700 shadow-xs' },
-              { id: 'High', label: t('high_priority', 'High'), activeClass: 'bg-rose-100 text-rose-800 border-rose-400 font-black' },
-              { id: 'Medium', label: t('medium_priority', 'Medium'), activeClass: 'bg-amber-100 text-amber-900 border-amber-400 font-black' },
-              { id: 'Low', label: t('low_priority', 'Low'), activeClass: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-black' },
+              { id: 'all', label: t('all_priorities', 'Toutes'), activeClass: 'bg-slate-900 text-white border-slate-900', inactiveClass: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100' },
+              { id: 'Critical', label: t('critical_priority', 'Critical'), activeClass: 'bg-red-600 text-white border-red-700 shadow-md', inactiveClass: 'bg-red-50/70 text-red-700 border-red-200 hover:bg-red-100' },
+              { id: 'High', label: t('high_priority', 'High'), activeClass: 'bg-orange-500 text-white border-orange-600 shadow-md', inactiveClass: 'bg-orange-50/70 text-orange-700 border-orange-200 hover:bg-orange-100' },
+              { id: 'Medium', label: t('medium_priority', 'Medium'), activeClass: 'bg-amber-400 text-amber-950 border-amber-500 shadow-md', inactiveClass: 'bg-amber-50/70 text-amber-900 border-amber-200 hover:bg-amber-100' },
+              { id: 'Low', label: t('low_priority', 'Low'), activeClass: 'bg-emerald-500 text-white border-emerald-600 shadow-md', inactiveClass: 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100' },
             ].map((pr) => (
               <button
                 key={pr.id}
                 onClick={() => setSelectedPriority(pr.id as any)}
-                className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold transition-all border ${
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border cursor-pointer ${
                   selectedPriority === pr.id 
                     ? `${pr.activeClass} scale-105` 
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : pr.inactiveClass
                 }`}
               >
                 {pr.label}
@@ -368,7 +382,7 @@ export const AuditLogsView: React.FC = () => {
                 <div 
                   key={log.id} 
                   onClick={() => setInspectedLog(log)}
-                  className="grid grid-cols-12 gap-3 px-5 py-3.5 items-center hover:bg-slate-50/80 transition-colors cursor-pointer"
+                  className={`grid grid-cols-12 gap-3 px-5 py-3.5 items-center transition-colors cursor-pointer ${getPriorityRowBorder(log.priority, log.action)}`}
                   title={t('click_view_audit_sheet', "Cliquer pour voir la fiche d'audit complète")}
                 >
                   
@@ -425,12 +439,12 @@ export const AuditLogsView: React.FC = () => {
         </div>
 
         {/* 2. MOBILE CARD VIEW (md:hidden) */}
-        <div className="md:hidden divide-y divide-slate-100">
+        <div className="md:hidden divide-y divide-slate-100 p-2 space-y-2">
           {paginatedLogs.map((log) => (
             <div
               key={log.id}
               onClick={() => setInspectedLog(log)}
-              className="p-3.5 space-y-2.5 hover:bg-slate-50 transition-colors cursor-pointer"
+              className={`p-3.5 space-y-2.5 rounded-2xl transition-colors cursor-pointer border ${getPriorityRowBorder(log.priority, log.action)}`}
             >
               {/* Top: Timestamp & Priority */}
               <div className="flex items-center justify-between">

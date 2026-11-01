@@ -166,9 +166,9 @@ export const Header: React.FC = () => {
             </button>
             <div className="flex items-center gap-1.5">
               <img 
-                src="/images/alexis-emblem.png" 
+                src="/images/logo1.jpeg" 
                 alt="Alexis Transferencia" 
-                className="w-7 h-7 rounded-lg object-contain bg-slate-950 p-0.5 shadow-xs ring-1 ring-slate-900/10" 
+                className="w-7 h-7 rounded-lg object-contain bg-white p-0.5 shadow-xs ring-1 ring-slate-900/10" 
               />
               <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
             </div>
