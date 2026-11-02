@@ -2,8 +2,54 @@ import React, { useState } from 'react';
 import { Search, Ticket, CheckCircle2, Clock, ShieldCheck, Activity, Landmark } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
+// Helper pour traduire les détails d'audit en direct
+function translateLogDetails(details: string, lang: string): string {
+  if (!details) return '';
+  if (lang === 'FR') return details;
+
+  let text = details;
+
+  if (lang === 'ES') {
+    text = text
+      .replace(/Annulation et restitution du solde pour la transaction/gi, 'Cancelación y reembolso de saldo para la transacción')
+      .replace(/Motif\s*:\s*erreur/gi, 'Motivo: error')
+      .replace(/Motif\s*:\s*Non spécifié/gi, 'Motivo: No especificado')
+      .replace(/Motif\s*:\s*/gi, 'Motivo: ')
+      .replace(/Alerte email SLA déclenchée\s*:\s*Transaction/gi, 'Alerta correo SLA activada: Transacción')
+      .replace(/en attente depuis/gi, 'en espera desde')
+      .replace(/heures sans traitement \(seuil 24h dépassé\)/gi, 'horas sin procesamiento (umbral 24h superado)')
+      .replace(/Notification envoyée à/gi, 'Notificación enviada a')
+      .replace(/intervenants/gi, 'intervinientes')
+      .replace(/Clôture de la tâche par/gi, 'Cierre de la tarea por')
+      .replace(/Preuve\s*:/gi, 'Comprobante:')
+      .replace(/Nouvelle transaction saisie/gi, 'Nueva transacción registrada')
+      .replace(/Création de transaction/gi, 'Creación de transacción')
+      .replace(/Versement enregistré/gi, 'Depósito registrado')
+      .replace(/Recharge de compte/gi, 'Recarga de cuenta');
+  } else if (lang === 'HT') {
+    text = text
+      .replace(/Annulation et restitution du solde pour la transaction/gi, 'Anilasyon ak remousman balans pou tranzaksyon')
+      .replace(/Motif\s*:\s*erreur/gi, 'Rezon: erè')
+      .replace(/Motif\s*:\s*Non spécifié/gi, 'Rezon: Pa presize')
+      .replace(/Motif\s*:\s*/gi, 'Rezon: ')
+      .replace(/Alerte email SLA déclenchée\s*:\s*Transaction/gi, 'Alèt imèl SLA deklannche: Tranzaksyon')
+      .replace(/en attente depuis/gi, 'ap tann depi')
+      .replace(/heures sans traitement \(seuil 24h dépassé\)/gi, 'èdtan san tretman (limit 24è depase)')
+      .replace(/Notification envoyée à/gi, 'Notifikasyon voye bay')
+      .replace(/intervenants/gi, 'moun konsène')
+      .replace(/Clôture de la tâche par/gi, 'Fèmti travay la pa')
+      .replace(/Preuve\s*:/gi, 'Prèv:')
+      .replace(/Nouvelle transaction saisie/gi, 'Nouvo tranzaksyon antre')
+      .replace(/Création de transaction/gi, 'Kreyasyon tranzaksyon')
+      .replace(/Versement enregistré/gi, 'Depo anrejistre')
+      .replace(/Recharge de compte/gi, 'Rechaj kont');
+  }
+
+  return text;
+}
+
 export const LatestUpdatesPanel: React.FC = () => {
-  const { auditLogs, transactions, setSelectedReceiptTx, t } = useApp();
+  const { auditLogs, transactions, setSelectedReceiptTx, currentLang, t } = useApp();
   const [filterPill, setFilterPill] = useState<'today' | 'yesterday' | 'week'>('today');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileLimit, setMobileLimit] = useState(10);
@@ -15,11 +61,13 @@ export const LatestUpdatesPanel: React.FC = () => {
   // Map audit logs and transactions to dynamic activities
   const dynamicActivities = auditLogs.map((log) => {
     const rawTime = new Date(log.timestamp).getTime();
+    const actionClean = log.action.replace(/_/g, ' ');
+    const translatedTitle = t(actionClean, t(actionClean.toUpperCase(), actionClean));
     return {
       id: log.id,
       timestamp: rawTime,
-      title: log.action.replace(/_/g, ' '),
-      subtext: log.details,
+      title: translatedTitle,
+      subtext: translateLogDetails(log.details, currentLang),
       time: new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       icon: log.action.includes('CLOTURE') || log.action.includes('VALIDATION') ? CheckCircle2 : Activity,
       iconBg: log.priority === 'High' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800',

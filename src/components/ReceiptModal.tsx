@@ -6,7 +6,7 @@ import { downloadReceiptPDF, shareReceiptPDF } from '../utils/receiptGenerator';
 import { ImageViewerModal } from './ImageViewerModal';
 
 export const ReceiptModal: React.FC = () => {
-  const { selectedReceiptTx, setSelectedReceiptTx, showToast, transactions, t } = useApp();
+  const { selectedReceiptTx, setSelectedReceiptTx, showToast, transactions, currentLang, t } = useApp();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -19,6 +19,7 @@ export const ReceiptModal: React.FC = () => {
   const isCompleted = tx.status === 'completed';
   const isCancelled = tx.status === 'cancelled';
   const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(tx.operator);
+  const localeCode = currentLang === 'ES' ? 'es-DO' : currentLang === 'HT' ? 'fr-HT' : 'fr-FR';
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
@@ -41,8 +42,8 @@ export const ReceiptModal: React.FC = () => {
               {isCancelled ? '✕' : 'D'}
             </div>
             <h2 className="font-extrabold text-slate-900 text-base leading-tight mt-2">D'Alexis</h2>
-            <p className="text-[11px] font-semibold text-slate-500">Transferencia y accesorio</p>
-            <p className="text-[10px] text-slate-400">RD ➔ Haïti • Agence République Dominicaine</p>
+            <p className="text-[11px] font-semibold text-slate-500">{t("Transferencia y accesorio")}</p>
+            <p className="text-[10px] text-slate-400">{t("RD ➔ Haïti • Agence République Dominicaine")}</p>
             
             {/* Status Indicator on Receipt */}
             <div className="pt-2">
@@ -54,12 +55,12 @@ export const ReceiptModal: React.FC = () => {
               ) : isCompleted ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
                   <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                  {isTelecom ? 'REÇU OFFICIEL • VALIDÉ PAR LE GESTIONNAIRE' : 'REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ'}
+                  {isTelecom ? t('REÇU OFFICIEL • VALIDÉ PAR LE GESTIONNAIRE') : t('REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-900 border border-orange-300">
                   <Clock className="w-3 h-3 text-orange-600" />
-                  {isTelecom ? 'BORDEREAU PROVISOIRE • EN ATTENTE DU GESTIONNAIRE' : 'BORDEREAU PROVISOIRE • EN COURS EN HAÏTI'}
+                  {isTelecom ? t('BORDEREAU PROVISOIRE • EN ATTENTE DU GESTIONNAIRE') : t('BORDEREAU PROVISOIRE • EN COURS EN HAÏTI')}
                 </span>
               )}
             </div>
@@ -70,24 +71,24 @@ export const ReceiptModal: React.FC = () => {
             <div className="bg-rose-50 p-3.5 rounded-2xl border-2 border-rose-300 text-left space-y-1.5 animate-in fade-in">
               <div className="flex items-center gap-1.5 text-xs font-black text-rose-900 uppercase tracking-wide">
                 <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>Information d'Annulation :</span>
+                <span>{t("Information d'Annulation :")}</span>
               </div>
               <div className="p-2.5 bg-white rounded-xl border border-rose-200 space-y-1 text-xs">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-slate-500 font-bold text-[11px]">Motif :</span>
+                  <span className="text-slate-500 font-bold text-[11px]">{t("Motif :")}</span>
                   <span className="font-extrabold text-rose-700 text-right break-words text-[11px]">
-                    {tx.cancellationReason || "Annulé par l'administrateur"}
+                    {t(tx.cancellationReason || "Annulé par l'administrateur")}
                   </span>
                 </div>
                 {tx.cancelledAt && (
                   <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-rose-100 font-mono">
-                    <span>Date d'annulation :</span>
-                    <span>{new Date(tx.cancelledAt).toLocaleString('fr-FR')}</span>
+                    <span>{t("Date d'annulation :")}</span>
+                    <span>{new Date(tx.cancelledAt).toLocaleString(localeCode)}</span>
                   </div>
                 )}
               </div>
               <p className="text-[10px] text-rose-700 font-semibold leading-tight pt-0.5">
-                ⚠️ Ce transfert a été annulé par la direction. Aucun fonds n'a été décaissé.
+                {t("⚠️ Ce transfert a été annulé par la direction. Aucun fonds n'a été décaissé.")}
               </p>
             </div>
           )}
@@ -95,15 +96,15 @@ export const ReceiptModal: React.FC = () => {
           {/* Transaction Metadata */}
           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs text-left">
             <div className="flex justify-between font-mono font-bold">
-              <span className="text-slate-400">N° Reçu:</span>
+              <span className="text-slate-400">{t("N° Reçu:")}</span>
               <span className="text-slate-900">{tx.referenceNumber}</span>
             </div>
             <div className="flex justify-between text-[11px]">
-              <span className="text-slate-500">Date:</span>
-              <span className="font-semibold text-slate-700">{new Date(tx.createdAt).toLocaleString()}</span>
+              <span className="text-slate-500">{t("Date:")}</span>
+              <span className="font-semibold text-slate-700">{new Date(tx.createdAt).toLocaleString(localeCode)}</span>
             </div>
             <div className="flex justify-between items-center text-[11px]">
-              <span className="text-slate-500">Service:</span>
+              <span className="text-slate-500">{t("Service:")}</span>
               <OperatorBadge operator={tx.operator} size="sm" />
             </div>
           </div>
@@ -112,7 +113,7 @@ export const ReceiptModal: React.FC = () => {
           <div className="text-left space-y-2 text-xs border-b border-dashed border-slate-300 pb-3">
             {tx.senderName && tx.senderName !== 'Client Comptoir' && (
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Expéditeur (RD)</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">{t("Expéditeur (RD)")}</p>
                 <p className="font-bold text-slate-900">{tx.senderName}</p>
                 {tx.senderPhone && tx.senderPhone !== '+1 809 000 0000' && (
                   <p className="text-[11px] text-slate-500 font-mono">{tx.senderPhone}</p>
@@ -122,7 +123,7 @@ export const ReceiptModal: React.FC = () => {
 
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase">
-                {isTelecom ? `Numéro Récepteur (${tx.operator.toUpperCase()})` : 'Bénéficiaire (Haïti)'}
+                {isTelecom ? `${t("Numéro Récepteur")} (${tx.operator.toUpperCase()})` : t("Bénéficiaire (Haïti)")}
               </p>
               {!isTelecom && tx.receiverName && !tx.receiverName.startsWith('Recharge') && (
                 <p className="font-bold text-slate-900">{tx.receiverName}</p>
@@ -137,7 +138,7 @@ export const ReceiptModal: React.FC = () => {
               <div className="flex items-center justify-between text-[11px] font-black text-blue-950 uppercase tracking-wider">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Preuve Photo & Validation :</span>
+                  <span>{t("Preuve Photo & Validation :")}</span>
                 </div>
                 {tx.proofUrl && (
                   <button
@@ -146,7 +147,7 @@ export const ReceiptModal: React.FC = () => {
                     className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Agrandir</span>
+                    <span>{t("Agrandir")}</span>
                   </button>
                 )}
               </div>
@@ -158,13 +159,13 @@ export const ReceiptModal: React.FC = () => {
                 >
                   <img 
                     src={tx.proofUrl} 
-                    alt="Photo Preuve Officielle" 
+                    alt={t("Photo Preuve Officielle")} 
                     className="max-h-[360px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                   />
                   <div className="flex items-center justify-between w-full px-1 text-[10px] text-blue-300 font-bold">
-                    <span>📷 PREUVE DU REÇU</span>
+                    <span>{t("📷 PREUVE DU REÇU")}</span>
                     <span className="text-white group-hover:underline flex items-center gap-1">
-                      <Eye className="w-3 h-3" /> Cliquer pour zoomer
+                      <Eye className="w-3 h-3" /> {t("Cliquer pour zoomer")}
                     </span>
                   </div>
                 </div>
@@ -181,41 +182,41 @@ export const ReceiptModal: React.FC = () => {
           {/* Financial Breakdown */}
           <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
             <div className="flex justify-between text-slate-600">
-              <span>Montant Encaissé:</span>
-              <span className="font-bold text-slate-900">{tx.amountDOP.toLocaleString()} Pesos</span>
+              <span>{t("Montant Encaissé:")}</span>
+              <span className="font-bold text-slate-900">{tx.amountDOP.toLocaleString()} {t("Pesos")}</span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Taux Appliqué:</span>
-              <span className="font-semibold text-slate-700">100 Pesos = {Math.round(tx.exchangeRate * 100)} HTG</span>
+              <span>{t("Taux Appliqué:")}</span>
+              <span className="font-semibold text-slate-700">100 {t("Pesos")} = {Math.round(tx.exchangeRate * 100)} HTG</span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Frais de Service:</span>
-              <span className="font-semibold text-slate-700">{tx.feeDOP} Pesos</span>
+              <span>{t("Frais de Service:")}</span>
+              <span className="font-semibold text-slate-700">{tx.feeDOP} {t("Pesos")}</span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Commission Admin:</span>
-              <span className="font-bold text-blue-600">+{tx.commissionDOP || Math.round(tx.amountDOP * 0.01)} Pesos</span>
+              <span>{t("Commission Admin:")}</span>
+              <span className="font-bold text-blue-600">+{tx.commissionDOP || Math.round(tx.amountDOP * 0.01)} {t("Pesos")}</span>
             </div>
             <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
-              <span className="font-bold text-slate-900">Montant à Décaissement:</span>
+              <span className="font-bold text-slate-900">{t("Montant à Décaissement:")}</span>
               <span className="text-lg font-extrabold text-blue-600">{tx.amountHTG.toLocaleString()} HTG</span>
             </div>
           </div>
 
-          {/* Signature & Certificate Section (QR Code removed / in standby) */}
+          {/* Signature & Certificate Section */}
           <div className="pt-2 flex items-center justify-between bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center font-black text-xs">
                 DA
               </div>
               <div className="text-left text-[11px] leading-tight">
-                <span className="font-extrabold text-slate-800 block">D'Alexis Certifié</span>
+                <span className="font-extrabold text-slate-800 block">{t("D'Alexis Certifié")}</span>
                 <span className="text-[10px] text-slate-400 font-mono">Node: {tx.createdByNode || 'node-01'}</span>
               </div>
             </div>
             <div className="text-right text-[10px] text-slate-400 font-mono">
-              <p className="font-bold text-slate-700">Agent: {tx.createdByName || 'Agence RD'}</p>
-              <p className="text-blue-600 font-black mt-0.5">✔ OFFICIEL & AUDITÉ</p>
+              <p className="font-bold text-slate-700">{t("Agent:")} {tx.createdByName || t('Agence RD')}</p>
+              <p className="text-blue-600 font-black mt-0.5">{t("✔ OFFICIEL & AUDITÉ")}</p>
             </div>
           </div>
 
@@ -228,20 +229,20 @@ export const ReceiptModal: React.FC = () => {
             onClick={async () => {
               setIsDownloading(true);
               try {
-                await downloadReceiptPDF(tx);
-                showToast('Reçu PDF officiel téléchargé avec succès !', 'success');
+                await downloadReceiptPDF(tx, currentLang);
+                showToast(t('Reçu PDF officiel téléchargé avec succès !'), 'success');
               } catch {
-                showToast('Erreur lors du téléchargement du PDF.', 'error');
+                showToast(t('Erreur lors du téléchargement du PDF.'), 'error');
               } finally {
                 setIsDownloading(false);
               }
             }}
             disabled={isDownloading}
             className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-            title="Télécharger le reçu officiel au format PDF"
+            title={t("Télécharger le reçu officiel au format PDF")}
           >
             <FileText className="w-4 h-4" />
-            <span>{isDownloading ? 'Génération PDF...' : 'Télécharger en PDF'}</span>
+            <span>{isDownloading ? t('Génération PDF...') : t('Télécharger en PDF')}</span>
           </button>
 
           <button
@@ -249,22 +250,22 @@ export const ReceiptModal: React.FC = () => {
             onClick={async () => {
               setIsSharing(true);
               try {
-                await shareReceiptPDF(tx);
+                await shareReceiptPDF(tx, currentLang);
                 setCopiedShare(true);
                 setTimeout(() => setCopiedShare(false), 2500);
-                showToast('Partage du reçu PDF activé !', 'success');
+                showToast(t('Partage du reçu PDF activé !'), 'success');
               } catch {
-                showToast('Partage annulé ou indisponible.', 'info');
+                showToast(t('Partage annulé ou indisponible.'), 'info');
               } finally {
                 setIsSharing(false);
               }
             }}
             disabled={isSharing}
             className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-            title="Partager le reçu PDF via WhatsApp, Email ou messagerie"
+            title={t("Partager le reçu PDF via WhatsApp, Email ou messagerie")}
           >
             {copiedShare ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-            <span>{copiedShare ? 'PDF Partagé !' : 'Partager le Reçu (PDF)'}</span>
+            <span>{copiedShare ? t('PDF Partagé !') : t('Partager le Reçu (PDF)')}</span>
           </button>
         </div>
 
@@ -273,7 +274,7 @@ export const ReceiptModal: React.FC = () => {
       {lightboxUrl && (
         <ImageViewerModal
           imageUrl={lightboxUrl}
-          title="Photo de la quittance / reçu"
+          title={t("Photo de la quittance / reçu")}
           onClose={() => setLightboxUrl(null)}
         />
       )}

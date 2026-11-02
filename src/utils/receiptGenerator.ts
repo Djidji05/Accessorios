@@ -4,15 +4,20 @@ import { jsPDF } from 'jspdf';
 /**
  * Génère le texte récapitulatif du reçu pour le partage SMS / WhatsApp / Presse-papier
  */
-export function getReceiptShareText(tx: Transaction): string {
+export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): string {
   const isCompleted = tx.status === 'completed';
   const isCancelled = tx.status === 'cancelled';
+  const isES = lang === 'ES';
+  const isHT = lang === 'HT';
+
   const statusLabel = isCancelled 
-    ? '❌ TRANSACTION ANNULÉE' 
+    ? (isES ? '❌ TRANSACCIÓN CANCELADA' : isHT ? '❌ TRANZAKSYON ANILE' : '❌ TRANSACTION ANNULÉE') 
     : isCompleted 
-    ? '✅ EFFECTUÉ & CLÔTURÉ' 
-    : '⏳ EN COURS / EN ATTENTE';
-  const dateStr = new Date(tx.createdAt).toLocaleString('fr-FR', {
+    ? (isES ? '✅ REALIZADO Y COMPLETADO' : isHT ? '✅ FÈT AK VALIDE' : '✅ EFFECTUÉ & CLÔTURÉ') 
+    : (isES ? '⏳ EN PROCESO / EN ESPERA' : isHT ? '⏳ AN KOU / AP TANN' : '⏳ EN COURS / EN ATTENTE');
+
+  const localeCode = isES ? 'es-DO' : isHT ? 'fr-HT' : 'fr-FR';
+  const dateStr = new Date(tx.createdAt).toLocaleString(localeCode, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -23,31 +28,52 @@ export function getReceiptShareText(tx: Transaction): string {
   const isTelecom = ['digicel', 'claro', 'altice', 'natcom'].includes(tx.operator);
   const showReceiverName = !isTelecom && tx.receiverName && !tx.receiverName.startsWith('Recharge');
 
-  return `🧾 *D'ALEXIS TRANSFERENCIA*
-Transfert & Services RD ➔ Haïti
+  const headerTitle = "🧾 *D'ALEXIS TRANSFERENCIA*";
+  const subTitle = isES ? 'Transferencias y Servicios RD ➔ Haití' : isHT ? 'Transfè & Sèvis RD ➔ Ayiti' : 'Transfert & Services RD ➔ Haïti';
+  const refLabel = isES ? '📄 *Ref :*' : '📄 *Réf :*';
+  const dateLabel = isES ? '📅 *Fecha :*' : isHT ? '📅 *Dat :*' : '📅 *Date :*';
+  const serviceLabel = isES ? '📶 *Servicio :*' : isHT ? '📶 *Sèvis :*' : '📶 *Service :*';
+  const statusKey = isES ? '⚡ *Estado :*' : isHT ? '⚡ *Estati :*' : '⚡ *Statut :*';
+  const cancelReasonLabel = isES ? '⚠️ *Motivo de cancelación :*' : isHT ? '⚠️ *Rezon anilasyon :*' : "⚠️ *Motif d'annulation :*";
+  const beneficiaryLabel = isES ? '👤 *Beneficiario :*' : isHT ? '👤 *Moun k ap resevwa :*' : '👤 *Bénéficiaire :*';
+  const phoneLabel = isTelecom 
+    ? (isES ? '📞 *Número Recargado :*' : isHT ? '📞 *Nimewo Rechaje :*' : '📞 *Numéro Rechargé :*')
+    : (isES ? '📞 *Teléfono :*' : isHT ? '📞 *Telefòn :*' : '📞 *Téléphone :*');
+  const amountRcvLabel = isES ? '💵 *Monto a Recibir :*' : isHT ? '💵 *Montan pou Resevwa :*' : '💵 *Montant Reçu :*';
+  const amountPaidLabel = isES ? '💰 *Monto Pagado :*' : isHT ? '💰 *Montan Peye :*' : '💰 *Montant Payé :*';
+  const rateLabel = isES ? '📊 *Tasa :*' : isHT ? '📊 *To :*' : '📊 *Taux :*';
+  const agentLabel = isES ? '🏢 Agente :' : isHT ? '🏢 Ajan :' : '🏢 Agent :';
+  const footerSec = isCancelled
+    ? (isES ? 'Transacción cancelada y revocada' : isHT ? 'Tranzaksyon anile epi revoke' : 'Transaction annulée et révoquée')
+    : (isES ? "Transacción oficial certificada D'Alexis" : isHT ? "Tranzaksyon ofisyèl sètifye D'Alexis" : "Transaction officielle certifiée D'Alexis");
+
+  return `${headerTitle}
+${subTitle}
 --------------------------------
-📄 *Réf :* ${tx.referenceNumber}
-📅 *Date :* ${dateStr}
-📶 *Service :* ${tx.operator.toUpperCase()}
-⚡ *Statut :* ${statusLabel}
-${isCancelled && tx.cancellationReason ? `⚠️ *Motif d'annulation :* ${tx.cancellationReason}\n` : ''}--------------------------------
-${showReceiverName ? `👤 *Bénéficiaire :* ${tx.receiverName}\n` : ''}📞 *${isTelecom ? 'Numéro Rechargé' : 'Téléphone'} :* ${tx.receiverPhone}
-💵 *Montant Reçu :* ${tx.amountHTG.toLocaleString()} HTG
-💰 *Montant Payé :* ${tx.amountDOP.toLocaleString()} DOP
-📊 *Taux :* 100 DOP = ${Math.round(tx.exchangeRate * 100)} HTG
+${refLabel} ${tx.referenceNumber}
+${dateLabel} ${dateStr}
+${serviceLabel} ${tx.operator.toUpperCase()}
+${statusKey} ${statusLabel}
+${isCancelled && tx.cancellationReason ? `${cancelReasonLabel} ${tx.cancellationReason}\n` : ''}--------------------------------
+${showReceiverName ? `${beneficiaryLabel} ${tx.receiverName}\n` : ''}${phoneLabel} ${tx.receiverPhone}
+${amountRcvLabel} ${tx.amountHTG.toLocaleString()} HTG
+${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP
+${rateLabel} 100 DOP = ${Math.round(tx.exchangeRate * 100)} HTG
 --------------------------------
-🏢 Agent : ${tx.createdByName || 'Agence Santo Domingo'}
-🔒 _${isCancelled ? 'Transaction annulée et révoquée' : 'Transaction officielle certifiée D\'Alexis'}_`;
+${agentLabel} ${tx.createdByName || (isES ? 'Agencia Santo Domingo' : 'Agence Santo Domingo')}
+🔒 _${footerSec}_`;
 }
 
 /**
  * Dessine un reçu graphique officiel haute définition sur HTML5 Canvas
  */
-export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvasElement> {
+export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   const hasProof = !!tx.proofUrl;
   const isCancelled = tx.status === 'cancelled';
   const isCompleted = tx.status === 'completed';
+  const isES = lang === 'ES';
+  const isHT = lang === 'HT';
   canvas.width = 650;
   canvas.height = (hasProof ? 1160 : 920) + (isCancelled ? 90 : 0);
   const ctx = canvas.getContext('2d');
@@ -106,7 +132,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
 
   ctx.fillStyle = '#94A3B8';
   ctx.font = '14px sans-serif';
-  ctx.fillText('RD ➔ Haïti • Agence République Dominicaine', 325, 208);
+  ctx.fillText(isES ? 'RD ➔ Haití • Agencia República Dominicana' : isHT ? 'RD ➔ Ayiti • Ajans Repiblik Dominikèn' : 'RD ➔ Haïti • Agence République Dominicaine', 325, 208);
 
   // Statut Badge
   const badgeY = 230;
@@ -122,10 +148,10 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.font = 'bold 13px sans-serif';
   ctx.fillText(
     isCancelled 
-      ? '✖ TRANSACTION OFFICIELLEMENT ANNULÉE' 
+      ? (isES ? '✖ TRANSACCIÓN OFICIALMENTE CANCELADA' : isHT ? '✖ TRANZAKSYON OFISYÈLMAN ANILE' : '✖ TRANSACTION OFFICIELLEMENT ANNULÉE') 
       : isCompleted 
-      ? '✔ REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ' 
-      : '⏳ BORDEREAU OFFICIEL • EN ATTENTE',
+      ? (isES ? '✔ RECIBO OFICIAL • DESEMBOLSO REALIZADO' : isHT ? '✔ RESI OFISYÈL • DEBOUYMAN FÈT' : '✔ REÇU OFFICIEL • DÉCAISSEMENT EFFECTUÉ') 
+      : (isES ? '⏳ COMPROBANTE OFICIAL • EN ESPERA' : isHT ? '⏳ BÒDWO OFISYÈL • AP TANN' : '⏳ BORDEREAU OFFICIEL • EN ATTENTE'),
     325,
     badgeY + 23
   );
@@ -151,15 +177,16 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.textAlign = 'left';
   ctx.fillStyle = '#64748B';
   ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('N° de Référence :', 60, 345);
-  ctx.fillText('Date & Heure :', 60, 380);
+  ctx.fillText(isES ? 'Nº de Referencia :' : isHT ? 'Nimewo Referans :' : 'N° de Référence :', 60, 345);
+  ctx.fillText(isES ? 'Fecha y Hora :' : isHT ? 'Dat & Lè :' : 'Date & Heure :', 60, 380);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 15px monospace';
   ctx.fillText(tx.referenceNumber, 590, 345);
 
-  const dateFormatted = new Date(tx.createdAt).toLocaleString('fr-FR', {
+  const localeCode = isES ? 'es-DO' : isHT ? 'fr-HT' : 'fr-FR';
+  const dateFormatted = new Date(tx.createdAt).toLocaleString(localeCode, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -177,7 +204,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   // Opérateur Badge
   ctx.fillStyle = '#64748B';
   ctx.font = 'bold 13px sans-serif';
-  ctx.fillText('OPÉRATEUR / SERVICE :', 45, currentY);
+  ctx.fillText(isES ? 'OPERADOR / SERVICIO :' : isHT ? 'OPERATÈ / SÈVIS :' : 'OPÉRATEUR / SERVICE :', 45, currentY);
 
   ctx.fillStyle = '#0F172A';
   ctx.font = 'black 15px sans-serif';
@@ -189,8 +216,8 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   currentY += 35;
   ctx.fillStyle = '#94A3B8';
   ctx.font = 'bold 12px sans-serif';
-  ctx.fillText('EXPÉDITEUR (RD)', 45, currentY);
-  ctx.fillText(isTelecomOp ? 'NUMÉRO RECHARGÉ' : 'BÉNÉFICIAIRE (HAÏTI)', 345, currentY);
+  ctx.fillText(isES ? 'REMITENTE (RD)' : isHT ? 'MOUN K AP VOYE (RD)' : 'EXPÉDITEUR (RD)', 45, currentY);
+  ctx.fillText(isTelecomOp ? (isES ? 'NÚMERO RECARGADO' : isHT ? 'NIMEWO RECHAJE' : 'NUMÉRO RECHARGÉ') : (isES ? 'BENEFICIARIO (HAITÍ)' : isHT ? 'MOUN K AP RESEVWA (AYITI)' : 'BÉNÉFICIAIRE (HAÏTI)'), 345, currentY);
 
   currentY += 25;
   ctx.fillStyle = '#0F172A';
@@ -229,7 +256,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   let finY = currentY + 35;
   ctx.fillStyle = '#475569';
   ctx.font = '600 15px sans-serif';
-  ctx.fillText('Montant Encaissé (RD) :', 65, finY);
+  ctx.fillText(isES ? 'Monto Recibido (RD) :' : isHT ? 'Montan Kolekte (RD) :' : 'Montant Encaissé (RD) :', 65, finY);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 16px sans-serif';
@@ -238,7 +265,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   finY += 32;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#475569';
-  ctx.fillText('Taux Appliqué :', 65, finY);
+  ctx.fillText(isES ? 'Tasa Aplicada :' : isHT ? 'To Apliké :' : 'Taux Appliqué :', 65, finY);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#334155';
   ctx.font = '600 15px sans-serif';
@@ -257,7 +284,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.textAlign = 'left';
   ctx.fillStyle = '#166534';
   ctx.font = 'bold 17px sans-serif';
-  ctx.fillText('MONTANT LIVRÉ :', 65, finY);
+  ctx.fillText(isES ? 'MONTO A DESEMBOLSAR :' : isHT ? 'MONTAN POU PEYE :' : 'MONTANT LIVRÉ :', 65, finY);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#15803D';
@@ -279,11 +306,11 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
     ctx.fillStyle = '#991B1B';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('⚠ MOTIF OFFICIEL D\'ANNULATION :', 60, currentY + 24);
+    ctx.fillText(isES ? '⚠ MOTIVO OFICIAL DE CANCELACIÓN :' : isHT ? '⚠ REZON OFISYÈL ANILASYON :' : '⚠ MOTIF OFFICIEL D\'ANNULATION :', 60, currentY + 24);
 
     ctx.fillStyle = '#7F1D1D';
     ctx.font = 'bold 14px sans-serif';
-    ctx.fillText(tx.cancellationReason || "Annulé par l'administration", 60, currentY + 48);
+    ctx.fillText(tx.cancellationReason || (isES ? 'Cancelado por la dirección' : isHT ? 'Anile pa direksyon an' : "Annulé par l'administration"), 60, currentY + 48);
 
     currentY += 90;
   }
@@ -308,7 +335,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
         ctx.fillStyle = '#1E40AF';
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('📷 PREUVE PHOTOGRAPHIQUE DU DÉCAISSEMENT / REÇU :', 60, currentY + 24);
+        ctx.fillText(isES ? '📷 COMPROBANTE FOTOGRÁFICO / RECIBO :' : isHT ? '📷 PRÈV FOTO DEKASMAN / RESI :' : '📷 PREUVE PHOTOGRAPHIQUE DU DÉCAISSEMENT / REÇU :', 60, currentY + 24);
 
         const maxW = 530;
         const maxH = 160;
@@ -328,13 +355,13 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
   ctx.textAlign = 'left';
   ctx.fillStyle = '#64748B';
   ctx.font = '600 13px sans-serif';
-  ctx.fillText(`Agent émetteur : ${tx.createdByName || 'Agence RD'}`, 45, currentY);
-  ctx.fillText(`Noeud : ${tx.createdByNode || 'node-01'}`, 45, currentY + 22);
+  ctx.fillText(`${isES ? 'Agente emisor :' : isHT ? 'Ajan ki voye :' : 'Agent émetteur :'} ${tx.createdByName || (isES ? 'Agencia RD' : 'Agence RD')}`, 45, currentY);
+  ctx.fillText(`${isES ? 'Nodo :' : isHT ? 'Nœud :' : 'Noeud :'} ${tx.createdByNode || 'node-01'}`, 45, currentY + 22);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = isCancelled ? '#DC2626' : '#2563EB';
   ctx.font = 'bold 13px sans-serif';
-  ctx.fillText(isCancelled ? '✖ TRANSACTION RÉVOQUÉE ET ANNULÉE' : '✔ TRANSACTION OFFICIELLE SÉCURISÉE', 605, currentY);
+  ctx.fillText(isCancelled ? (isES ? '✖ TRANSACCIÓN REVOCADA Y CANCELADA' : isHT ? '✖ TRANZAKSYON REVOKE AK ANILE' : '✖ TRANSACTION RÉVOQUÉE ET ANNULÉE') : (isES ? '✔ TRANSACCIÓN OFICIAL SEGURA' : isHT ? '✔ TRANZAKSYON OFISYÈL SEKIRIZE' : '✔ TRANSACTION OFFICIELLE SÉCURISÉE'), 605, currentY);
   ctx.fillStyle = '#94A3B8';
   ctx.font = '12px sans-serif';
   ctx.fillText("Plateforme D'Alexis Transferencia", 605, currentY + 22);
@@ -345,8 +372,8 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
 /**
  * Génère un document PDF officiel haute définition à partir du canvas
  */
-export async function generateReceiptPDF(tx: Transaction): Promise<jsPDF> {
-  const canvas = await generateReceiptCanvas(tx);
+export async function generateReceiptPDF(tx: Transaction, lang: string = 'FR'): Promise<jsPDF> {
+  const canvas = await generateReceiptCanvas(tx, lang);
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
   // Format ticket thermique / A6 vertical (100mm de large)
@@ -366,8 +393,8 @@ export async function generateReceiptPDF(tx: Transaction): Promise<jsPDF> {
 /**
  * Télécharge le reçu au format PDF
  */
-export async function downloadReceiptPDF(tx: Transaction): Promise<void> {
-  const doc = await generateReceiptPDF(tx);
+export async function downloadReceiptPDF(tx: Transaction, lang: string = 'FR'): Promise<void> {
+  const doc = await generateReceiptPDF(tx, lang);
   const cleanRef = tx.referenceNumber.replace(/[^a-zA-Z0-9-]/g, '_');
   doc.save(`Recu_${cleanRef}.pdf`);
 }
@@ -375,12 +402,12 @@ export async function downloadReceiptPDF(tx: Transaction): Promise<void> {
 /**
  * Partage le reçu PDF via l'API Web Share native (WhatsApp, SMS, Email, etc.) ou fallback WhatsApp
  */
-export async function shareReceiptPDF(tx: Transaction): Promise<boolean> {
-  const shareText = getReceiptShareText(tx);
+export async function shareReceiptPDF(tx: Transaction, lang: string = 'FR'): Promise<boolean> {
+  const shareText = getReceiptShareText(tx, lang);
   const cleanRef = tx.referenceNumber.replace(/[^a-zA-Z0-9-]/g, '_');
 
   try {
-    const doc = await generateReceiptPDF(tx);
+    const doc = await generateReceiptPDF(tx, lang);
     const pdfBlob = doc.output('blob');
 
     if (pdfBlob && typeof navigator !== 'undefined' && navigator.canShare) {
@@ -410,11 +437,11 @@ export async function shareReceiptPDF(tx: Transaction): Promise<boolean> {
   try {
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
     window.open(whatsappUrl, '_blank');
-    await downloadReceiptPDF(tx);
+    await downloadReceiptPDF(tx, lang);
     return true;
   } catch {
     navigator.clipboard.writeText(shareText);
-    await downloadReceiptPDF(tx);
+    await downloadReceiptPDF(tx, lang);
     return false;
   }
 }
@@ -422,13 +449,13 @@ export async function shareReceiptPDF(tx: Transaction): Promise<boolean> {
 /**
  * Télécharge le reçu au format image PNG (pour compatibilité)
  */
-export async function downloadReceiptImage(tx: Transaction): Promise<void> {
-  return downloadReceiptPDF(tx);
+export async function downloadReceiptImage(tx: Transaction, lang: string = 'FR'): Promise<void> {
+  return downloadReceiptPDF(tx, lang);
 }
 
 /**
  * Partage le reçu (pour compatibilité)
  */
-export async function shareReceipt(tx: Transaction): Promise<boolean> {
-  return shareReceiptPDF(tx);
+export async function shareReceipt(tx: Transaction, lang: string = 'FR'): Promise<boolean> {
+  return shareReceiptPDF(tx, lang);
 }
