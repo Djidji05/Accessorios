@@ -163,6 +163,7 @@ export interface Translations {
   target_account: string;
   volume_by_operator: string;
   solde_natcash_natcom: string;
+  solde_moncash_digicel: string;
 
   // Weekly Settlements
   settlements_title: string;
@@ -383,6 +384,7 @@ export const translations: Record<Language, Translations> = {
     target_account: "Compte Cible",
     volume_by_operator: "Volume Transité par Opérateur",
     solde_natcash_natcom: "Solde Natcash & Natcom (HT)",
+    solde_moncash_digicel: "Solde MonCash & Digicel (HT)",
 
     // Weekly Settlements
     settlements_title: "Versements & Liquidations Hebdomadaires",
@@ -602,6 +604,7 @@ export const translations: Record<Language, Translations> = {
     target_account: "Kont Sib la",
     volume_by_operator: "Volim ki Pase pa Operatè",
     solde_natcash_natcom: "Balans Natcash & Natcom (HT)",
+    solde_moncash_digicel: "Balans MonCash & Digicel (HT)",
 
     // Weekly Settlements
     settlements_title: "Vèsman & Likidasyon pa Semèn",
@@ -821,6 +824,7 @@ export const translations: Record<Language, Translations> = {
     target_account: "Cuenta Destino",
     volume_by_operator: "Volumen Transitado por Operador",
     solde_natcash_natcom: "Saldo Natcash y Natcom (HT)",
+    solde_moncash_digicel: "Saldo MonCash y Digicel (HT)",
 
     // Weekly Settlements
     settlements_title: "Liquidaciones y Depósitos Semanales",

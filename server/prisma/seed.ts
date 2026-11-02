@@ -98,7 +98,7 @@ async function main() {
     {
       id: 'bal_moncash',
       operator: 'moncash',
-      name: 'Flotte Float MonCash (Digicel HT)',
+      name: 'Solde MonCash & Digicel (Digicel HT)',
       balance: 0,
       currency: 'HTG',
       accountNumber: 'MC-HT-88401',

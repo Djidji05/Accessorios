@@ -212,8 +212,9 @@ router.post('/', authMiddleware, async (req, res) => {
         },
       });
 
-      // 2. Débit atomique de la balance du compte correspondant (Prévention absolue des courses critiques)
-      const targetBalance = await tx.accountBalance.findFirst({ where: { operator } });
+      // 2. Débit atomique de la balance du compte correspondant (Flottes unifiées : Natcom -> Natcash, Digicel -> MonCash)
+      const targetOperator = (operator === 'natcom') ? 'natcash' : (operator === 'digicel') ? 'moncash' : operator;
+      const targetBalance = await tx.accountBalance.findFirst({ where: { operator: targetOperator } });
       if (targetBalance) {
         const deduction = targetBalance.currency === 'HTG' ? amountHTG : amountDOP;
         await tx.accountBalance.update({
@@ -350,8 +351,9 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
         },
       });
 
-      // 2. Remboursement atomique du solde sur le compte flotte
-      const targetBalance = await tx.accountBalance.findFirst({ where: { operator: existing.operator } });
+      // 2. Remboursement atomique du solde sur le compte flotte (Flottes unifiées)
+      const targetRefundOperator = (existing.operator === 'natcom') ? 'natcash' : (existing.operator === 'digicel') ? 'moncash' : existing.operator;
+      const targetBalance = await tx.accountBalance.findFirst({ where: { operator: targetRefundOperator } });
       if (targetBalance) {
         const refundAmount = targetBalance.currency === 'HTG' ? existing.amountHTG : existing.amountDOP;
         await tx.accountBalance.update({
@@ -380,8 +382,9 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
       return cancelledTx;
     });
 
+    const targetRefundOperator = (existing.operator === 'natcom') ? 'natcash' : (existing.operator === 'digicel') ? 'moncash' : existing.operator;
     realtimeService.broadcast('TRANSACTION_CANCELLED', updated);
-    realtimeService.broadcast('BALANCE_UPDATED', { operator: existing.operator });
+    realtimeService.broadcast('BALANCE_UPDATED', { operator: targetRefundOperator });
 
     // Déclenchement de la notification d'annulation par e-mail
     sendTransactionCancelledNotification(updated, reason || 'Annulé par l\'administrateur').catch((e) => console.error('Erreur notification email annulation tx:', e));

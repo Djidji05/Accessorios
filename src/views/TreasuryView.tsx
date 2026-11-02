@@ -238,20 +238,21 @@ export const TreasuryView: React.FC = () => {
   };
   const volumeMetrics = getVolumeMetrics();
 
-  const totalDOP = accountBalances
+  // Natcom partage la même flotte que Natcash. Digicel partage la même flotte que MonCash.
+  // Pas de carte séparée ni d'injection flotte pour Natcom et Digicel.
+  const displayAccounts = accountBalances.filter(b => b.operator !== 'natcom' && b.operator !== 'digicel');
+
+  const totalDOP = displayAccounts
     .filter(b => b.currency === 'DOP')
     .reduce((acc, curr) => acc + curr.balance, 0);
 
-  const totalHTG = accountBalances
+  const totalHTG = displayAccounts
     .filter(b => b.currency === 'HTG')
     .reduce((acc, curr) => acc + curr.balance, 0);
 
-  const totalUSD = accountBalances
+  const totalUSD = displayAccounts
     .filter(b => b.currency === 'USD')
     .reduce((acc, curr) => acc + curr.balance, 0);
-
-  // Natcom partage le même compte que Natcash (décrédité ensemble). Pas de carte séparée ni d'injection flotte pour Natcom.
-  const displayAccounts = accountBalances.filter(b => b.operator !== 'natcom');
 
   // Identify float warning (< 10,000)
   const lowFloatAccounts = displayAccounts.filter(b => b.balance < 10000);
@@ -316,7 +317,7 @@ export const TreasuryView: React.FC = () => {
 
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => exportTreasuryReportToCSV(accountBalances, validPeriodTxs, `Alexis_Transferencia_Tresorerie_${selectedDateRange.preset || 'export'}`, logs)}
+              onClick={() => exportTreasuryReportToCSV(displayAccounts, validPeriodTxs, `Alexis_Transferencia_Tresorerie_${selectedDateRange.preset || 'export'}`, logs)}
               className="px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs"
               title="Exporter Rapport CSV Financier"
             >
@@ -325,7 +326,7 @@ export const TreasuryView: React.FC = () => {
             </button>
 
             <button
-              onClick={() => exportTreasuryReportToPDF(accountBalances, validPeriodTxs, `Rapport Financier & Trésorerie (${selectedDateRange.label})`, logs)}
+              onClick={() => exportTreasuryReportToPDF(displayAccounts, validPeriodTxs, `Rapport Financier & Trésorerie (${selectedDateRange.label})`, logs)}
               className="px-3 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-900 dark:border-slate-700 cursor-pointer shadow-2xs"
               title="Générer & Télécharger le Rapport PDF Financier"
             >
@@ -731,10 +732,18 @@ export const TreasuryView: React.FC = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-                      {bal.operator === 'natcash' ? (t('solde_natcash_natcom', 'Solde Natcash & Natcom (HT)')) : bal.name}
+                      {bal.operator === 'natcash' 
+                        ? (t('solde_natcash_natcom', 'Solde Natcash & Natcom (HT)')) 
+                        : bal.operator === 'moncash'
+                        ? (t('solde_moncash_digicel', 'Solde MonCash & Digicel (HT)'))
+                        : bal.name}
                     </span>
                     <span className="text-[10px] text-slate-400 font-bold uppercase">
-                      {bal.operator === 'natcash' ? 'Natcash / Natcom' : bal.operator}
+                      {bal.operator === 'natcash' 
+                        ? 'Natcash / Natcom' 
+                        : bal.operator === 'moncash'
+                        ? 'MonCash / Digicel'
+                        : bal.operator}
                     </span>
                   </div>
 
@@ -926,7 +935,11 @@ export const TreasuryView: React.FC = () => {
                 >
                   {displayAccounts.map(acc => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.operator === 'natcash' ? (t('solde_natcash_natcom', 'Solde Natcash & Natcom (HT)')) : acc.name} ({acc.balance.toLocaleString()} {acc.currency === 'DOP' ? 'Pesos' : acc.currency})
+                      {acc.operator === 'natcash' 
+                        ? (t('solde_natcash_natcom', 'Solde Natcash & Natcom (HT)')) 
+                        : acc.operator === 'moncash'
+                        ? (t('solde_moncash_digicel', 'Solde MonCash & Digicel (HT)'))
+                        : acc.name} ({acc.balance.toLocaleString()} {acc.currency === 'DOP' ? 'Pesos' : acc.currency})
                     </option>
                   ))}
                 </select>

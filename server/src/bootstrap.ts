@@ -87,7 +87,7 @@ export async function bootstrapDatabase() {
 
       // 4. Soldes Trésorerie
       const balances = [
-        { id: 'bal_moncash', operator: 'moncash', name: 'Flotte Float MonCash (Digicel HT)', balance: 0, currency: 'HTG', accountNumber: 'MC-HT-88401', status: 'optimal' },
+        { id: 'bal_moncash', operator: 'moncash', name: 'Solde MonCash & Digicel (Digicel HT)', balance: 0, currency: 'HTG', accountNumber: 'MC-HT-88401', status: 'optimal' },
         { id: 'bal_natcash', operator: 'natcash', name: 'Solde Natcash Agent (Natcom HT)', balance: 0, currency: 'HTG', accountNumber: 'NC-HT-11204', status: 'optimal' },
         { id: 'bal_digicel', operator: 'digicel', name: 'Compte Bulk Top-Up Digicel', balance: 0, currency: 'DOP', accountNumber: 'DIGI-RD-90', status: 'optimal' },
         { id: 'bal_natcom', operator: 'natcom', name: 'Compte Direct Natcom Data', balance: 0, currency: 'HTG', accountNumber: 'NAT-HT-007', status: 'optimal' },

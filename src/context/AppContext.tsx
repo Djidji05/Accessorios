@@ -445,7 +445,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Si bal_digicel existe dans le cache local, fusionner son solde dans bal_moncash et filtrer
+          const digicelAcc = parsed.find((b: any) => b.operator === 'digicel');
+          if (digicelAcc) {
+            return parsed
+              .filter((b: any) => b.operator !== 'digicel')
+              .map((b: any) => b.operator === 'moncash'
+                ? { ...b, name: 'Solde MonCash & Digicel (Digicel HT)', balance: b.balance + (digicelAcc.balance || 0) }
+                : b
+              );
+          }
+          return parsed;
+        }
       } catch (err) {
         console.error('Erreur lecture dalexis_balances:', err);
       }
@@ -1297,13 +1309,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setTransactions((prev) => [newTx, ...prev]);
 
-    // Update balances: Natcom shares the Natcash balance and decredits directly from it
+    // Update balances: Natcom shares the Natcash balance and Digicel shares the MonCash balance
     if (!isZelle) {
       setAccountBalances((prev) =>
         prev.map((b) => {
-          const targetOperator = data.operator === 'natcom' ? 'natcash' : data.operator;
+          const targetOperator = data.operator === 'natcom' ? 'natcash' : data.operator === 'digicel' ? 'moncash' : data.operator;
           if (b.operator === targetOperator) {
-            return { ...b, balance: Math.max(0, b.balance - data.amountDOP), lastUpdated: new Date().toISOString() };
+            const deduction = b.currency === 'HTG' ? finalAmountHTG : data.amountDOP;
+            return { ...b, balance: Math.max(0, b.balance - deduction), lastUpdated: new Date().toISOString() };
           }
           return b;
         })
@@ -1494,6 +1507,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return tx;
       })
     );
+
+    // Restitution du solde sur la flotte correspondante
+    const txToCancel = transactions.find((t) => t.id === transactionId);
+    if (txToCancel) {
+      setAccountBalances((prev) =>
+        prev.map((b) => {
+          const targetOperator = txToCancel.operator === 'natcom' ? 'natcash' : txToCancel.operator === 'digicel' ? 'moncash' : txToCancel.operator;
+          if (b.operator === targetOperator) {
+            const refund = b.currency === 'HTG' ? (txToCancel.amountHTG || 0) : (txToCancel.amountDOP || 0);
+            return { ...b, balance: b.balance + refund, lastUpdated: new Date().toISOString() };
+          }
+          return b;
+        })
+      );
+    }
 
     eventBus.publish(
       'TRANSACTION_CANCELLED',
