@@ -80,42 +80,89 @@ export const AuditLogsView: React.FC = () => {
     switch (priority) {
       case 'Critical':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-red-600 text-white shadow-sm shadow-red-600/30 border border-red-700 ring-2 ring-red-400/30 animate-pulse">
-            <AlertTriangle className="w-3.5 h-3.5 text-white fill-white shrink-0" />
-            <span>{t('critical_priority', 'Critique')}</span>
+          <span 
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black shadow-sm ring-2 ring-red-400/40 animate-pulse"
+            style={{
+              backgroundColor: '#DC2626',
+              borderColor: '#B91C1C',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 6px rgba(220, 38, 38, 0.35)'
+            }}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color: '#FFFFFF', fill: '#FFFFFF' }} />
+            <span style={{ color: '#FFFFFF' }}>{t('critical_priority', 'Critique')}</span>
           </span>
         );
       case 'High':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-orange-500 text-white shadow-sm shadow-orange-500/30 border border-orange-600">
-            <Flag className="w-3.5 h-3.5 text-white fill-white shrink-0" />
-            <span>{t('high_priority', 'Élevée')}</span>
+          <span 
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black shadow-sm border"
+            style={{
+              backgroundColor: '#EA580C',
+              borderColor: '#C2410C',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 6px rgba(234, 88, 12, 0.35)'
+            }}
+          >
+            <Flag className="w-3.5 h-3.5 shrink-0" style={{ color: '#FFFFFF', fill: '#FFFFFF' }} />
+            <span style={{ color: '#FFFFFF' }}>{t('high_priority', 'Élevée')}</span>
           </span>
         );
       case 'Medium':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-amber-400 text-amber-950 shadow-xs border border-amber-500">
-            <Flag className="w-3.5 h-3.5 text-amber-950 fill-amber-950 shrink-0" />
-            <span>{t('medium_priority', 'Moyenne')}</span>
+          <span 
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black shadow-sm border"
+            style={{
+              backgroundColor: '#D97706',
+              borderColor: '#B45309',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 5px rgba(217, 119, 6, 0.3)'
+            }}
+          >
+            <Flag className="w-3.5 h-3.5 shrink-0" style={{ color: '#FFFFFF', fill: '#FFFFFF' }} />
+            <span style={{ color: '#FFFFFF' }}>{t('medium_priority', 'Moyenne')}</span>
           </span>
         );
       case 'Low':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 border border-emerald-600">
-            <Flag className="w-3.5 h-3.5 text-white fill-white shrink-0" />
-            <span>{t('low_priority', 'Faible')}</span>
+          <span 
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black shadow-sm border"
+            style={{
+              backgroundColor: '#059669',
+              borderColor: '#047857',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 5px rgba(5, 150, 105, 0.3)'
+            }}
+          >
+            <Flag className="w-3.5 h-3.5 shrink-0" style={{ color: '#FFFFFF', fill: '#FFFFFF' }} />
+            <span style={{ color: '#FFFFFF' }}>{t('low_priority', 'Basse')}</span>
           </span>
         );
     }
   };
 
+  const getPriorityRowStyle = (p?: string, action?: string): React.CSSProperties => {
+    const priority = resolveLogPriority(p, action);
+    switch (priority) {
+      case 'Critical':
+        return { borderLeft: '4px solid #DC2626', backgroundColor: 'rgba(254, 242, 242, 0.65)' };
+      case 'High':
+        return { borderLeft: '4px solid #EA580C', backgroundColor: 'rgba(255, 247, 237, 0.5)' };
+      case 'Medium':
+        return { borderLeft: '4px solid #D97706', backgroundColor: 'rgba(254, 243, 199, 0.4)' };
+      case 'Low':
+      default:
+        return { borderLeft: '4px solid #059669', backgroundColor: 'rgba(236, 253, 245, 0.35)' };
+    }
+  };
+
   const getPriorityRowBorder = (p?: string, action?: string) => {
     const priority = resolveLogPriority(p, action);
-    if (priority === 'Critical') return 'border-l-4 border-l-red-600 bg-red-50/30 hover:bg-red-50/50';
-    if (priority === 'High') return 'border-l-4 border-l-orange-500 bg-orange-50/20 hover:bg-orange-50/40';
-    if (priority === 'Medium') return 'border-l-4 border-l-amber-400 bg-amber-50/15 hover:bg-amber-50/30';
-    return 'border-l-4 border-l-emerald-500 bg-emerald-50/10 hover:bg-emerald-50/20';
+    if (priority === 'Critical') return 'border-l-4 border-l-red-600 bg-red-50/40 hover:bg-red-50/60';
+    if (priority === 'High') return 'border-l-4 border-l-orange-500 bg-orange-50/30 hover:bg-orange-50/50';
+    if (priority === 'Medium') return 'border-l-4 border-l-amber-500 bg-amber-50/25 hover:bg-amber-50/45';
+    return 'border-l-4 border-l-emerald-600 bg-emerald-50/20 hover:bg-emerald-50/35';
   };
 
   const filteredLogs = auditLogs.filter(log => {
@@ -344,24 +391,28 @@ export const AuditLogsView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-1.5 sm:border-l sm:border-slate-200 sm:pl-2.5 pt-2 sm:pt-0">
             <span className="text-[10px] font-black uppercase text-slate-400 mr-1">{t('priority_colon', 'Priorité:')}</span>
             {[
-              { id: 'all', label: t('all_priorities', 'Toutes'), activeClass: 'bg-slate-900 text-white border-slate-900', inactiveClass: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100' },
-              { id: 'Critical', label: t('critical_priority', 'Critical'), activeClass: 'bg-red-600 text-white border-red-700 shadow-md', inactiveClass: 'bg-red-50/70 text-red-700 border-red-200 hover:bg-red-100' },
-              { id: 'High', label: t('high_priority', 'High'), activeClass: 'bg-orange-500 text-white border-orange-600 shadow-md', inactiveClass: 'bg-orange-50/70 text-orange-700 border-orange-200 hover:bg-orange-100' },
-              { id: 'Medium', label: t('medium_priority', 'Medium'), activeClass: 'bg-amber-400 text-amber-950 border-amber-500 shadow-md', inactiveClass: 'bg-amber-50/70 text-amber-900 border-amber-200 hover:bg-amber-100' },
-              { id: 'Low', label: t('low_priority', 'Low'), activeClass: 'bg-emerald-500 text-white border-emerald-600 shadow-md', inactiveClass: 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100' },
-            ].map((pr) => (
-              <button
-                key={pr.id}
-                onClick={() => setSelectedPriority(pr.id as any)}
-                className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border cursor-pointer ${
-                  selectedPriority === pr.id 
-                    ? `${pr.activeClass} scale-105` 
-                    : pr.inactiveClass
-                }`}
-              >
-                {pr.label}
-              </button>
-            ))}
+              { id: 'all', label: t('all_priorities', 'Toutes'), activeBg: '#0f172a', activeColor: '#ffffff' },
+              { id: 'Critical', label: t('critical_priority', 'Critique'), activeBg: '#dc2626', activeColor: '#ffffff' },
+              { id: 'High', label: t('high_priority', 'Élevée'), activeBg: '#ea580c', activeColor: '#ffffff' },
+              { id: 'Medium', label: t('medium_priority', 'Moyenne'), activeBg: '#d97706', activeColor: '#ffffff' },
+              { id: 'Low', label: t('low_priority', 'Basse'), activeBg: '#059669', activeColor: '#ffffff' },
+            ].map((pr) => {
+              const isSelected = selectedPriority === pr.id;
+              return (
+                <button
+                  key={pr.id}
+                  onClick={() => setSelectedPriority(pr.id as any)}
+                  style={isSelected ? { backgroundColor: pr.activeBg, color: pr.activeColor, borderColor: pr.activeBg } : undefined}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border cursor-pointer ${
+                    isSelected 
+                      ? 'shadow-md scale-105' 
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {pr.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -394,6 +445,7 @@ export const AuditLogsView: React.FC = () => {
                 <div 
                   key={log.id} 
                   onClick={() => setInspectedLog(log)}
+                  style={getPriorityRowStyle(log.priority, log.action)}
                   className={`grid grid-cols-12 gap-3 px-5 py-3.5 items-center transition-colors cursor-pointer ${getPriorityRowBorder(log.priority, log.action)}`}
                   title={t('click_view_audit_sheet', "Cliquer pour voir la fiche d'audit complète")}
                 >
@@ -456,6 +508,7 @@ export const AuditLogsView: React.FC = () => {
             <div
               key={log.id}
               onClick={() => setInspectedLog(log)}
+              style={getPriorityRowStyle(log.priority, log.action)}
               className={`p-3.5 space-y-2.5 rounded-2xl transition-colors cursor-pointer border ${getPriorityRowBorder(log.priority, log.action)}`}
             >
               {/* Top: Timestamp & Priority */}

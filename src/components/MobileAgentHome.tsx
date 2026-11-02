@@ -1424,7 +1424,7 @@ export const MobileAgentHome: React.FC = () => {
         
         {/* Subtle Brand Logo Watermark */}
         <div className="absolute -bottom-6 -right-6 w-36 h-36 opacity-15 pointer-events-none select-none">
-          <img src="/images/logo1.jpeg" alt="" className="w-full h-full object-contain" />
+          <img src="/images/logo1.png?v=2" alt="" className="w-full h-full object-contain" />
         </div>
 
         <div className="relative space-y-2">

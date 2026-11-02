@@ -29,19 +29,21 @@ export default {
       purple: colors.blue,
       cyan: colors.blue,
 
-      // Map semantic colors to strict professional colors
-      // Success (formerly green/emerald) -> Muted Slate or Blue
-      emerald: colors.slate,
-      green: colors.slate,
+      // Full vibrant semantic colors
+      emerald: colors.emerald,
+      green: colors.green,
+      teal: colors.teal,
       
-      // Warning (formerly amber/yellow) -> Muted Slate
-      amber: colors.slate,
-      yellow: colors.slate,
-      orange: colors.slate,
+      amber: colors.amber,
+      yellow: colors.yellow,
+      orange: colors.orange,
 
-      // Danger (formerly rose/red) -> Muted Slate
-      rose: colors.slate,
-      red: colors.slate,
+      rose: colors.rose,
+      red: colors.red,
+      purple: colors.purple,
+      indigo: colors.indigo,
+      sky: colors.sky,
+      cyan: colors.cyan,
 
       background: "#FFFFFF",
       foreground: "#0F172A",

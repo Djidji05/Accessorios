@@ -68,7 +68,7 @@ export async function generateReceiptCanvas(tx: Transaction): Promise<HTMLCanvas
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
       img.onerror = reject;
-      img.src = '/images/logo1.jpeg';
+      img.src = '/images/logo1.png?v=2';
     });
     ctx.save();
     ctx.beginPath();

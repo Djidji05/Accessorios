@@ -111,7 +111,7 @@ export const Sidebar: React.FC = () => {
           <>
             <div className="flex items-center gap-2.5 overflow-hidden">
               <img 
-                src="/images/logo1.jpeg" 
+                src="/images/logo1.png?v=2" 
                 alt="Alexis Transferencia" 
                 className="w-8 h-8 rounded-xl object-contain shadow-sm ring-1 ring-slate-900/10 flex-shrink-0 bg-white p-0.5" 
               />
@@ -153,7 +153,7 @@ export const Sidebar: React.FC = () => {
             title="Agrandir la barre latérale"
             aria-label="Agrandir la barre latérale"
           >
-            <img src="/images/logo1.jpeg" alt="Alexis" className="w-full h-full object-contain group-hover:hidden bg-white rounded-md" />
+            <img src="/images/logo1.png?v=2" alt="Alexis" className="w-full h-full object-contain group-hover:hidden bg-white rounded-md" />
             <PanelLeftOpen className="w-4 h-4 hidden group-hover:block text-white" />
           </button>
         )}

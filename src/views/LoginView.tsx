@@ -82,7 +82,7 @@ export const LoginView: React.FC = () => {
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <img 
-            src="/images/logo1.jpeg" 
+            src="/images/logo1.png?v=2" 
             alt="Alexis Transferencia" 
             className="w-10 h-10 rounded-2xl shadow-lg ring-1 ring-blue-500/20 object-contain bg-white p-0.5"
           />
@@ -173,7 +173,7 @@ export const LoginView: React.FC = () => {
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-4 lg:hidden">
                 <img 
-                  src="/images/logo1.jpeg" 
+                  src="/images/logo1.png?v=2" 
                   alt="Alexis Transferencia" 
                   className="w-11 h-11 rounded-2xl shadow-md object-contain bg-white p-1 ring-1 ring-blue-500/20"
                 />

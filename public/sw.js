@@ -1,4 +1,4 @@
-const CACHE_NAME = 'accessorio-pwa-v7';
+const CACHE_NAME = 'accessorio-pwa-v9';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -14,7 +14,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[PWA Service Worker] Pre-caching App Shell v7');
+      console.log('[PWA Service Worker] Pre-caching App Shell v8');
       return cache.addAll(STATIC_ASSETS);
     })
   );
