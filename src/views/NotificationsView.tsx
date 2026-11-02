@@ -103,47 +103,69 @@ export const NotificationsView: React.FC = () => {
         const netFormatted = `${(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`;
 
         if (tx.zelleStatus === 'pending_admin_check' || tx.status === 'in_progress') {
+          const title = currentUser.role === 'admin'
+            ? (currentLang === 'ES' ? `🚨 ¿Verificación Zelle: $${numUSD} USD recibidos?` : currentLang === 'HT' ? `🚨 Verifikasyon Zelle : $${numUSD} USD resevwa ?` : `🚨 Vérification Zelle : $${numUSD} USD reçus ?`)
+            : (currentLang === 'ES' ? `⏳ Zelle $${numUSD} USD enviado para verificación` : currentLang === 'HT' ? `⏳ Zelle $${numUSD} USD voye pou verifikasyon` : `⏳ Zelle $${numUSD} USD envoyé pour vérification`);
+          const message = currentUser.role === 'admin'
+            ? (currentLang === 'ES' ? `El agente ${tx.createdByName || 'RD'} le pide confirmar la recepción de la transferencia Zelle de $${numUSD} USD. Haga clic para verificar el comprobante y responder SÍ o NO.` : currentLang === 'HT' ? `Ajan ${tx.createdByName || 'RD'} ap mande w konfime si w resevwa transfè Zelle $${numUSD} USD an. Klike pou w tcheke prèv la epi reponn WI oswa NON.` : `L'Agent ${tx.createdByName || 'RD'} vous demande de confirmer la bonne réception du virement Zelle de $${numUSD} USD. Cliquez pour vérifier la preuve et répondre OUI ou NON.`)
+            : (currentLang === 'ES' ? `Su transacción Zelle de $${numUSD} USD está en verificación bancaria por el Administrador. No entregue dinero antes de la validación.` : currentLang === 'HT' ? `Tranzaksyon Zelle $${numUSD} USD ou a ap verifye nan bank lan pa Administratè a. Pa remèt lajan anvan validasyon.` : `Votre transaction Zelle de $${numUSD} USD est en cours de vérification bancaire par l'Administrateur. Ne remettez pas l'argent avant validation.`);
+          const badgeText = currentUser.role === 'admin'
+            ? (currentLang === 'ES' ? 'Verificar SÍ / NO' : currentLang === 'HT' ? 'Verifye WI / NON' : 'Vérifier OUI / NON')
+            : (currentLang === 'ES' ? 'Esperando Admin' : currentLang === 'HT' ? 'N ap tann Admin' : 'Attente Admin');
+
           list.push({
             id: `notif_tx_${tx.id}`,
             category: 'transactions',
-            title: currentUser.role === 'admin'
-              ? `🚨 Vérification Zelle : $${numUSD} USD reçus ?`
-              : `⏳ Zelle $${numUSD} USD envoyé pour vérification`,
-            message: currentUser.role === 'admin'
-              ? `L'Agent ${tx.createdByName || 'RD'} vous demande de confirmer la bonne réception du virement Zelle de $${numUSD} USD. Cliquez pour vérifier la preuve et répondre OUI ou NON.`
-              : `Votre transaction Zelle de $${numUSD} USD est en cours de vérification bancaire par l'Administrateur. Ne remettez pas l'argent avant validation.`,
+            title,
+            message,
             time: formatTime(tx.createdAt),
             icon: Clock,
             color: 'text-purple-600 bg-purple-500/10 border-purple-500/20',
-            badgeText: currentUser.role === 'admin' ? 'Vérifier OUI / NON' : 'Attente Admin',
+            badgeText,
             badgeColor: 'bg-purple-100 text-purple-900 border border-purple-300 font-black animate-pulse',
             tx
           });
           return;
         } else if (tx.zelleStatus === 'approved' || tx.status === 'completed') {
+          const title = currentLang === 'ES' ? `✅ Zelle Confirmado: Entregar ${netFormatted}` : currentLang === 'HT' ? `✅ Zelle Konfime : Remèt ${netFormatted}` : `✅ Zelle Confirmé : Remettre ${netFormatted}`;
+          const message = currentLang === 'ES'
+            ? `El Administrador confirmó haber recibido el Zelle de $${numUSD} USD. Puede entregar ${netFormatted} al cliente (${tx.receiverName}). Tasa y tarifas certificadas.`
+            : currentLang === 'HT'
+            ? `Administratè a konfime li wè Zelle $${numUSD} USD an. Ou mèt remèt ${netFormatted} bay kliyan an (${tx.receiverName}). Tò ak frè sètifye.`
+            : `L'Admin a confirmé avoir vu le Zelle de $${numUSD} USD. Vous pouvez remettre ${netFormatted} au client (${tx.receiverName}). Taux et frais certifiés.`;
+          const badgeText = currentLang === 'ES' ? 'Pago Autorizado' : currentLang === 'HT' ? 'Peman Otorize' : 'Paiement Autorisé';
+
           list.push({
             id: `notif_tx_${tx.id}`,
             category: 'transactions',
-            title: `✅ Zelle Confirmé : Remettre ${netFormatted}`,
-            message: `L'Admin a confirmé avoir vu le Zelle de $${numUSD} USD. Vous pouvez remettre ${netFormatted} au client (${tx.receiverName}). Taux et frais certifiés.`,
+            title,
+            message,
             time: formatTime(tx.completedAt || tx.createdAt),
             icon: CheckCircle2,
             color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-            badgeText: 'Paiement Autorisé',
+            badgeText,
             badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold',
             tx
           });
           return;
         } else if (tx.zelleStatus === 'rejected' || tx.status === 'cancelled') {
+          const title = currentLang === 'ES' ? `❌ Zelle Rechazado: No entregar dinero` : currentLang === 'HT' ? `❌ Zelle Refize : Pa bay lajan` : `❌ Zelle Refusé : Ne pas verser d'argent`;
+          const message = currentLang === 'ES'
+            ? `El Administrador no vio el Zelle de $${numUSD} USD en su cuenta bancaria. Motivo: ${tx.zelleAdminNote || 'No recibido'}. No entregue dinero.`
+            : currentLang === 'HT'
+            ? `Administratè a pa wè Zelle $${numUSD} USD an nan kont labank li. Rezon: ${tx.zelleAdminNote || 'Pa resevwa'}. Pa bay lajan.`
+            : `L'Admin n'a pas vu le Zelle de $${numUSD} USD sur son compte bancaire. Motif: ${tx.zelleAdminNote || 'Non reçu'}. Ne remettez pas d'argent.`;
+          const badgeText = currentLang === 'ES' ? 'Rechazado Admin' : currentLang === 'HT' ? 'Refize pa Admin' : 'Refusé Admin';
+
           list.push({
             id: `notif_tx_${tx.id}`,
             category: 'transactions',
-            title: `❌ Zelle Refusé : Ne pas verser d'argent`,
-            message: `L'Admin n'a pas vu le Zelle de $${numUSD} USD sur son compte bancaire. Motif: ${tx.zelleAdminNote || 'Non reçu'}. Ne remettez pas d'argent.`,
+            title,
+            message,
             time: formatTime(tx.createdAt),
             icon: ShieldAlert,
             color: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
-            badgeText: 'Refusé Admin',
+            badgeText,
             badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 font-bold',
             tx
           });

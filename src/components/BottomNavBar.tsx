@@ -64,7 +64,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Zap className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Tâches')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_tasks', 'Tâches')}</span>
           </button>
 
           {/* Historique Haïti */}
@@ -78,7 +78,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <History className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Historique')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_history', 'Historique')}</span>
           </button>
 
           {/* Paramètres */}
@@ -92,7 +92,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Paramètres')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_settings', 'Paramètres')}</span>
           </button>
         </div>
       </nav>
@@ -117,7 +117,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Accueil')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_home', 'Accueil')}</span>
           </button>
 
           {/* Historique */}
@@ -131,7 +131,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <History className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Historique')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_history', 'Historique')}</span>
           </button>
 
           {/* Dépôts */}
@@ -145,7 +145,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Landmark className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Dépôts')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_deposits', 'Dépôts')}</span>
           </button>
 
           {/* Paramètres */}
@@ -159,7 +159,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('Paramètres')}</span>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_settings', 'Paramètres')}</span>
           </button>
         </div>
       </nav>
@@ -184,7 +184,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[9px] tracking-tight font-semibold">{t('nav_dashboard', 'Tableau')}</span>
+            <span className="text-[9px] tracking-tight font-semibold">{t('bnav_dashboard', 'Tableau')}</span>
           </button>
 
           {/* 2. File d'attente / Tâches Numériques (avec badge des validations en attente) */}
@@ -205,7 +205,7 @@ export const BottomNavBar: React.FC = () => {
                 </span>
               )}
             </div>
-            <span className="text-[9px] tracking-tight font-semibold">{t('nav_tasks', 'Tâches')}</span>
+            <span className="text-[9px] tracking-tight font-semibold">{t('bnav_tasks', 'Tâches')}</span>
           </button>
 
           {/* 3. Espace Opérations (Guichet Saisie & Exécution) */}
@@ -219,7 +219,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Wrench className="w-5 h-5" />
-            <span className="text-[9px] tracking-tight font-semibold">{t('Espace Opérations', 'Opérations')}</span>
+            <span className="text-[9px] tracking-tight font-semibold">{t('bnav_operations', 'Opérations')}</span>
           </button>
 
           {/* 4. Historique & Archives */}
@@ -233,10 +233,10 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <History className="w-5 h-5" />
-            <span className="text-[9px] tracking-tight font-semibold">{t('nav_history', 'Historique')}</span>
+            <span className="text-[9px] tracking-tight font-semibold">{t('bnav_history', 'Historique')}</span>
           </button>
 
-          {/* 6. Paramètres */}
+          {/* 5. Paramètres */}
           <button
             type="button"
             onClick={() => setActiveTab('settings')}
@@ -247,7 +247,7 @@ export const BottomNavBar: React.FC = () => {
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[9px] tracking-tight font-semibold">{t('nav_settings', 'Paramètres')}</span>
+            <span className="text-[9px] tracking-tight font-semibold">{t('bnav_settings', 'Paramètres')}</span>
           </button>
         </div>
       </nav>
@@ -272,7 +272,7 @@ export const BottomNavBar: React.FC = () => {
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight font-semibold">{t('nav_dashboard', 'Tableau')}</span>
+          <span className="text-[10px] tracking-tight font-semibold">{t('bnav_dashboard', 'Tableau')}</span>
         </button>
 
         {/* 2. File d'attente / Tâches (avec badge des tâches en attente) */}
@@ -293,7 +293,7 @@ export const BottomNavBar: React.FC = () => {
               </span>
             )}
           </div>
-          <span className="text-[10px] tracking-tight font-semibold">{t('nav_tasks', 'Tâches')}</span>
+          <span className="text-[10px] tracking-tight font-semibold">{t('bnav_tasks', 'Tâches')}</span>
         </button>
 
         {/* 3. Espace Opérations (remplace Trésorerie) */}
@@ -307,7 +307,7 @@ export const BottomNavBar: React.FC = () => {
           }`}
         >
           <Wrench className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight font-semibold">{t('Espace Opérations', 'Opérations')}</span>
+          <span className="text-[10px] tracking-tight font-semibold">{t('bnav_operations', 'Opérations')}</span>
         </button>
 
         {/* 4. Historique */}
@@ -321,7 +321,7 @@ export const BottomNavBar: React.FC = () => {
           }`}
         >
           <History className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight font-semibold">{t('nav_history', 'Historique')}</span>
+          <span className="text-[10px] tracking-tight font-semibold">{t('bnav_history', 'Historique')}</span>
         </button>
 
         {/* 5. Paramètres */}
@@ -335,7 +335,7 @@ export const BottomNavBar: React.FC = () => {
           }`}
         >
           <Settings className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight font-semibold">{t('nav_settings', 'Paramètres')}</span>
+          <span className="text-[10px] tracking-tight font-semibold">{t('bnav_settings', 'Paramètres')}</span>
         </button>
       </div>
     </nav>

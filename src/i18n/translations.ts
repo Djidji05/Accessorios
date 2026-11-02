@@ -30,6 +30,15 @@ export interface Translations {
   sub_user_list: string;
   sub_create_user: string;
 
+  // Bottom Navbar Short Labels (Single word)
+  bnav_dashboard: string;
+  bnav_tasks: string;
+  bnav_operations: string;
+  bnav_history: string;
+  bnav_settings: string;
+  bnav_home: string;
+  bnav_deposits: string;
+
   // Header & Tools
   search_placeholder: string;
   rate_label: string;
@@ -241,6 +250,15 @@ export const translations: Record<Language, Translations> = {
     sub_user_list: "Liste & Rôles",
     sub_create_user: "Créer un Utilisateur",
 
+    // Bottom Navbar Short Labels (Single word)
+    bnav_dashboard: "Tableau",
+    bnav_tasks: "Tâches",
+    bnav_operations: "Opérations",
+    bnav_history: "Historique",
+    bnav_settings: "Paramètres",
+    bnav_home: "Accueil",
+    bnav_deposits: "Dépôts",
+
     // Header & Tools
     search_placeholder: "Rechercher une opération...",
     rate_label: "Taux officiel",
@@ -451,6 +469,15 @@ export const translations: Record<Language, Translations> = {
     sub_user_list: "Lis & Wòl yo",
     sub_create_user: "Kreye yon Itilizatè",
 
+    // Bottom Navbar Short Labels (Single word)
+    bnav_dashboard: "Tablo",
+    bnav_tasks: "Tach",
+    bnav_operations: "Operasyon",
+    bnav_history: "Istwa",
+    bnav_settings: "Paramèt",
+    bnav_home: "Akèy",
+    bnav_deposits: "Depo",
+
     // Header & Tools
     search_placeholder: "Chèche yon operasyon...",
     rate_label: "Tays ofisyèl",
@@ -660,6 +687,15 @@ export const translations: Record<Language, Translations> = {
     ops_flows: "Operaciones y Flujos",
     sub_user_list: "Lista y Roles",
     sub_create_user: "Crear Usuario",
+
+    // Bottom Navbar Short Labels (Single word)
+    bnav_dashboard: "Panel",
+    bnav_tasks: "Tareas",
+    bnav_operations: "Operaciones",
+    bnav_history: "Historial",
+    bnav_settings: "Ajustes",
+    bnav_home: "Inicio",
+    bnav_deposits: "Depósitos",
 
     // Header & Tools
     search_placeholder: "Buscar una operación...",
@@ -1401,9 +1437,51 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Télécharger en PDF": "Telechaje an PDF",
     "Cliquer pour ouvrir la page de transaction et modifier si besoin": "Klike pou ouvri paj tranzaksyon an epi modifye si bezwen",
     "Prendre en charge, valider et clôturer avec quittance": "Pran an chaj, valide epi fèmen ak resi",
-    "Consulter et télécharger le reçu": "Gade epi telechaje resi a",
-    "Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)": "Ajoute epi voye dirèkteman yon nouvo tranzaksyon (MonCash, Digicel, Claro, Altice)",
     "Reçu Annulé (PDF / Partager)": "Resi Anile (PDF / Pataje)",
+
+    // Navigation & Sidebar Missing
+    "Opérations Guichet": "Operasyon Gichè",
+    "Opération Guichet": "Operasyon Gichè",
+    "Espace Opérations": "Espas Operasyon",
+    "Espace Guichet": "Espas Gichè",
+    "Espace Opérationnel Haïti": "Espas Operasyonèl Ayiti",
+    "KPIs & Statistiques": "KPI ak Estatistik",
+    "Tâches & Routage": "Tach & Woutaj",
+    "Soldes & Liquidités": "Balans & Likidite",
+    "Archives & Bilans": "Achiv & Bilan",
+    "Dossiers Clôturés": "Dosye ki Fèmen",
+    "Retraits & Recharges": "Retrè & Rechaj",
+
+    // Notifications & Messages
+    "Aucune notification": "Pa gen notifikasyon",
+    "Compte Agent RD": "Kont Ajan RD",
+    "Transfert Effectué": "Transfè Fèt",
+    "En attente de preuve": "N ap tann prèv",
+    "Preuve Zelle (Capture)": "Prèv Zelle (Kapti)",
+    "Valider & Envoyer pour Vérification Admin": "Valide & Voye pou Verifikasyon Admin",
+    "Virement Zelle déclaré :": "Transfè Zelle deklare :",
+    "Ne remettez aucun argent au client avant validation": "Pa remèt okenn lajan bay kliyan an anvan validasyon",
+    "Taux du Jour": "Tò pou Jodi a",
+    "Alerte Opérateurs": "Alèt Operatè yo",
+    "Notifications Haïti": "Notifikasyon Ayiti",
+    "Tout marquer comme lu": "Make tout kòm li",
+    "Aucune notification pour le moment.": "Pa gen okenn notifikasyon pou kounye a.",
+    "Voir l'historique financier et les transactions": "Wè istwa finansye ak tranzaksyon yo",
+    "service(s) temporairement suspendu(s)": "sèvis sispann pou yon ti tan",
+    "service(s) partenaire(s) temporairement suspendu(s) pour maintenance.": "sèvis patnè sispann pou yon ti tan pou antretyen.",
+    "Vérification Zelle": "Verifikasyon Zelle",
+    "Vérifier OUI / NON": "Verifye WI / NON",
+    "Attente Admin": "N ap tann Admin",
+    "Paiement Autorisé": "Peman Otorize",
+    "Refusé Admin": "Refize pa Admin",
+    "Agent Comptoir R.D.": "Ajan Kontwa R.D.",
+    "Agent Terrain Haïti": "Ajan Teren Ayiti",
+    "Gestionnaire Numérique": "Jesyonè Dijital",
+    "Transfert Validé": "Transfè Valide",
+    "Transfert Annulé": "Transfè Anile",
+    "Transfert En cours": "Transfè An kou",
+    "Récemment": "Resamman",
+    "pour": "pou",
   },
   ES: {
     // Menu & Navigation
@@ -1958,9 +2036,51 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Télécharger en PDF": "Descargar en PDF",
     "Cliquer pour ouvrir la page de transaction et modifier si besoin": "Clic para abrir la página de transacción y modificar si es necesario",
     "Prendre en charge, valider et clôturer avec quittance": "Tomar a cargo, validar y cerrar con comprobante",
-    "Consulter et télécharger le reçu": "Consultar y descargar el recibo",
-    "Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)": "Agregar y emitir directamente una nueva transacción (MonCash, Digicel, Claro, Altice)",
     "Reçu Annulé (PDF / Partager)": "Recibo Anulado (PDF / Compartir)",
+
+    // Navigation & Sidebar Missing
+    "Opérations Guichet": "Operaciones de Ventanilla",
+    "Opération Guichet": "Operación de Ventanilla",
+    "Espace Opérations": "Área de Operaciones",
+    "Espace Guichet": "Área de Ventanilla",
+    "Espace Opérationnel Haïti": "Área Operativa Haití",
+    "KPIs & Statistiques": "KPIs y Estadísticas",
+    "Tâches & Routage": "Tareas y Enrutamiento",
+    "Soldes & Liquidités": "Saldos y Liquidez",
+    "Archives & Bilans": "Archivos y Balances",
+    "Dossiers Clôturés": "Expedientes Cerrados",
+    "Retraits & Recharges": "Retiros y Recargas",
+
+    // Notifications & Messages
+    "Aucune notification": "Sin notificaciones",
+    "Compte Agent RD": "Cuenta Agente RD",
+    "Transfert Effectué": "Transferencia Realizada",
+    "En attente de preuve": "Esperando comprobante",
+    "Preuve Zelle (Capture)": "Comprobante Zelle (Captura)",
+    "Valider & Envoyer pour Vérification Admin": "Validar y Enviar para Verificación Admin",
+    "Virement Zelle déclaré :": "Transferencia Zelle declarada:",
+    "Ne remettez aucun argent au client avant validation": "No entregue dinero al cliente antes de la validación",
+    "Taux du Jour": "Tasa del Día",
+    "Alerte Opérateurs": "Alerta de Operadores",
+    "Notifications Haïti": "Notificaciones Haití",
+    "Tout marquer comme lu": "Marcar todo como leído",
+    "Aucune notification pour le moment.": "No hay notificaciones por el momento.",
+    "Voir l'historique financier et les transactions": "Ver historial financiero y transacciones",
+    "service(s) temporairement suspendu(s)": "servicio(s) suspendido(s) temporalmente",
+    "service(s) partenaire(s) temporairement suspendu(s) pour maintenance.": "servicio(s) asociado(s) suspendido(s) temporalmente por mantenimiento.",
+    "Vérification Zelle": "Verificación Zelle",
+    "Vérifier OUI / NON": "Verificar SÍ / NO",
+    "Attente Admin": "Esperando Admin",
+    "Paiement Autorisé": "Pago Autorizado",
+    "Refusé Admin": "Rechazado Admin",
+    "Agent Comptoir R.D.": "Agente Ventanilla R.D.",
+    "Agent Terrain Haïti": "Agente en Terreno Haití",
+    "Gestionnaire Numérique": "Gestor Digital",
+    "Transfert Validé": "Transferencia Validada",
+    "Transfert Annulé": "Transferencia Cancelada",
+    "Transfert En cours": "Transferencia En proceso",
+    "Récemment": "Recientemente",
+    "pour": "para",
   },
 };
 

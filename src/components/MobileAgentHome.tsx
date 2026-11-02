@@ -247,7 +247,8 @@ export const MobileAgentHome: React.FC = () => {
     scopedTxs.slice(0, 4).forEach((tx) => {
       let icon = Clock;
       let color = 'text-amber-500 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800';
-      let title = `Transfert ${tx.status === 'completed' ? 'Validé' : tx.status === 'cancelled' ? 'Annulé' : 'En cours'}`;
+      const statusLabel = tx.status === 'completed' ? t('Validé', 'Validé') : tx.status === 'cancelled' ? t('Annulé', 'Annulé') : t('En cours', 'En cours');
+      let title = `${t('Transfert', 'Transfert')} ${statusLabel}`;
 
       if (tx.status === 'completed') {
         icon = CheckCircle2;
@@ -260,8 +261,8 @@ export const MobileAgentHome: React.FC = () => {
       list.push({
         id: `tx_${tx.id}`,
         title,
-        message: `${tx.operator.toUpperCase()} • ${tx.amountHTG.toLocaleString()} HTG pour ${tx.receiverName} (${tx.receiverPhone})`,
-        time: 'Récent',
+        message: `${tx.operator.toUpperCase()} • ${tx.amountHTG.toLocaleString()} HTG ${t('pour', 'pour')} ${tx.receiverName} (${tx.receiverPhone})`,
+        time: t('Récemment', 'Récemment'),
         icon,
         color,
         tx
@@ -271,9 +272,9 @@ export const MobileAgentHome: React.FC = () => {
     // Exchange Rate notification
     list.push({
       id: 'notif_rate',
-      title: 'Taux du Jour',
+      title: t('Taux du Jour', 'Taux du Jour'),
       message: `100 Pesos (DOP) = ${Math.round(dopToHtgRate * 100)} Gourdes (HTG)`,
-      time: 'Aujourd\'hui',
+      time: t('Aujourd\'hui', 'Aujourd\'hui'),
       icon: DollarSign,
       color: 'text-blue-500 bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:border-blue-800'
     });
@@ -283,16 +284,16 @@ export const MobileAgentHome: React.FC = () => {
     if (activeKillCount > 0) {
       list.push({
         id: 'notif_ks',
-        title: 'Alerte Opérateurs',
-        message: `${activeKillCount} service(s) temporairement suspendu(s)`,
-        time: 'Actif',
+        title: t('Alerte Opérateurs', 'Alerte Opérateurs'),
+        message: `${activeKillCount} ${t('service(s) temporairement suspendu(s)', 'service(s) temporairement suspendu(s)')}`,
+        time: t('Actif', 'Actif'),
         icon: Lock,
         color: 'text-rose-500 bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800'
       });
     }
 
     return list;
-  }, [transactions, currentUser, dopToHtgRate, killSwitchList, isAdmin, isGestionnaire, isAgentRD, isAgentHaiti, isMyTransaction]);
+  }, [transactions, currentUser, dopToHtgRate, killSwitchList, isAdmin, isGestionnaire, isAgentRD, isAgentHaiti, isMyTransaction, t]);
 
   const unreadNotifications = notifications.filter(n => !readNotificationIds.includes(n.id));
   const unreadCount = unreadNotifications.length;
@@ -1323,10 +1324,10 @@ export const MobileAgentHome: React.FC = () => {
                         </div>
                         <div>
                           <h4 className="font-extrabold text-slate-900 dark:text-white text-xs uppercase tracking-wider">
-                            Notifications
+                            {t('Notifications')}
                           </h4>
                           <p className="text-[10px] text-slate-400 font-medium">
-                            {isAgentRD ? 'Compte Agent RD' : currentUser.role}
+                            {isAgentRD ? t('Agent Comptoir R.D.') : isGestionnaire ? t('Gestionnaire Numérique') : currentUser.role}
                           </p>
                         </div>
                       </div>
@@ -1337,7 +1338,7 @@ export const MobileAgentHome: React.FC = () => {
                             onClick={() => markAllNotificationsAsRead(notifications.map(n => n.id))}
                             className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
                           >
-                            Tout lire
+                            {t('Tout lire')}
                           </button>
                         )}
                         <button 
@@ -1351,7 +1352,7 @@ export const MobileAgentHome: React.FC = () => {
 
                     <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                       {unreadNotifications.length === 0 ? (
-                        <p className="text-center py-6 text-xs text-slate-400">Aucune notification</p>
+                        <p className="text-center py-6 text-xs text-slate-400">{t('Aucune notification')}</p>
                       ) : (
                         unreadNotifications.map((notif) => {
                           const IconComp = notif.icon;
@@ -1447,9 +1448,18 @@ export const MobileAgentHome: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-1.5 rounded-xl bg-white/10 text-white">
+            <button
+              type="button"
+              onClick={() => {
+                setShowBalance(true);
+                setActiveTab('history');
+              }}
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all cursor-pointer focus:outline-none flex items-center justify-center"
+              title={t("Voir l'historique financier et les transactions", "Voir l'historique financier et les transactions")}
+              aria-label={t("Voir l'historique financier et les transactions", "Voir l'historique financier et les transactions")}
+            >
               <ArrowUpRight className="w-4 h-4" />
-            </div>
+            </button>
           </div>
 
           <div className="flex items-baseline gap-2 pt-1">
