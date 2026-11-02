@@ -150,17 +150,21 @@ export const Header: React.FC = () => {
     { code: 'ES', label: 'Español 🇩🇴' },
   ];
 
-  // Determine whether the top navbar should be visible on mobile
-  // For Agent RD on the main guichet view (where MobileAgentHome provides its own top bar), hide only on mobile.
-  // On ALL other pages (history, settlements, settings, tasks, notifications, dashboard, etc.), it is ALWAYS visible and sticky at top!
-  const isAgentOnGuichetHome = isAgentRD && activeTab === 'guichet' && !selectedService;
+  // Si on est dans une page de service : ENLEVER COMPLÈTEMENT LE NAVBAR !
+  if (selectedService) {
+    return null;
+  }
+
+  // Sur mobile, l'agent RD sur sa page d'accueil guichet a déjà son propre en-tête d'accueil
+  // Sur TOUTES les autres pages convenues, le navbar reste visible et collé en haut !
+  const isAgentOnGuichetHome = isAgentRD && activeTab === 'guichet';
   const isHeaderVisibleOnMobile = !isAgentOnGuichetHome;
 
   return (
     <header className={`${isHeaderVisibleOnMobile ? 'flex' : 'hidden md:flex'} h-14 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-2.5 sm:px-6 items-center justify-between sticky top-0 z-40 transition-colors w-full min-w-0 shadow-2xs`}>
       {/* Left Section: Mobile Brand Header & Desktop Breadcrumbs */}
       <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 min-w-0 flex-shrink">
-        {/* Mobile Header: Burger Menu (Admin/Gestionnaire) OR Brand Logo with Back/Page Title */}
+        {/* Mobile Header: Burger Menu (Admin/Gestionnaire) OR Page Title (sans logo dans le navbar) */}
         <div className="flex items-center gap-2 md:hidden">
           {isDesktopNavRole ? (
             <button
@@ -171,14 +175,7 @@ export const Header: React.FC = () => {
               <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
             </button>
           ) : null}
-          <div className="flex items-center gap-1.5">
-            <img 
-              src="/images/logo1.jpeg" 
-              alt="Alexis Transferencia" 
-              className="w-7 h-7 rounded-lg object-contain bg-white p-0.5 shadow-xs ring-1 ring-slate-900/10" 
-            />
-            <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
-          </div>
+          <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
           <span className="text-slate-300 dark:text-slate-700 font-bold">/</span>
           <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[120px]">
             {activeTab === 'overview' ? t('nav_dashboard', 'Dashboard') : 

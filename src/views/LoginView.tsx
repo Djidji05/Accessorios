@@ -98,17 +98,11 @@ export const LoginView: React.FC = () => {
         {/* Left Side: Brand Visuals & Features */}
         <div className="lg:col-span-6 hidden lg:flex flex-col justify-center space-y-8 pr-8 relative">
           
-          {/* Official 3D Branding Banner */}
-          <div className="space-y-4">
-            <div className="relative group max-w-md">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-600 rounded-3xl blur-xl opacity-20 group-hover:opacity-35 transition duration-1000" />
-              <img 
-                src="/images/logo1.jpeg" 
-                alt="Alexis Transferencia Logo" 
-                className="relative w-full max-h-72 rounded-2xl shadow-2xl border border-slate-200/40 object-contain bg-white/90 p-4"
-              />
-            </div>
-
+          {/* Official Branding Typography & Intro */}
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+              Alexis <span className="text-blue-600">Transferencia</span>
+            </h1>
             <span className="text-xs font-black tracking-widest text-blue-600 uppercase block">
               {currentLang === 'HT' ? 'PLATFÒM OFISYÈL TRANSFÈ SAN KASE TÈT' : (currentLang === 'ES' ? 'PLATAFORMA OFICIAL DE TRANSFERENCIAS' : 'PLATEFORME OFFICIELLE DE TRANSFERT UNIFIÉE')}
             </span>
