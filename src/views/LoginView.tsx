@@ -78,22 +78,8 @@ export const LoginView: React.FC = () => {
         }} 
       />
 
-      {/* Top Header Bar inside Login Page */}
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/images/logo1.png?v=2" 
-            alt="Alexis Transferencia" 
-            className="w-10 h-10 rounded-2xl shadow-lg ring-1 ring-blue-500/20 object-contain bg-white p-0.5"
-          />
-          <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-            Alexis <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-extrabold uppercase tracking-wider">Transferencia</span>
-          </span>
-        </div>
-      </div>
-
       {/* Main Split Layout Container */}
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10 pt-20 lg:pt-12">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10 py-8 lg:py-12">
         
         {/* Left Side: Brand Visuals & Features */}
         <div className="lg:col-span-6 hidden lg:flex flex-col justify-center space-y-8 pr-8 relative">
@@ -171,18 +157,6 @@ export const LoginView: React.FC = () => {
 
             {/* Title */}
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4 lg:hidden">
-                <img 
-                  src="/images/logo1.png?v=2" 
-                  alt="Alexis Transferencia" 
-                  className="w-11 h-11 rounded-2xl shadow-md object-contain bg-white p-1 ring-1 ring-blue-500/20"
-                />
-                <div>
-                  <h3 className="text-base font-black text-slate-900 leading-tight">Alexis Transferencia</h3>
-                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Portail Sécurisé</span>
-                </div>
-              </div>
-
               <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
                 {t('login_title', 'Connexion au Portail')}
               </h2>
