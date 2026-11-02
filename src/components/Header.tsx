@@ -178,7 +178,7 @@ export const Header: React.FC = () => {
           <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
           <span className="text-slate-300 dark:text-slate-700 font-bold">/</span>
           <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[120px]">
-            {activeTab === 'overview' ? t('nav_dashboard', 'Dashboard') : 
+            {activeTab === 'overview' ? (isAgentHaiti ? t('nav_tasks', 'Tâches') : t('nav_dashboard', 'Dashboard')) : 
              activeTab === 'guichet' ? t('nav_guichet', 'Guichet') : 
              activeTab === 'history' ? t('nav_history', 'Historique') :
              activeTab === 'settlements' ? t('nav_settlements', 'Versements') :
@@ -206,7 +206,7 @@ export const Header: React.FC = () => {
         <span className="text-slate-500 dark:text-slate-400 font-medium hidden md:inline">{t('nav_overview')}</span>
         <span className="text-slate-300 dark:text-slate-600 hidden md:inline">/</span>
         <span className="font-bold text-slate-900 dark:text-slate-100 capitalize truncate hidden md:inline">
-          {activeTab === 'overview' ? t('nav_dashboard') : activeTab === 'guichet' ? t('nav_guichet') : activeTab.replace('_', ' ')}
+          {activeTab === 'overview' ? (isAgentHaiti ? t('nav_tasks') : t('nav_dashboard')) : activeTab === 'guichet' ? t('nav_guichet') : activeTab.replace('_', ' ')}
         </span>
       </div>
 
