@@ -47,7 +47,7 @@ export async function bootstrapDatabase() {
           userId: 'cmtyvnlg40000d2uvmaf3szds',
           userName: 'Noel Djivensly',
           role: 'admin',
-          servicesAllowed: JSON.stringify(['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice']),
+          servicesAllowed: JSON.stringify(['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle']),
           maxSingleTransactionDOP: 1000000,
           canCancelTransaction: true,
           canManageKillSwitch: true,
@@ -58,7 +58,7 @@ export async function bootstrapDatabase() {
           userId: 'usr_admin',
           userName: 'Alexis D\'Alexis',
           role: 'admin',
-          servicesAllowed: JSON.stringify(['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice']),
+          servicesAllowed: JSON.stringify(['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle']),
           maxSingleTransactionDOP: 1000000,
           canCancelTransaction: true,
           canManageKillSwitch: true,
@@ -79,6 +79,7 @@ export async function bootstrapDatabase() {
         { operator: 'natcom', serviceName: 'Natcom (Recharge & Data HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
         { operator: 'claro', serviceName: 'Claro RD (Paiement Factures)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
         { operator: 'altice', serviceName: 'Altice RD (Paiement & Recharges)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+        { operator: 'zelle', serviceName: 'Zelle USA (Paiement & Virement USD)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
       ];
 
       for (const ks of killSwitches) {

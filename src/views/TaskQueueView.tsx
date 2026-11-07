@@ -3899,9 +3899,15 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
           <DateRangePicker value={selectedRange} onChange={setSelectedRange} />
           {(isAdmin || isGestionnaire) && (
             <button
-              onClick={() => setIsAddTxModalOpen(true)}
+              onClick={() => {
+                if (isAdmin) {
+                  setActiveTab('guichet');
+                } else {
+                  setIsAddTxModalOpen(true);
+                }
+              }}
               className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl sm:rounded-2xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer whitespace-nowrap"
-              title={t("Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)", "Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)")}
+              title={isAdmin ? t("Espace Opérations", "Espace Opérations") : t("Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)", "Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)")}
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ {t("Ajouter une Transaction", "Ajouter une Transaction")}</span>

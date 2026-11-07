@@ -75,13 +75,19 @@ router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
     });
 
     // Création permissions par défaut
+    const defaultServices = 
+      role === 'agent_haiti' ? ['natcash', 'natcom'] :
+      role === 'gestionnaire' ? ['moncash', 'digicel', 'claro', 'altice', 'zelle'] :
+      role === 'agent_rd' ? ['moncash', 'digicel', 'claro', 'altice', 'natcash', 'natcom', 'zelle'] :
+      ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'];
+
     await prisma.userPermission.create({
       data: {
         userId: newUser.id,
         userName: newUser.name,
         role: newUser.role,
-        servicesAllowed: JSON.stringify(['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice']),
-        maxSingleTransactionDOP: role === 'admin' ? 500000 : 50000,
+        servicesAllowed: JSON.stringify(defaultServices),
+        maxSingleTransactionDOP: role === 'admin' ? 500000 : (role === 'gestionnaire' ? 100000 : 50000),
         canCancelTransaction: role === 'admin',
         canManageKillSwitch: role === 'admin',
         canViewTreasury: role === 'admin' || role === 'gestionnaire',
@@ -116,7 +122,7 @@ router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
 router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, username, email, password, role, location, status } = req.body;
+    const { name, username, email, password, role, location, status, avatar } = req.body;
 
     const existingUser = await prisma.user.findUnique({ where: { id } });
     if (!existingUser) {
@@ -170,6 +176,10 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
 
     if (status) {
       dataToUpdate.status = status;
+    }
+
+    if (avatar !== undefined && avatar !== null) {
+      dataToUpdate.avatar = avatar;
     }
 
     const updatedUser = await prisma.user.update({

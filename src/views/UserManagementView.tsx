@@ -39,12 +39,17 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
-  ChevronDown
+  ChevronDown,
+  Camera,
+  Upload,
+  Image as ImageIcon,
+  Trash2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, Role, User } from '../types';
 import { Pagination } from '../components/Pagination';
+import { compressImage } from '../utils/imageCompressor';
 
 export const UserManagementView: React.FC = () => {
   const { 
@@ -241,6 +246,30 @@ export const UserManagementView: React.FC = () => {
     else if (activeTab === 'user_list' || activeTab === 'users') setSubTab('user_list');
   }, [activeTab]);
 
+  const AVATAR_PRESETS = [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+  ];
+
+  const handleAvatarFile = async (file: File, isEdit: boolean) => {
+    try {
+      const compressed = await compressImage(file, 256, 256, 0.8);
+      if (compressed) {
+        if (isEdit) {
+          setEditFormData((prev) => ({ ...prev, avatar: compressed }));
+        } else {
+          setFormData((prev) => ({ ...prev, avatar: compressed }));
+        }
+      }
+    } catch (err) {
+      console.error('Erreur compression avatar:', err);
+    }
+  };
+
   // Form State for New User (with Username & Password)
   const [formData, setFormData] = useState({
     name: '',
@@ -286,6 +315,7 @@ export const UserManagementView: React.FC = () => {
     role: 'agent_rd' as Role,
     location: '',
     commissionRate: 1.0,
+    avatar: '',
   });
   const [editPassword, setEditPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
@@ -308,6 +338,7 @@ export const UserManagementView: React.FC = () => {
       role: user.role,
       location: user.location,
       commissionRate: user.commissionRate !== undefined ? user.commissionRate : 1.0,
+      avatar: user.avatar || '',
     });
     setEditPassword('');
     setShowEditPassword(false);
@@ -327,6 +358,7 @@ export const UserManagementView: React.FC = () => {
       role: editFormData.role,
       location: editFormData.location,
       commissionRate: Number(editFormData.commissionRate),
+      avatar: editFormData.avatar,
     };
 
     if (editPassword && editPassword.trim()) {
@@ -389,7 +421,7 @@ export const UserManagementView: React.FC = () => {
     setTimeout(() => setCopiedPassword(false), 2000);
   };
 
-  const allOperators: OperatorCode[] = ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice'];
+  const allOperators: OperatorCode[] = ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'];
 
   const filteredUsers = availableUsers.filter((u) => {
     return (
@@ -922,6 +954,96 @@ export const UserManagementView: React.FC = () => {
                   <span className="text-[11px] font-mono text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-lg font-bold">
                     {inspectedUser.nodeId}
                   </span>
+                </div>
+
+                {/* Photo de Profil (Avatar) */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-blue-600" />
+                      <span>Photo de Profil</span>
+                    </label>
+                    {editFormData.avatar && (
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData({ ...editFormData, avatar: '' })}
+                        className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Supprimer la photo</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="relative group flex-shrink-0">
+                      {editFormData.avatar ? (
+                        <img 
+                          src={editFormData.avatar} 
+                          alt="Aperçu" 
+                          className="w-20 h-20 rounded-2xl object-cover border-2 border-blue-400 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-2xl bg-slate-200 text-slate-600 font-black text-xl flex items-center justify-center border-2 border-dashed border-slate-300">
+                          {editFormData.name ? editFormData.name.charAt(0).toUpperCase() : <UserIcon className="w-8 h-8 opacity-40" />}
+                        </div>
+                      )}
+                      <label 
+                        htmlFor="edit-avatar-upload" 
+                        className="absolute inset-0 bg-black/40 text-white rounded-2xl flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold"
+                      >
+                        <Camera className="w-5 h-5 mb-0.5" />
+                        Changer
+                      </label>
+                      <input
+                        id="edit-avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAvatarFile(file, true);
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex-1 space-y-2 w-full">
+                      <div className="flex items-center gap-2">
+                        <label 
+                          htmlFor="edit-avatar-upload"
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Téléverser depuis l'appareil</span>
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-medium">JPEG, PNG ou WebP</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Modèles :</span>
+                        {AVATAR_PRESETS.map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setEditFormData({ ...editFormData, avatar: preset })}
+                            className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                              editFormData.avatar === preset ? 'border-blue-600 ring-2 ring-blue-200 scale-110' : 'border-slate-200 hover:border-slate-400 opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={preset} alt={`Modèle ${idx + 1}`} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+
+                      <input
+                        type="url"
+                        value={editFormData.avatar}
+                        onChange={(e) => setEditFormData({ ...editFormData, avatar: e.target.value })}
+                        placeholder="Ou collez l'URL d'une image (https://...)"
+                        className="w-full bg-white border border-slate-200 text-[11px] font-mono text-slate-700 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
@@ -1480,7 +1602,7 @@ export const UserManagementView: React.FC = () => {
                           }`}
                         >
                           {isAllowed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <XCircle className="w-3.5 h-3.5 text-slate-400" />}
-                          <span className="capitalize">{op}</span>
+                          <span className="capitalize">{op === 'zelle' ? '🇺🇸 Zelle USA' : op}</span>
                         </div>
                       );
                     })}
@@ -2254,6 +2376,96 @@ export const UserManagementView: React.FC = () => {
                 </span>
               </div>
 
+              {/* Photo de profil (Avatar) */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-emerald-600" />
+                    <span>Photo de Profil de l'Agent</span>
+                  </label>
+                  {formData.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, avatar: '' })}
+                      className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Réinitialiser</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative group flex-shrink-0">
+                    {formData.avatar ? (
+                      <img 
+                        src={formData.avatar} 
+                        alt="Aperçu" 
+                        className="w-20 h-20 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl bg-slate-200 text-slate-600 font-black text-xl flex items-center justify-center border-2 border-dashed border-slate-300">
+                        {formData.name ? formData.name.charAt(0).toUpperCase() : <UserIcon className="w-8 h-8 opacity-40" />}
+                      </div>
+                    )}
+                    <label 
+                      htmlFor="create-avatar-upload" 
+                      className="absolute inset-0 bg-black/40 text-white rounded-2xl flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-bold"
+                    >
+                      <Camera className="w-5 h-5 mb-0.5" />
+                      Choisir
+                    </label>
+                    <input
+                      id="create-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAvatarFile(file, false);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex-1 space-y-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <label 
+                        htmlFor="create-avatar-upload"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Téléverser depuis l'appareil / Caméra</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-medium">JPEG, PNG ou WebP</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Modèles :</span>
+                      {AVATAR_PRESETS.map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, avatar: preset })}
+                          className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                            formData.avatar === preset ? 'border-emerald-600 ring-2 ring-emerald-200 scale-110' : 'border-slate-200 hover:border-slate-400 opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={preset} alt={`Modèle ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+
+                    <input
+                      type="url"
+                      value={formData.avatar}
+                      onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                      placeholder="Ou collez l'URL d'une image (https://...)"
+                      className="w-full bg-white border border-slate-200 text-[11px] font-mono text-slate-700 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Nom Complet */}
                 <div>
@@ -2515,7 +2727,7 @@ export const UserManagementView: React.FC = () => {
                   </div>
 
                   {/* Operator Permission Toggles Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-1">
                     {allOperators.map((op) => {
                       const isForbiddenGestionnaire = perm.role === 'gestionnaire' && (op === 'natcash' || op === 'natcom');
                       const isAllowed = !isForbiddenGestionnaire && perm.servicesAllowed?.includes(op);
@@ -2529,14 +2741,18 @@ export const UserManagementView: React.FC = () => {
                             isForbiddenGestionnaire
                               ? 'bg-amber-50/50 border-amber-200 text-amber-800 opacity-60'
                               : isAllowed 
-                                ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 shadow-2xs hover:bg-emerald-100' 
+                                ? (op === 'zelle' ? 'bg-purple-50/80 border-purple-300 text-purple-950 shadow-2xs hover:bg-purple-100' : 'bg-emerald-50/70 border-emerald-300 text-emerald-900 shadow-2xs hover:bg-emerald-100')
                                 : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60 hover:opacity-100'
-                          } disabled:cursor-not-allowed`}
+                          } disabled:cursor-not-allowed cursor-pointer`}
                           title={isForbiddenGestionnaire ? "Interdit : Un gestionnaire/superviseur ne peut pas effectuer de transactions Natcash et Natcom." : undefined}
                         >
-                          <span className="capitalize text-xs font-extrabold">{op}</span>
+                          <span className="capitalize text-xs font-extrabold">{op === 'zelle' ? '🇺🇸 Zelle' : op}</span>
                           <span className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                            isForbiddenGestionnaire ? 'bg-amber-200 text-amber-800 font-mono text-[9px] font-black' : isAllowed ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'
+                            isForbiddenGestionnaire 
+                              ? 'bg-amber-200 text-amber-800 font-mono text-[9px] font-black' 
+                              : isAllowed 
+                                ? (op === 'zelle' ? 'bg-purple-600 text-white' : 'bg-emerald-600 text-white')
+                                : 'bg-slate-200 text-slate-400'
                           }`}>
                             {isForbiddenGestionnaire ? '✕' : isAllowed ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                           </span>

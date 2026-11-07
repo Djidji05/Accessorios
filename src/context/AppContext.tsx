@@ -237,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = localStorage.getItem('dalexis_user');
       if (saved) {
         const u = JSON.parse(saved);
-        if (u.role === 'agent_rd') return 'guichet';
+        if (u.role === 'agent_rd' || u.role === 'gestionnaire') return 'guichet';
         if (u.role === 'agent_haiti') return 'tasks';
       }
     } catch {}
@@ -477,7 +477,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Migration automatique: s'assurer que les agents RD, gestionnaires et admins ont Zelle autorisé par défaut s'il manquait
+          return parsed.map((p: UserPermissionMatrix) => {
+            const shouldHaveZelle = p.role === 'admin' || p.role === 'agent_rd' || p.role === 'gestionnaire';
+            if (shouldHaveZelle && Array.isArray(p.servicesAllowed) && !p.servicesAllowed.includes('zelle')) {
+              return { ...p, servicesAllowed: [...p.servicesAllowed, 'zelle'] };
+            }
+            return p;
+          });
+        }
       } catch (err) {
         console.error('Erreur lecture dalexis_permissions:', err);
       }
@@ -1746,9 +1755,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Add default permissions entry
         const defaultServices: OperatorCode[] = 
           createdUser.role === 'agent_haiti' ? ['natcash', 'natcom'] :
-          createdUser.role === 'gestionnaire' ? ['moncash', 'digicel', 'claro', 'altice'] :
-          createdUser.role === 'agent_rd' ? ['moncash', 'digicel', 'claro', 'altice', 'natcash', 'natcom'] :
-          ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice'];
+          createdUser.role === 'gestionnaire' ? ['moncash', 'digicel', 'claro', 'altice', 'zelle'] :
+          createdUser.role === 'agent_rd' ? ['moncash', 'digicel', 'claro', 'altice', 'natcash', 'natcom', 'zelle'] :
+          ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'];
 
         const defaultCeiling = createdUser.role === 'admin' ? 500000 : (createdUser.role === 'agent_haiti' || createdUser.role === 'gestionnaire' ? 100000 : 50000);
         const newPerm: UserPermissionMatrix = {
@@ -1797,9 +1806,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Add default permissions entry
     const localServices: OperatorCode[] = 
       newUser.role === 'agent_haiti' ? ['natcash', 'natcom'] :
-      newUser.role === 'gestionnaire' ? ['moncash', 'digicel', 'claro', 'altice'] :
-      newUser.role === 'agent_rd' ? ['moncash', 'digicel', 'claro', 'altice', 'natcash', 'natcom'] :
-      ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice'];
+      newUser.role === 'gestionnaire' ? ['moncash', 'digicel', 'claro', 'altice', 'zelle'] :
+      newUser.role === 'agent_rd' ? ['moncash', 'digicel', 'claro', 'altice', 'natcash', 'natcom', 'zelle'] :
+      ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'];
 
     const localCeiling = newUser.role === 'admin' ? 500000 : (newUser.role === 'agent_haiti' || newUser.role === 'gestionnaire' ? 100000 : 50000);
     const newPerm: UserPermissionMatrix = {
@@ -1885,9 +1894,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (res.user) {
           localStorage.setItem('dalexis_user', JSON.stringify(res.user));
           setCurrentUser(res.user);
-          // Redirection immédiate sur l'onglet adapté au rôle
+          // Redirection immédiate sur l'onglet adapté au rôle (Gestionnaire -> Opérations en premier)
           const targetTab: ActiveTab = 
-            res.user.role === 'agent_rd' ? 'guichet' :
+            res.user.role === 'agent_rd' || res.user.role === 'gestionnaire' ? 'guichet' :
             res.user.role === 'agent_haiti' ? 'tasks' :
             'overview';
           setActiveTab(targetTab);

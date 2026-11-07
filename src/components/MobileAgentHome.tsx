@@ -1226,9 +1226,17 @@ export const MobileAgentHome: React.FC = () => {
         <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 -mt-4 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-3">
             {/* Agent Avatar */}
-            <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md ring-2 ring-white dark:ring-slate-800">
-              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
-            </div>
+            {currentUser.avatar ? (
+              <img
+                src={currentUser.avatar}
+                alt={currentUser.name}
+                className="w-10 h-10 rounded-full object-cover shadow-md ring-2 ring-white dark:ring-slate-800"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md ring-2 ring-white dark:ring-slate-800">
+                {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
+              </div>
+            )}
 
             <div>
               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block leading-none">

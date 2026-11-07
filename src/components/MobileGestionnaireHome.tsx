@@ -60,6 +60,7 @@ const OPERATORS_LIST: {
   { id: 'natcom', name: 'Natcom', country: '🇭🇹', symbol: 'NAT', icon: Radio, badgeBg: 'bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 border-sky-200 dark:border-sky-900/40', tagText: 'Telecom & Recharge HT' },
   { id: 'claro', name: 'Claro RD', country: '🇩🇴', symbol: 'CLA', icon: PhoneCall, badgeBg: 'bg-red-600/10 text-red-700 dark:bg-red-600/20 dark:text-red-400 border-red-200 dark:border-red-900/40', tagText: 'Telecom R.D.' },
   { id: 'altice', name: 'Altice RD', country: '🇩🇴', symbol: 'ALT', icon: ShoppingBag, badgeBg: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border-orange-200 dark:border-orange-900/40', tagText: 'Telecom R.D.' },
+  { id: 'zelle', name: 'Zelle USA', country: '🇺🇸', symbol: 'ZEL', icon: DollarSign, badgeBg: 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 border-purple-200 dark:border-purple-900/40', tagText: 'Virement USD' },
 ];
 
 export const MobileGestionnaireHome: React.FC = () => {
@@ -265,16 +266,25 @@ export const MobileGestionnaireHome: React.FC = () => {
       amountDOP: numAmount,
       feeDOP,
       commissionDOP: commDOP,
+      proofUrl: directProofImage || undefined,
+      zelleProofUrl: directOperator === 'zelle' ? (directProofImage || undefined) : undefined,
     });
 
     if (res.success && res.transaction) {
       const createdTx = res.transaction;
       const isHaitiOp = directOperator === 'natcom' || directOperator === 'natcash' || directOperator === 'moncash' || directOperator === 'digicel';
+      const isZelle = directOperator === 'zelle';
 
       if (isHaitiOp) {
         setFeedback({
           type: 'success',
           message: `Transaction ${createdTx.referenceNumber} (${directOperator.toUpperCase()}) créée et mise en attente ! Transmise à l'agent en Haïti pour validation avec photo de preuve.`,
+        });
+        setSelectedReceiptTx(createdTx);
+      } else if (isZelle) {
+        setFeedback({
+          type: 'success',
+          message: `Transaction Zelle ${createdTx.referenceNumber} soumise avec photo de preuve ! En attente de validation bancaire par l'Administrateur.`,
         });
         setSelectedReceiptTx(createdTx);
       } else {

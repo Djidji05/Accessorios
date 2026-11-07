@@ -1,8 +1,9 @@
-const CACHE_NAME = 'accessorio-pwa-v9';
+const CACHE_NAME = 'accessorio-pwa-v10';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/images/logo1.png',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-192.svg',

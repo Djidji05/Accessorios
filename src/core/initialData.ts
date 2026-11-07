@@ -70,6 +70,13 @@ export const INITIAL_KILL_SWITCH: KillSwitchItem[] = [
     updatedBy: 'Alexis D\'Alexis',
     updatedAt: new Date().toISOString(),
   },
+  {
+    operator: 'zelle',
+    serviceName: 'Zelle USA (Paiement & Virement USD)',
+    enabled: true,
+    updatedBy: 'Alexis D\'Alexis',
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 export const INITIAL_TRANSACTIONS: Transaction[] = [];
@@ -122,7 +129,7 @@ export const INITIAL_PERMISSIONS: UserPermissionMatrix[] = [
     userId: 'cmtyvnlg40000d2uvmaf3szds',
     userName: 'Noel Djivensly',
     role: 'admin',
-    servicesAllowed: ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice'],
+    servicesAllowed: ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'],
     maxSingleTransactionDOP: 1000000,
     canCancelTransaction: true,
     canManageKillSwitch: true,
@@ -133,7 +140,7 @@ export const INITIAL_PERMISSIONS: UserPermissionMatrix[] = [
     userId: 'usr_admin',
     userName: 'Alexis D\'Alexis',
     role: 'admin',
-    servicesAllowed: ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice'],
+    servicesAllowed: ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'],
     maxSingleTransactionDOP: 1000000,
     canCancelTransaction: true,
     canManageKillSwitch: true,
