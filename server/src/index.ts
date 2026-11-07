@@ -69,8 +69,8 @@ app.use(cors({
     ) {
       return callback(null, true);
     }
-    // Au lieu de crasher le serveur avec un Error(), refuser proprement sans exception 500
-    return callback(null, true);
+    // Refuser proprement les origines non autorisées sans générer d'exception 500
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

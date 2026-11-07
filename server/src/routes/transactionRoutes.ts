@@ -72,8 +72,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 1.1 Récupération de l'image de preuve
-router.get('/:id/proof', async (req, res) => {
+// 1.1 Récupération sécurisée de l'image de preuve (Authentifié avec Bearer ou ?token=)
+router.get('/:id/proof', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const tx = await prisma.transaction.findUnique({
