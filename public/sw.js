@@ -1,13 +1,13 @@
-const CACHE_NAME = 'accessorio-pwa-v10';
+const CACHE_NAME = 'accessorio-pwa-v12';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.png',
+  '/apple-touch-icon.png',
   '/images/logo1.png',
   '/icon-192.png',
-  '/icon-512.png',
-  '/icon-192.svg',
-  '/icon-512.svg'
+  '/icon-512.png'
 ];
 
 // 1. Install Event: Cache Core Static Shell Assets
