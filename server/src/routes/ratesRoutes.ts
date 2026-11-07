@@ -18,7 +18,7 @@ router.get('/', async (_req, res) => {
       baseCurrency: 'DOP',
       targetCurrency: 'HTG',
       rate: dopRate?.rate || 2.35,
-      usdRate: usdRate?.rate || 140.5,
+      usdRate: usdRate?.rate || 58.0,
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors de la récupération du taux.' });
@@ -40,18 +40,20 @@ router.put('/', authMiddleware, requireRole('admin'), async (req, res) => {
     const isUSD = String(currency).toUpperCase() === 'USD';
     const rateId = isUSD ? 'rate_usd' : 'rate_official';
     const baseCur = isUSD ? 'USD' : 'DOP';
+    const targetCur = isUSD ? 'DOP' : 'HTG';
 
     const updated = await prisma.exchangeRate.upsert({
       where: { id: rateId },
       update: {
         rate: numRate,
+        targetCurrency: targetCur,
         updatedBy: effectiveActorName,
         updatedAt: new Date(),
       },
       create: {
         id: rateId,
         baseCurrency: baseCur,
-        targetCurrency: 'HTG',
+        targetCurrency: targetCur,
         rate: numRate,
         updatedBy: effectiveActorName,
       }
@@ -66,7 +68,7 @@ router.put('/', authMiddleware, requireRole('admin'), async (req, res) => {
         action: 'TAUX_CHANGE_MAJ',
         targetType: 'system',
         details: isUSD
-          ? `Mise à jour du taux officiel USD : 1 USD = ${numRate} HTG.`
+          ? `Mise à jour du taux officiel USD : 1 USD = ${numRate} DOP.`
           : `Mise à jour du taux officiel : 1 Peso = ${numRate} HTG.`,
         nodeStatus: 'SYNCED',
         priority: 'Medium',
@@ -78,7 +80,7 @@ router.put('/', authMiddleware, requireRole('admin'), async (req, res) => {
     return res.json({
       success: true,
       message: isUSD 
-        ? `Taux USD mis à jour : 1 USD = ${numRate} HTG.`
+        ? `Taux USD mis à jour : 1 USD = ${numRate} DOP.`
         : `Taux mis à jour : 1 Peso = ${numRate} HTG.`,
       rate: updated,
     });

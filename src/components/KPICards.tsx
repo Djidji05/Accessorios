@@ -11,8 +11,10 @@ interface KPICardsProps {
 export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
   const { currentUser, transactions, dopToHtgRate, usdToHtgRate, adminCommissionRate, serviceCommissionRates, t } = useApp();
 
-  // Taux dynamique USD -> DOP (1 USD = 60 DOP approx. basé sur USD/HTG vs DOP/HTG)
-  const usdToDopRate = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+  // Taux de référence direct USD -> DOP (ex: 58.0 DOP)
+  const usdToDopRate = (usdToHtgRate && usdToHtgRate <= 100)
+    ? usdToHtgRate
+    : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
 
   // Helper pour calculer la commission d'une transaction en DOP
   const getTxCommissionDOP = (tx: typeof transactions[0]) => {

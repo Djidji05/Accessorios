@@ -1590,6 +1590,12 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Validation bancaire obligatoire": "Validación bancaria obligatoria",
     "RÈGLE DE SÉCURITÉ : Ne donnez aucun argent au client avant que l'Admin ait validé !": "REGLA DE SEGURIDAD: ¡No entregue dinero al cliente antes de que el Admin haya validado!",
 
+    "Taux de Référence (1 USD ➔ DOP)": "To Referans (1 USD ➔ DOP)",
+    "Nouveau taux 1 USD -> DOP (ex: 58.0):": "Nouvo to 1 USD -> DOP (egz: 58.0):",
+    "Modifier le taux USD/DOP": "Modifye to USD/DOP",
+    "utilisé pour Zelle et conversions en pesos": "itilize pou Zelle ak konvèsyon an pesos",
+    "signifie que": "vle di ke",
+    "Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.": "Aplikasyon telechaje avèk siksè ! Jwenn rakousi Alexis Transferencia a nan telechajman ou yo.",
     // PWA Prompt
     "Installer Alexis Transferencia PWA": "Enstale Alexis Transferencia PWA",
     "pwa_prompt_sub": "Enstale aplikasyon an sou ekran lakay ou pou yon aksè rapid e optimize.",
@@ -2304,6 +2310,12 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Validation bancaire obligatoire": "Validación bancaria obligatoria",
     "RÈGLE DE SÉCURITÉ : Ne donnez aucun argent au client avant que l'Admin ait validé !": "REGLA DE SEGURIDAD: ¡No entregue dinero al cliente antes de que el Admin haya validado!",
 
+        "Taux de Référence (1 USD ➔ DOP)": "Tasa de Referencia (1 USD ➔ DOP)",
+    "Nouveau taux 1 USD -> DOP (ex: 58.0):": "Nueva tasa 1 USD -> DOP (ej: 58.0):",
+    "Modifier le taux USD/DOP": "Modificar tasa USD/DOP",
+    "utilisé pour Zelle et conversions en pesos": "utilizado para Zelle y conversiones en pesos",
+    "signifie que": "significa que",
+    "Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.": "¡Aplicación descargada con éxito! Encuentre el acceso directo de Alexis Transferencia en sus descargas.",
     // PWA Prompt
     "Installer Alexis Transferencia PWA": "Instalar Alexis Transferencia PWA",
     "pwa_prompt_sub": "Instale la aplicación en su pantalla de inicio para un acceso ultra rápido y optimizado.",

@@ -267,18 +267,19 @@ export const Header: React.FC = () => {
 
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="font-bold text-slate-700 dark:text-slate-300">
-              1 USD = {usdToHtgRate || 140.5} HTG
+              1 USD = {usdToHtgRate <= 100 ? (usdToHtgRate || 58.0) : 58.0} DOP
             </span>
             {currentUser.role === 'admin' && (
               <button 
                 onClick={() => {
-                  const newUsd = prompt('Nouveau taux 1 USD -> HTG (ex: 140.5):', (usdToHtgRate || 140.5).toString());
+                  const currentUsdDop = usdToHtgRate <= 100 ? (usdToHtgRate || 58.0) : 58.0;
+                  const newUsd = prompt(t('Nouveau taux 1 USD -> DOP (ex: 58.0):', 'Nouveau taux 1 USD -> DOP (ex: 58.0):'), currentUsdDop.toString());
                   if (newUsd && !isNaN(parseFloat(newUsd))) {
                     setUsdToHtgRate(parseFloat(newUsd));
                   }
                 }}
                 className="text-[10px] text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-semibold cursor-pointer"
-                title="Modifier le taux USD/HTG"
+                title={t('Modifier le taux USD/DOP', 'Modifier le taux USD/DOP')}
               >
                 {t('edit')}
               </button>

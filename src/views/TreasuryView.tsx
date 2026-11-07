@@ -77,8 +77,10 @@ export const TreasuryView: React.FC = () => {
     label: '7 derniers jours',
   });
 
-  // Taux de conversion USD -> DOP (1 USD ≈ 60 DOP, dérivé de USD/HTG vs DOP/HTG)
-  const usdToDopRate = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+  // Taux de référence direct USD -> DOP (ex: 58.0 DOP)
+  const usdToDopRate = (usdToHtgRate && usdToHtgRate <= 100)
+    ? usdToHtgRate
+    : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
   const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
 
   // Filtrage temporel précis des transactions
@@ -132,7 +134,7 @@ export const TreasuryView: React.FC = () => {
   const totalZelleCommissionUSD = Math.round(totalZelleVolumeUSD * (zelleCommRate / 100) * 100) / 100;
   const totalZelleCommissionDOP = Math.round(totalZelleCommissionUSD * usdToDopRate);
   const totalZelleVolumeDOP = Math.round(totalZelleVolumeUSD * usdToDopRate);
-  const totalZelleVolumeHTG = Math.round(totalZelleVolumeUSD * (usdToHtgRate || 140.5));
+  const totalZelleVolumeHTG = Math.round(totalZelleVolumeUSD * (usdToDopRate * (dopToHtgRate || 2.35)));
 
   // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME SUR LA PÉRIODE SÉLECTIONNÉE ---
   const liveFeesDOP = validPeriodTxs.reduce((sum, t) => {
@@ -570,7 +572,7 @@ export const TreasuryView: React.FC = () => {
               1 USD = {usdToDopRate.toFixed(1)} DOP
             </span>
             <span className="text-[10px] sm:text-[11px] font-mono font-bold bg-purple-950 text-purple-200 px-2.5 py-1 rounded-xl border border-purple-700">
-              1 USD = {usdToHtgRate || 140.5} HTG
+              1 USD ≈ {Math.round(usdToDopRate * (dopToHtgRate || 2.35))} HTG
             </span>
           </div>
         </div>
@@ -616,7 +618,7 @@ export const TreasuryView: React.FC = () => {
               {totalZelleVolumeHTG.toLocaleString()} <span className="text-xs font-bold text-purple-300">HTG</span>
             </p>
             <p className="text-[10px] text-purple-300 font-medium">
-              {t('calculated_at_usd_rate', 'Calculé au taux USD de')} {usdToHtgRate || 140.5} HTG
+              {t('calculated_at_usd_rate', 'Calculé au taux USD de')} {usdToDopRate.toFixed(1)} DOP
             </p>
           </div>
         </div>

@@ -267,7 +267,9 @@ export const OperationsGuichetView: React.FC = () => {
         setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme en USD.' });
         return;
       }
-      const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+      const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+        ? usdToHtgRate
+        : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const clientName = receiverName.trim() || senderName.trim() || 'Client Zelle';
 
       const result = createTransaction({
@@ -876,7 +878,9 @@ export const OperationsGuichetView: React.FC = () => {
               {/* Live Calculations Breakdown */}
               {(() => {
                 const numUSD = parseFloat(zelleAmountUSD) || 0;
-                const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+                const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+        ? usdToHtgRate
+        : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
                 const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
                 const netUSD = Math.max(0, numUSD - feeUSD);
                 const netDOP = Math.round(netUSD * usdToDop);

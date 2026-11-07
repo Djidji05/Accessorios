@@ -164,7 +164,7 @@ interface AppContextType {
   canInstallPWA: boolean;
   showPWAInstallPrompt: boolean;
   setShowPWAInstallPrompt: (show: boolean) => void;
-  installPWA: () => Promise<'accepted' | 'dismissed' | 'unsupported_ios' | 'unavailable' | 'already_installed'>;
+  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'unsupported_ios' | 'unavailable' | 'already_installed'>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -354,7 +354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unsupported_ios' | 'unavailable' | 'already_installed'> => {
+  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'unsupported_ios' | 'unavailable' | 'already_installed'> => {
     if (isPWAInstalled) {
       return 'already_installed';
     }
@@ -377,6 +377,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.error('PWA install prompt error:', err);
       }
     }
+
+    // Déclencher le téléchargement immédiat du lanceur d'application pour bureau / mobile
+    if (typeof window !== 'undefined') {
+      try {
+        const origin = window.location.origin || 'https://alexistransferencia.app';
+        const content = `[InternetShortcut]\r\nURL=${origin}/\r\nIconIndex=0\r\nIconFile=${origin}/favicon.png\r\nHotKey=0\r\n[{000214A0-0000-0000-C000-000000000046}]\r\nProp3=19,11\r\n`;
+        const blob = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Alexis-Transferencia.url';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return 'downloaded';
+      } catch (e) {
+        console.error('Erreur téléchargement lanceur app:', e);
+      }
+    }
+
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     if (isIOS) {
       return 'unsupported_ios';
@@ -413,7 +434,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [usdToHtgRate, setUsdToHtgRateState] = useState<number>(() => {
     const saved = localStorage.getItem('dalexis_usd_to_htg_rate');
-    return saved ? parseFloat(saved) : 140.5;
+    const val = saved ? parseFloat(saved) : 58.0;
+    return (val > 0 && val <= 100) ? val : 58.0;
   });
   
   const [adminCommissionRate, setAdminCommissionRateState] = useState<number>(() => {
@@ -840,7 +862,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               if (rateData?.usdRate) {
                 const u = parseFloat(String(rateData.usdRate));
                 if (!isNaN(u) && u > 0) {
-                  setUsdToHtgRateState((prev) => (prev === u ? prev : u));
+                  const normalizedUsd = u > 100 ? 58.0 : u;
+                  setUsdToHtgRateState((prev) => (prev === normalizedUsd ? prev : normalizedUsd));
                 }
               }
             }
@@ -1102,8 +1125,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (rateObj?.isUSD || rateObj?.baseCurrency === 'USD') {
               const u = parseFloat(String(rateObj.rate || rateObj.usdRate));
               if (!isNaN(u) && u > 0) {
-                setUsdToHtgRateState(u);
-                showToast(`📈 Taux USD officiel actualisé en direct : 1 USD = ${u} HTG`, 'info');
+                const normalizedU = u > 100 ? 58.0 : u;
+                setUsdToHtgRateState(normalizedU);
+                showToast(`📈 Taux USD officiel actualisé en direct : 1 USD = ${normalizedU} DOP`, 'info');
               }
             } else if (rateObj?.rate) {
               const r = rateObj.rate > 10 ? rateObj.rate / 100 : rateObj.rate;
@@ -1178,10 +1202,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setUsdToHtgRate = (rate: number) => {
     const num = parseFloat(String(rate));
     if (isNaN(num) || num <= 0) return;
-    setUsdToHtgRateState(num);
-    localStorage.setItem('dalexis_usd_to_htg_rate', num.toString());
-    api.rates.update(num, currentUser.name, 'USD').catch(() => null);
-    showToast(`Taux USD officiel mis à jour : 1 USD = ${num} HTG`, 'success');
+    const normalizedNum = Math.round(num * 100) / 100;
+    setUsdToHtgRateState(normalizedNum);
+    localStorage.setItem('dalexis_usd_to_htg_rate', normalizedNum.toString());
+    api.rates.update(normalizedNum, currentUser.name, 'USD').catch(() => null);
+    showToast(`Taux de référence USD mis à jour : 1 USD = ${normalizedNum} DOP`, 'success');
   };
 
   // Subscribe to distributed event bus for audit logging
@@ -1281,11 +1306,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    // Calculs spécifiques Zelle si applicable
-    const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+    // Calculs spécifiques Zelle si applicable (Taux USD -> DOP direct)
+    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+      ? usdToHtgRate
+      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
     const finalAmountUSD = data.amountUSD || (isZelle && data.amountDOP > 0 ? Math.round((data.amountDOP / usdToDop) * 100) / 100 : 0);
     const finalAmountDOP = isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP;
-    const finalAmountHTG = isZelle ? Math.round(finalAmountUSD * (usdToHtgRate || 140.5)) : Math.round(data.amountDOP * dopToHtgRate);
+    const finalAmountHTG = isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate);
 
     const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
     const zelleFeeRate = 3.5; // 3.5% Frais guichet / virement
@@ -1297,7 +1324,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const netPayoutAmount = payoutCurrency === 'DOP'
       ? Math.round(netUSD * usdToDop)
       : payoutCurrency === 'HTG'
-      ? Math.round(netUSD * (usdToHtgRate || 140.5))
+      ? Math.round(netUSD * (usdToDop * (dopToHtgRate || 2.35)))
       : Math.round(netUSD * 100) / 100;
 
     const finalFeeDOP = isZelle ? Math.round(zelleFeeUSD * usdToDop) : data.feeDOP;

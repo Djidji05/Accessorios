@@ -55,7 +55,9 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const isApproved = tx.zelleStatus === 'approved' || (tx.status === 'completed' && tx.operator === 'zelle');
   const isRejected = tx.zelleStatus === 'rejected' || (tx.status === 'cancelled' && tx.operator === 'zelle');
 
-  const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+  const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+    ? usdToHtgRate
+    : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
   const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';

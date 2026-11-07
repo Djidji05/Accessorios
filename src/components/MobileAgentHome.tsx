@@ -426,7 +426,9 @@ export const MobileAgentHome: React.FC = () => {
       return;
     }
 
-    const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+      ? usdToHtgRate
+      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
     const clientName = 'Client Zelle';
 
     const res = createTransaction({
@@ -466,7 +468,9 @@ export const MobileAgentHome: React.FC = () => {
 
     // DEDICATED STREAMLINED ZELLE INTAKE SCREEN
     if (selectedService === 'zelle') {
-      const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
+      const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+      ? usdToHtgRate
+      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const numUSD = parseFloat(zelleAmountUSD) || 0;
       const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
       const netUSD = Math.max(0, numUSD - feeUSD);

@@ -77,14 +77,14 @@ export const SettingsView: React.FC = () => {
   const [rateInput, setRateInput] = useState(() => {
     return (dopToHtgRate <= 10 ? Math.round(dopToHtgRate * 100) : Math.round(dopToHtgRate)).toString();
   });
-  const [usdRateInput, setUsdRateInput] = useState(() => (usdToHtgRate || 140.5).toString());
+  const [usdRateInput, setUsdRateInput] = useState(() => (usdToHtgRate <= 100 ? (usdToHtgRate || 58.0) : 58.0).toString());
 
   React.useEffect(() => {
     setRateInput((dopToHtgRate <= 10 ? Math.round(dopToHtgRate * 100) : Math.round(dopToHtgRate)).toString());
   }, [dopToHtgRate]);
 
   React.useEffect(() => {
-    setUsdRateInput((usdToHtgRate || 140.5).toString());
+    setUsdRateInput((usdToHtgRate <= 100 ? (usdToHtgRate || 58.0) : 58.0).toString());
   }, [usdToHtgRate]);
 
   const [companyHeader, setCompanyHeader] = useState("Alexis Transferencia");
@@ -769,8 +769,8 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                {t('Taux de Référence (1 USD ➔ HTG)')}
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
+                {t('Taux de Référence (1 USD ➔ DOP)')}
               </label>
               <div className="relative">
                 <input
@@ -779,12 +779,14 @@ export const SettingsView: React.FC = () => {
                   value={usdRateInput}
                   disabled={currentUser.role !== 'admin'}
                   onChange={(e) => setUsdRateInput(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-xs font-mono font-black text-slate-900 px-3 py-2.5 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 disabled:opacity-60"
-                  placeholder="140.5"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-black text-slate-900 dark:text-white px-3 py-2.5 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 disabled:opacity-60"
+                  placeholder="58.0"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">HTG</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">DOP</span>
               </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-1">Saisir <span className="font-mono font-bold text-slate-700">140.5</span> signifie que <span className="font-mono font-bold text-slate-700">1 USD = 140.5 HTG</span> (utilisé pour Zelle et conversions).</p>
+              <p className="text-[10px] text-slate-500 font-medium mt-1">
+                {t('Saisir')} <span className="font-mono font-bold text-slate-700 dark:text-slate-300">58.0</span> {t('signifie que')} <span className="font-mono font-bold text-slate-700 dark:text-slate-300">1 USD = 58.0 DOP</span> ({t('utilisé pour Zelle et conversions en pesos')}).
+              </p>
             </div>
           </div>
         </div>

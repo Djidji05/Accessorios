@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Alexis Transferencia",
   "short_name": "Alexis Transfer",
   "description": "Plateforme transfrontalière de transfert d'argent et services télécoms (DOP / HTG / USD)",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#FFFFFF",

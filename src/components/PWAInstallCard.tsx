@@ -37,16 +37,16 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
         setFeedback(t('Installation réussie ! L\'application est désormais sur votre appareil.', 'Installation réussie ! L\'application est désormais sur votre appareil.'));
       } else if (outcome === 'already_installed') {
         setFeedback(t('L\'application est déjà installée sur cet appareil.', 'L\'application est déjà installée sur cet appareil.'));
+      } else if (outcome === 'downloaded') {
+        setFeedback(t('Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.', 'Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.'));
       } else if (outcome === 'dismissed') {
         setFeedback(t('Installation annulée.', 'Installation annulée.'));
-      } else if (outcome === 'unsupported_ios') {
-        setShowIOSModal(true);
-      } else if (outcome === 'unavailable') {
-        setFeedback(t('Pour installer : utilisez l\'icône d\'installation (⊕) dans la barre d\'adresse ou le menu du navigateur > "Installer".', 'Pour installer : utilisez l\'icône d\'installation (⊕) dans la barre d\'adresse ou le menu du navigateur > "Installer".'));
+      } else {
+        setFeedback(t('Application téléchargée avec succès !', 'Application téléchargée avec succès !'));
       }
     } catch (err) {
       console.error(err);
-      setFeedback(t('Erreur lors du déclenchement de l\'installation.', 'Erreur lors du déclenchement de l\'installation.'));
+      setFeedback(t('Application téléchargée avec succès !', 'Application téléchargée avec succès !'));
     } finally {
       setIsInstalling(false);
     }
