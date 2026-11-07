@@ -2610,31 +2610,82 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </div>
                   )}
 
-                  {/* Financial Breakdown Card */}
-                  <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-2.5 text-xs">
-                    <div className="flex justify-between items-center text-slate-700">
-                      <span>Somme reçue par Zelle :</span>
-                      <span className="font-mono font-black text-slate-900 text-sm">${(tx.amountUSD || 0).toLocaleString()} USD</span>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                      <span>Frais de service (3.5%) :</span>
-                      <span className="font-mono font-bold text-slate-700">-${((tx.zelleFeeUSD || (tx.amountUSD || 0) * 0.035)).toFixed(2)} USD</span>
-                    </div>
-                    <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                      <span>Taux appliqué :</span>
-                      <span className="font-mono font-bold text-slate-700">
-                        1 USD = {(tx.zelleExchangeRate || (tx.amountDOP / (tx.amountUSD || 1))).toFixed(2)} {tx.netPayoutCurrency || 'DOP'}
-                      </span>
-                    </div>
-                    <div className="pt-2 border-t border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <span className="font-black text-xs uppercase tracking-tight text-purple-950">
-                        Montant net à remettre au client :
-                      </span>
-                      <span className="font-mono font-black text-emerald-600 text-xl">
-                        {(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.netPayoutCurrency || 'DOP'}
-                      </span>
-                    </div>
-                  </div>
+                  {/* Financial Breakdown & Agent Card */}
+                  {(() => {
+                    const numUSD = tx.amountUSD || (tx.amountDOP ? Math.round((tx.amountDOP / (tx.zelleExchangeRate || 60)) * 100) / 100 : 0);
+                    const appliedRate = tx.zelleExchangeRate || (tx.amountDOP && numUSD ? tx.amountDOP / numUSD : 60);
+                    const zFeeUSD = tx.zelleFeeUSD || Math.round(numUSD * 0.035 * 100) / 100;
+                    const zFeeDOP = Math.round(zFeeUSD * appliedRate);
+                    const zCommUSD = tx.zelleCommissionUSD || Math.round(numUSD * 0.015 * 100) / 100;
+                    const zCommDOP = Math.round(zCommUSD * appliedRate);
+                    const zPayoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
+                    const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
+                    const zNetPayout = tx.netPayoutAmount || (zPayoutCurrency === 'DOP' ? Math.round(zNetUSD * appliedRate) : zNetUSD);
+
+                    return (
+                      <div className="space-y-3">
+                        {/* Agent Qui a fait la transaction */}
+                        <div className="p-3 bg-purple-50/80 rounded-2xl border border-purple-200 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                              {(tx.createdByName || 'A')[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-slate-500 block">{t('Agent Émetteur')}</span>
+                              <span className="font-bold text-slate-900">{tx.createdByName || 'Agent Guichet'}</span>
+                              <span className="text-[10px] text-purple-700 ml-1.5 font-bold uppercase tracking-wider">
+                                ({tx.createdByRole?.replace('_', ' ') || 'agent'})
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 block">{t("Date & Heure d'envoi")}</span>
+                            <span className="font-mono text-slate-700 font-bold text-[11px]">
+                              {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Grille financière complète */}
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
+                          <div className="flex justify-between items-center text-slate-700">
+                            <span className="font-bold">{t('Somme reçue par Zelle :')}</span>
+                            <span className="font-mono font-black text-purple-700 text-sm">$${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                          </div>
+
+                          <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                            <span>{t('Taux appliqué :')}</span>
+                            <span className="font-mono font-bold text-slate-800">
+                              1 USD = {appliedRate.toFixed(2)} DOP
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                            <span>{t('Frais de Service (3.5%) :')}</span>
+                            <span className="font-mono font-bold text-amber-700">
+                              -$${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                            <span>{t('Commission Plateforme (1.5%) :')}</span>
+                            <span className="font-mono font-bold text-emerald-700">
+                              +$${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
+                            </span>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <span className="font-black text-xs uppercase tracking-tight text-slate-900">
+                              {t('Montant net à remettre au client :')}
+                            </span>
+                            <span className="font-mono font-black text-emerald-600 text-xl">
+                              {zPayoutCurrency === 'USD' ? `$${zNetPayout.toLocaleString()} USD` : `${zNetPayout.toLocaleString()} DOP`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Admin OUI / NON Action Box */}
                   {currentUser.role === 'admin' && (tx.zelleStatus === 'pending_admin_check' || tx.status === 'in_progress') ? (

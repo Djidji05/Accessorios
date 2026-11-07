@@ -58,11 +58,13 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const usdToDop = (usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 60.0;
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
-  const netPayout = tx.netPayoutAmount || tx.amountDOP;
-  const payoutCurrency = tx.netPayoutCurrency || 'DOP';
-
+  const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
   const feeUSD = tx.zelleFeeUSD || Math.round(amountUSD * 0.035 * 100) / 100;
   const feeDOP = Math.round(feeUSD * appliedRate);
+  const commUSD = tx.zelleCommissionUSD || Math.round(amountUSD * 0.015 * 100) / 100;
+  const commDOP = Math.round(commUSD * appliedRate);
+  const netUSD = Math.round((amountUSD - feeUSD) * 100) / 100;
+  const netPayout = tx.netPayoutAmount || (payoutCurrency === 'DOP' ? Math.round(netUSD * appliedRate) : netUSD);
 
   const proofImg = tx.zelleProofUrl || tx.proofUrl;
 
@@ -110,14 +112,14 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                    Fiche de Validation Zelle Pay
+                    {t('Fiche de Validation Zelle Pay')}
                   </h3>
                   <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {tx.referenceNumber}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Virement direct USA • Reçu par <strong className="text-slate-800 dark:text-slate-200">{tx.createdByName || 'Agent Guichet'}</strong>
+                  {t('Virement direct USA • Reçu par')} <strong className="text-slate-800 dark:text-slate-200">{tx.createdByName || 'Agent Guichet'}</strong>
                 </p>
               </div>
             </div>
@@ -129,6 +131,28 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+
+          {/* 👤 FICHE AGENT ÉMETTEUR & CONTEXTE */}
+          <div className="p-3 bg-purple-50/70 dark:bg-purple-950/40 rounded-2xl border border-purple-200 dark:border-purple-800 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-xs shadow-xs">
+                {(tx.createdByName || 'A')[0].toUpperCase()}
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('Agent Émetteur')}</span>
+                <span className="font-bold text-slate-900 dark:text-white">{tx.createdByName || 'Agent Guichet'}</span>
+                <span className="text-[10px] text-purple-600 dark:text-purple-400 ml-1.5 font-bold uppercase tracking-wider">
+                  ({tx.createdByRole?.replace('_', ' ') || 'agent'})
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">{t("Date & Heure d'envoi")}</span>
+              <span className="font-mono text-slate-700 dark:text-slate-300 font-bold text-[11px]">
+                {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
           </div>
 
           {/* STATUS BANNER */}
@@ -283,36 +307,50 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
           {/* 📊 FICHE FINANCIÈRE DÉTAILLÉE (TAUX & FRAIS TRANSPARENTS) */}
           <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs">
             <h4 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-[11px] pb-1 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <span>Détails Financiers & Calculs Officiels</span>
+              <span>{t('Détails Financiers & Calculs Officiels')}</span>
               <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">1 USD ≈ {appliedRate.toFixed(2)} DOP</span>
             </h4>
 
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
               <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Montant Zelle Reçu (Brut)</span>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Montant Zelle Reçu (Brut)')}</span>
                 <p className="text-base font-black font-mono text-purple-600 dark:text-purple-400 mt-0.5">
                   ${amountUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span className="text-xs">USD</span>
                 </p>
               </div>
 
               <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Taux de Conversion Appliqué</span>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Taux de Conversion Appliqué')}</span>
                 <p className="text-base font-black font-mono text-slate-900 dark:text-white mt-0.5">
                   1 USD = {appliedRate.toFixed(2)} DOP
                 </p>
               </div>
 
               <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Frais de Service (3.5%)</span>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Frais de Service (3.5%)')}</span>
                 <p className="text-sm font-black font-mono text-amber-600 dark:text-amber-400 mt-0.5">
-                  -${feeUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400">(-{feeDOP.toLocaleString()} DOP)</span>
+                  -${feeUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(-{feeDOP.toLocaleString()} DOP)</span>
                 </p>
               </div>
 
               <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Type d'opération</span>
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Commission Plateforme')}</span>
+                <p className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  +${commUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(+{commDOP.toLocaleString()} DOP)</span>
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Devise de remise au client :')}</span>
+                <p className="text-sm font-black font-mono text-slate-900 dark:text-white mt-0.5">
+                  {payoutCurrency === 'USD' ? '🇺🇸 Dollars (USD)' : '🇩🇴 Pesos (DOP)'}
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t("Type d'opération")}</span>
                 <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5 truncate">
-                  Virement Direct Zelle USA
+                  {t('Virement Direct Zelle USA')}
                 </p>
               </div>
             </div>
@@ -323,28 +361,28 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             <div className="p-4 rounded-3xl bg-purple-50/80 dark:bg-purple-950/40 border-2 border-purple-300 dark:border-purple-800 space-y-4">
               <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-extrabold text-sm">
                 <HelpCircle className="w-5 h-5 text-purple-600" />
-                <span>Question pour l'Administrateur : Avez-vous bien vu ce Zelle sur votre compte bancaire ?</span>
+                <span>{t("Question pour l'Administrateur : Avez-vous bien vu ce Zelle sur votre compte bancaire ?")}</span>
               </div>
 
               {showRejectInput ? (
                 <div className="space-y-3 p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-rose-300 dark:border-rose-800">
                   <label className="block text-xs font-bold text-rose-700 dark:text-rose-300">
-                    Motif du refus (optionnel) :
+                    {t("Motif du refus (optionnel) :")}
                   </label>
                   <input
                     type="text"
                     value={rejectNote}
                     onChange={(e) => setRejectNote(e.target.value)}
-                    placeholder="Ex: Fonds non visibles sur Banreservas / compte US..."
+                    placeholder="Ex: Fonds non visibles sur compte US / virement non reçu..."
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs px-3 py-2 rounded-xl text-slate-900 dark:text-white focus:outline-none"
                   />
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setShowRejectInput(false)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"
                     >
-                      Annuler
+                      {t('Annuler')}
                     </button>
                     <button
                       type="button"
@@ -352,7 +390,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                       onClick={handleAdminReject}
                       className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm cursor-pointer"
                     >
-                      Confirmer le Refus (NON)
+                      {t('Confirmer le Refus (NON)')}
                     </button>
                   </div>
                 </div>
@@ -366,7 +404,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-5 h-5" />
-                    <span>OUI, J'ai bien vu le Zelle (Valider)</span>
+                    <span>{t("OUI, J'ai bien vu le Zelle (Valider)")}</span>
                   </button>
 
                   {/* BOUTON NON */}
@@ -377,7 +415,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     className="w-full py-3.5 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <XCircle className="w-5 h-5" />
-                    <span>NON, Zelle non reçu (Refuser)</span>
+                    <span>{t("NON, Zelle non reçu (Refuser)")}</span>
                   </button>
                 </div>
               )}
@@ -392,7 +430,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimer Reçu</span>
+              <span>{t('Imprimer Reçu')}</span>
             </button>
 
             <button
@@ -400,7 +438,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               onClick={onClose}
               className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
             >
-              Fermer
+              {t('Fermer')}
             </button>
           </div>
         </div>

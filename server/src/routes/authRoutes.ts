@@ -86,6 +86,10 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     }
 
+    if ((user.role === 'admin' || user.role === 'agent_rd' || user.role === 'gestionnaire') && !servicesAllowedList.includes('zelle')) {
+      servicesAllowedList.push('zelle');
+    }
+
     return res.json({
       success: true,
       token,
@@ -126,6 +130,18 @@ router.get('/me', authMiddleware, async (req, res) => {
       where: { userId: user.id }
     });
 
+    let meServicesAllowed: string[] = [];
+    if (permissions?.servicesAllowed) {
+      try {
+        meServicesAllowed = JSON.parse(permissions.servicesAllowed);
+      } catch {
+        meServicesAllowed = [];
+      }
+    }
+    if ((user.role === 'admin' || user.role === 'agent_rd' || user.role === 'gestionnaire') && !meServicesAllowed.includes('zelle')) {
+      meServicesAllowed.push('zelle');
+    }
+
     return res.json({
       user: {
         id: user.id,
@@ -140,7 +156,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       },
       permissions: permissions ? {
         ...permissions,
-        servicesAllowed: JSON.parse(permissions.servicesAllowed)
+        servicesAllowed: meServicesAllowed
       } : null
     });
   } catch (error) {

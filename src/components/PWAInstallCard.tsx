@@ -34,17 +34,19 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
     try {
       const outcome = await installPWA();
       if (outcome === 'accepted') {
-        setFeedback('Installation réussie ! L\'application est désormais sur votre appareil.');
+        setFeedback(t('Installation réussie ! L\'application est désormais sur votre appareil.', 'Installation réussie ! L\'application est désormais sur votre appareil.'));
+      } else if (outcome === 'already_installed') {
+        setFeedback(t('L\'application est déjà installée sur cet appareil.', 'L\'application est déjà installée sur cet appareil.'));
+      } else if (outcome === 'dismissed') {
+        setFeedback(t('Installation annulée.', 'Installation annulée.'));
       } else if (outcome === 'unsupported_ios') {
         setShowIOSModal(true);
       } else if (outcome === 'unavailable') {
-        setShowIOSModal(true);
-      } else if (outcome === 'already_installed') {
-        setFeedback('L\'application est déjà installée sur cet appareil.');
+        setFeedback(t('Pour installer : utilisez l\'icône d\'installation (⊕) dans la barre d\'adresse ou le menu du navigateur > "Installer".', 'Pour installer : utilisez l\'icône d\'installation (⊕) dans la barre d\'adresse ou le menu du navigateur > "Installer".'));
       }
     } catch (err) {
       console.error(err);
-      setShowIOSModal(true);
+      setFeedback(t('Erreur lors du déclenchement de l\'installation.', 'Erreur lors du déclenchement de l\'installation.'));
     } finally {
       setIsInstalling(false);
     }

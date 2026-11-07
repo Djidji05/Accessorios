@@ -171,7 +171,7 @@ export const MobileAgentHome: React.FC = () => {
   // Zelle specific agent intake states
   const [zelleProofImage, setZelleProofImage] = useState<string | null>(null);
   const [zelleAmountUSD, setZelleAmountUSD] = useState<string>('100');
-  const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'HTG'>('DOP');
+  const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'USD'>('DOP');
   const [selectedZellePayoutTx, setSelectedZellePayoutTx] = useState<Transaction | null>(null);
   const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
   const zelleCameraInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -471,8 +471,7 @@ export const MobileAgentHome: React.FC = () => {
       const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
       const netUSD = Math.max(0, numUSD - feeUSD);
       const netPayoutDOP = Math.round(netUSD * usdToDop);
-      const netPayoutHTG = Math.round(netUSD * (usdToHtgRate || 140.5));
-      const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netPayoutHTG.toLocaleString()} HTG`;
+      const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netUSD.toFixed(2)} USD`;
 
       return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-28 space-y-4 animate-in fade-in">
@@ -675,14 +674,14 @@ export const MobileAgentHome: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setZellePayoutCurrency('HTG')}
+                    onClick={() => setZellePayoutCurrency('USD')}
                     className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      zellePayoutCurrency === 'HTG'
+                      zellePayoutCurrency === 'USD'
                         ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
-                    <span>🇭🇹 Gourdes (HTG)</span>
+                    <span>🇺🇸 Dollars (USD)</span>
                   </button>
                 </div>
               </div>

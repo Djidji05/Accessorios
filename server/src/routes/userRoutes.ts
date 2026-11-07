@@ -24,10 +24,21 @@ router.get('/', authMiddleware, async (_req, res) => {
     });
 
     const permissions = await prisma.userPermission.findMany();
-    const formattedPermissions = permissions.map(p => ({
-      ...p,
-      servicesAllowed: JSON.parse(p.servicesAllowed),
-    }));
+    const formattedPermissions = permissions.map(p => {
+      let servicesAllowed: string[] = [];
+      try {
+        servicesAllowed = JSON.parse(p.servicesAllowed);
+      } catch {
+        servicesAllowed = [];
+      }
+      if ((p.role === 'admin' || p.role === 'agent_rd' || p.role === 'gestionnaire') && !servicesAllowed.includes('zelle')) {
+        servicesAllowed.push('zelle');
+      }
+      return {
+        ...p,
+        servicesAllowed,
+      };
+    });
 
     return res.json({ users, permissions: formattedPermissions });
   } catch (error) {

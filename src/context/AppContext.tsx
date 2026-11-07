@@ -284,7 +284,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // PWA Installation Management
-  const [deferredPWAPrompt, setDeferredPWAPrompt] = useState<any>(null);
+  const [deferredPWAPrompt, setDeferredPWAPrompt] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      return (window as any).__deferredPWAPrompt || null;
+    }
+    return null;
+  });
   const [isPWAInstalled, setIsPWAInstalled] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return (
@@ -295,22 +300,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return false;
   });
-  const [showPWAInstallPrompt, setShowPWAInstallPrompt] = useState<boolean>(false);
+  const [showPWAInstallPrompt, setShowPWAInstallPrompt] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return Boolean((window as any).__deferredPWAPrompt);
+    }
+    return false;
+  });
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPWAPrompt(e);
+      (window as any).__deferredPWAPrompt = e;
       setShowPWAInstallPrompt(true);
+    };
+
+    const handlePromptAvailable = (e: any) => {
+      if (e.detail) {
+        setDeferredPWAPrompt(e.detail);
+        setShowPWAInstallPrompt(true);
+      }
     };
 
     const handleAppInstalled = () => {
       setIsPWAInstalled(true);
       setShowPWAInstallPrompt(false);
       setDeferredPWAPrompt(null);
+      (window as any).__deferredPWAPrompt = null;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('pwa-prompt-available', handlePromptAvailable);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     const mediaQuery = window.matchMedia('(display-mode: standalone)');
@@ -326,6 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('pwa-prompt-available', handlePromptAvailable);
       window.removeEventListener('appinstalled', handleAppInstalled);
       if (mediaQuery.removeEventListener) {
         mediaQuery.removeEventListener('change', handleDisplayModeChange);
@@ -337,14 +358,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isPWAInstalled) {
       return 'already_installed';
     }
-    if (deferredPWAPrompt) {
+    const promptEvent = deferredPWAPrompt || (typeof window !== 'undefined' ? (window as any).__deferredPWAPrompt : null);
+    if (promptEvent) {
       try {
-        deferredPWAPrompt.prompt();
-        const { outcome } = await deferredPWAPrompt.userChoice;
+        await promptEvent.prompt();
+        const { outcome } = await promptEvent.userChoice;
         if (outcome === 'accepted') {
           setIsPWAInstalled(true);
           setShowPWAInstallPrompt(false);
           setDeferredPWAPrompt(null);
+          if (typeof window !== 'undefined') {
+            (window as any).__deferredPWAPrompt = null;
+          }
           return 'accepted';
         }
         return 'dismissed';

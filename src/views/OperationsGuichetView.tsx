@@ -159,7 +159,7 @@ export const OperationsGuichetView: React.FC = () => {
   // Zelle Specific States
   const [zelleProofImage, setZelleProofImage] = useState<string | null>(null);
   const [zelleAmountUSD, setZelleAmountUSD] = useState<string>('100');
-  const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'HTG'>('DOP');
+  const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'USD'>('DOP');
   const [selectedZellePayoutTx, setSelectedZellePayoutTx] = useState<Transaction | null>(null);
   const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
   const zelleCameraInputRef = useRef<HTMLInputElement>(null);
@@ -861,14 +861,14 @@ export const OperationsGuichetView: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setZellePayoutCurrency('HTG')}
+                    onClick={() => setZellePayoutCurrency('USD')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
-                      zellePayoutCurrency === 'HTG'
+                      zellePayoutCurrency === 'USD'
                         ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <span>🇭🇹 Gourdes (HTG)</span>
+                    <span>🇺🇸 Dollars (USD)</span>
                   </button>
                 </div>
               </div>
@@ -880,8 +880,8 @@ export const OperationsGuichetView: React.FC = () => {
                 const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
                 const netUSD = Math.max(0, numUSD - feeUSD);
                 const netDOP = Math.round(netUSD * usdToDop);
-                const netHTG = Math.round(netUSD * (usdToHtgRate || 135));
-                const netPayout = zellePayoutCurrency === 'DOP' ? netDOP : netHTG;
+                const netUSDExact = Math.round(netUSD * 100) / 100;
+                const netPayout = zellePayoutCurrency === 'DOP' ? netDOP : netUSDExact;
 
                 return (
                   <div className="p-4 bg-purple-50/70 rounded-2xl space-y-3 text-xs border border-purple-200/70 font-sans">
@@ -890,7 +890,7 @@ export const OperationsGuichetView: React.FC = () => {
                       <span className="font-mono font-bold text-slate-900">
                         {zellePayoutCurrency === 'DOP'
                           ? `1 USD = ${usdToDop.toFixed(2)} DOP`
-                          : `1 USD = ${usdToHtgRate.toFixed(2)} HTG`}
+                          : '1 USD = 1.00 USD'}
                       </span>
                     </div>
 
