@@ -140,10 +140,10 @@ export const TreasuryView: React.FC = () => {
   const liveFeesDOP = validPeriodTxs.reduce((sum, t) => {
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
-      const feeUSD = amtUSD * 0.035;
+      const feeUSD = amtUSD * 0.005; // 0.5% frais de service guichet
       return sum + Math.round(feeUSD * usdToDopRate);
     }
-    return sum + (t.feeDOP || Math.round(t.amountDOP * 0.03));
+    return sum + (t.feeDOP || Math.round(t.amountDOP * 0.005));
   }, 0);
   const totalFeesDOP = (liveFeesDOP > 0 || hasSystemHistory) ? liveFeesDOP : 48500;
 
@@ -408,7 +408,7 @@ export const TreasuryView: React.FC = () => {
                 <span>{t('gross_revenue', 'Revenu Total & Performance Plateforme')}</span>
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5">
-                Vue consolidée : Frais Guichet (3%), Commissions Admin et Virements Zelle (USD).
+                Vue consolidée : Frais Guichet (0.5%), Commissions Admin et Virements Zelle (USD).
               </p>
             </div>
           </div>
@@ -441,7 +441,7 @@ export const TreasuryView: React.FC = () => {
               </div>
             </div>
             <p className="text-[11px] text-slate-400 font-medium pt-2 border-t border-slate-800">
-              Frais de Service (3%) + Commissions Admin cumulées
+              Frais de Service (0.5%) + Commissions Admin cumulées
             </p>
           </div>
 
@@ -467,7 +467,7 @@ export const TreasuryView: React.FC = () => {
           {/* Card 3: Frais de Service Collectés */}
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-2 flex flex-col justify-between sm:col-span-2 lg:col-span-1">
             <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Frais de Service Guichet (3%)</span>
+              <span>Frais de Service Guichet (0.5%)</span>
               <span className="text-amber-400 text-[10px] bg-amber-950 px-2 py-0.5 rounded-full border border-amber-800">Comptoir</span>
             </div>
             <div>

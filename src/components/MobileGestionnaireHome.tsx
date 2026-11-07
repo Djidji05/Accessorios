@@ -249,8 +249,8 @@ export const MobileGestionnaireHome: React.FC = () => {
 
     setIsSubmittingDirect(true);
 
-    const feeDOP = Math.round(numAmount * 0.015);
-    const commDOP = Math.round(numAmount * 0.01);
+    const feeDOP = Math.round(numAmount * 0.005); // 0.5% frais de service guichet
+    const commDOP = Math.round(numAmount * 0.01); // 1% commission admin
 
     const finalReceiverName = isNoBeneficiaryOperator
       ? (directReceiverName.trim() || `Recharge ${directOperator.toUpperCase()}`)

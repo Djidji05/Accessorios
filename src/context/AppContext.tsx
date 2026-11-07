@@ -1314,23 +1314,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
       ? usdToHtgRate
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-    const finalAmountUSD = data.amountUSD || (isZelle && data.amountDOP > 0 ? Math.round((data.amountDOP / usdToDop) * 100) / 100 : 0);
-    const finalAmountHTG = isHaitiInbound 
-      ? (data.amountHTG || 0)
-      : (isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate));
+    const finalAmountUSD = (isZelle || isHaitiInbound)
+      ? (data.amountUSD || (data.amountDOP > 0 ? Math.round((data.amountDOP / usdToDop) * 100) / 100 : 0))
+      : (data.amountUSD || 0);
     const finalAmountDOP = isHaitiInbound
-      ? Math.round(finalAmountHTG / (dopToHtgRate || 2.35))
+      ? (data.amountDOP > 0 ? data.amountDOP : Math.round(finalAmountUSD * usdToDop))
       : (isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP);
+    const finalAmountHTG = isHaitiInbound 
+      ? Math.round(finalAmountDOP * (dopToHtgRate || 2.35))
+      : (isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate));
 
     const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.0;
-    const zelleFeeRate = 1.0; // 1% Frais de service Zelle
+    const zelleFeeRate = 0.5; // 0.5% Frais de service guichet
     const zelleFeeUSD = isZelle ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
     const zelleCommissionUSD = isZelle ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
 
     const payoutCurrency = data.payoutCurrency || 'DOP';
     const netUSD = finalAmountUSD - zelleFeeUSD;
     const netPayoutAmount = isHaitiInbound
-      ? (finalAmountDOP - Math.round(finalAmountDOP * 0.01))
+      ? (finalAmountDOP - Math.round(finalAmountDOP * 0.005))
       : (payoutCurrency === 'DOP'
         ? Math.round(netUSD * usdToDop)
         : payoutCurrency === 'HTG'
@@ -1338,7 +1340,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : Math.round(netUSD * 100) / 100);
 
     const finalFeeDOP = isHaitiInbound
-      ? Math.round(finalAmountDOP * 0.01)
+      ? Math.round(finalAmountDOP * 0.005)
       : (isZelle ? Math.round(zelleFeeUSD * usdToDop) : data.feeDOP);
     const finalCommDOP = isHaitiInbound
       ? Math.round(finalAmountDOP * 0.01)
@@ -1374,8 +1376,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       channel,
       amountDOP: finalAmountDOP,
       amountHTG: finalAmountHTG,
-      amountUSD: isZelle ? finalAmountUSD : data.amountUSD,
-      exchangeRate: isZelle ? usdToDop : dopToHtgRate,
+      amountUSD: (isZelle || isHaitiInbound) ? finalAmountUSD : data.amountUSD,
+      exchangeRate: (isZelle || isHaitiInbound) ? usdToDop : dopToHtgRate,
       feeDOP: finalFeeDOP,
       commissionDOP: finalCommDOP,
       
@@ -1394,7 +1396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       proofUrl: proofImg,
       proofNotes: isHaitiInbound
-        ? `Preuve réception ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG) soumise par ${currentUser.name}. En attente de confirmation par l'Administrateur.`
+        ? `Preuve réception ${data.operator.toUpperCase()} ($${finalAmountUSD} USD ~ ${finalAmountDOP.toLocaleString()} DOP) soumise par ${currentUser.name}. En attente de confirmation par l'Administrateur.`
         : (isZelle ? `Preuve Zelle ($${finalAmountUSD} USD) soumise par ${currentUser.name}. En attente de vérification bancaire par l'Administrateur.` : undefined),
 
       createdByNode: currentUser.nodeId,
@@ -1578,14 +1580,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (approved) {
-      const appliedRate = tx.exchangeRate || dopToHtgRate || 2.35;
-      const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : Math.round(tx.amountHTG / appliedRate);
-      const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.01);
+      const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+        ? usdToHtgRate
+        : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+      const appliedRate = tx.exchangeRate || usdToDop || 58.0;
+      const numUSD = tx.amountUSD || (tx.amountDOP > 0 ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : (tx.amountHTG > 0 ? Math.round((tx.amountHTG / (dopToHtgRate || 2.35) / appliedRate) * 100) / 100 : 0));
+      const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : (numUSD > 0 ? Math.round(numUSD * appliedRate) : Math.round(tx.amountHTG / (dopToHtgRate || 2.35)));
+      const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.005);
       const commDOP = tx.commissionDOP > 0 ? tx.commissionDOP : Math.round(grossDOP * 0.01);
       const netPayout = tx.netPayoutAmount && tx.netPayoutAmount > 0 ? tx.netPayoutAmount : (grossDOP - feeDOP);
       const payoutText = `${netPayout.toLocaleString()} DOP`;
 
-      const proofNotes = `[RÉCEPTION ${tx.operator.toUpperCase()} CONFIRMÉE PAR L'ADMIN ${currentUser.name}] Somme de ${tx.amountHTG.toLocaleString()} HTG vérifiée sur le compte. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
+      const proofNotes = `[RÉCEPTION ${tx.operator.toUpperCase()} CONFIRMÉE PAR L'ADMIN ${currentUser.name}] Somme de $${numUSD} USD (~ ${grossDOP.toLocaleString()} DOP) vérifiée sur le compte. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
 
       setTransactions((prev) =>
         prev.map((t) => {

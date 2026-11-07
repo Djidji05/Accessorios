@@ -35,6 +35,7 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
     completeTask,
     setSelectedReceiptTx, 
     dopToHtgRate,
+    usdToHtgRate,
     t 
   } = useApp();
 
@@ -51,10 +52,14 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
   const isRejected = tx.haitiInboundStatus === 'rejected' || tx.status === 'cancelled';
   const isCompleted = tx.status === 'completed';
 
-  const appliedRate = tx.exchangeRate || dopToHtgRate || 2.35;
-  const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : Math.round(tx.amountHTG / appliedRate);
-  const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.01);
-  const commDOP = tx.commissionDOP > 0 ? tx.commissionDOP : Math.round(grossDOP * 0.01);
+  const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+    ? usdToHtgRate
+    : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+  const appliedRate = tx.exchangeRate || usdToDop || 58.0;
+  const numUSD = tx.amountUSD || (tx.amountDOP > 0 ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : (tx.amountHTG > 0 ? Math.round((tx.amountHTG / (dopToHtgRate || 2.35) / appliedRate) * 100) / 100 : 0));
+  const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : (numUSD > 0 ? Math.round(numUSD * appliedRate) : Math.round(tx.amountHTG / (dopToHtgRate || 2.35)));
+  const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.005); // 0.5% frais de service guichet
+  const commDOP = tx.commissionDOP > 0 ? tx.commissionDOP : Math.round(grossDOP * 0.01); // 1% commission admin
   const netPayout = tx.netPayoutAmount && tx.netPayoutAmount > 0 ? tx.netPayoutAmount : (grossDOP - feeDOP);
 
   const proofImg = tx.haitiInboundProofUrl || tx.proofUrl;
@@ -229,13 +234,13 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
             {/* Financial Details Card */}
             <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {/* Montant Reçu HTG */}
+                {/* Montant Reçu USD */}
                 <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
                   <p className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400">
-                    {t('Somme Reçue (Haïti)', 'Somme Reçue (Haïti)')}
+                    {t('Somme sur la Preuve (USD)', 'Somme sur la Preuve (USD)')}
                   </p>
                   <p className="text-2xl font-black font-mono text-slate-900 dark:text-white mt-1">
-                    {tx.amountHTG.toLocaleString()} <span className="text-sm font-bold text-slate-500">HTG</span>
+                    ${numUSD.toLocaleString()} <span className="text-sm font-bold text-slate-500">USD</span>
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     {tx.operator.toUpperCase()}
@@ -245,13 +250,13 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
                 {/* Montant Net à Verser DOP */}
                 <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60">
                   <p className="text-[11px] font-black uppercase text-emerald-700 dark:text-emerald-400">
-                    {t('Montant à Verser (RD)', 'Montant à Verser (RD)')}
+                    {t('Montant Net à Verser (RD)', 'Montant Net à Verser (RD)')}
                   </p>
                   <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
                     {netPayout.toLocaleString()} <span className="text-sm font-bold text-emerald-700">DOP</span>
                   </p>
                   <p className="text-[10px] font-bold text-emerald-600/80 mt-0.5">
-                    {t('Taux :', 'Taux :')} 100 DOP = {Math.round(appliedRate * 100)} HTG
+                    {t('Taux :', 'Taux :')} 1 USD = {appliedRate.toFixed(2)} DOP
                   </p>
                 </div>
               </div>
@@ -264,7 +269,7 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
                     <span className="font-mono font-bold text-slate-900 dark:text-white">{grossDOP.toLocaleString()} DOP</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">{t('Frais de service (1%) :', 'Frais de service (1%) :')}</span>
+                    <span className="text-slate-500">{t('Frais de service (0.5%) :', 'Frais de service (0.5%) :')}</span>
                     <span className="font-mono font-bold text-amber-600">-{feeDOP.toLocaleString()} DOP</span>
                   </div>
                   <div className="flex justify-between">
@@ -388,3 +393,4 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
     </>
   );
 };
+

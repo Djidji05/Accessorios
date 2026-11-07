@@ -157,28 +157,28 @@ export const INITIAL_SERVICE_COMMISSIONS: ServiceCommissionConfig[] = [
   {
     serviceType: 'transfer',
     serviceName: 'Transfert d\'Argent / Envoi Haïti',
-    defaultFeeRate: 3.0,
+    defaultFeeRate: 0.5,
     adminCommissionRate: 1.0,
     description: 'Envois de fonds vers la République d\'Haïti (MonCash, Natcash, Cash)'
   },
   {
     serviceType: 'cash_out',
     serviceName: 'Retrait d\'Espèces (Cash-Out Guichet)',
-    defaultFeeRate: 2.5,
+    defaultFeeRate: 0.5,
     adminCommissionRate: 1.0,
     description: 'Retrait en comptoir et agences partenaires'
   },
   {
     serviceType: 'topup_mobile',
     serviceName: 'Recharge Mobile & Data Télécom',
-    defaultFeeRate: 2.0,
+    defaultFeeRate: 0.5,
     adminCommissionRate: 1.5,
     description: 'Recharges téléphoniques (Digicel, Natcom, Claro, Altice)'
   },
   {
     serviceType: 'bill_payment',
     serviceName: 'Paiement de Factures & Services',
-    defaultFeeRate: 1.5,
+    defaultFeeRate: 0.5,
     adminCommissionRate: 0.8,
     description: 'Règlement de factures d\'eau, d\'électricité et services publics'
   }
@@ -189,7 +189,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'moncash',
     operatorName: 'MonCash (Digicel Haïti)',
     adminCommissionRate: 1.0,
-    defaultFeeRate: 3.0,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'HTG / DOP',
     description: 'Transferts et paiements mobiles MonCash Haïti'
@@ -198,7 +198,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'natcash',
     operatorName: 'Natcash (Natcom Haïti)',
     adminCommissionRate: 1.0,
-    defaultFeeRate: 2.5,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'HTG / DOP',
     description: 'Portefeuille électronique et décaissement Natcash Haïti'
@@ -207,7 +207,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'zelle',
     operatorName: 'Zelle (Transfert USD)',
     adminCommissionRate: 1.5,
-    defaultFeeRate: 3.5,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'USD / DOP',
     description: 'Virements et transferts directs Zelle USA'
@@ -216,7 +216,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'digicel',
     operatorName: 'Digicel (Recharge & Data)',
     adminCommissionRate: 2.0,
-    defaultFeeRate: 2.0,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'HTG',
     description: 'Recharge minutes & forfaits internet Digicel Haïti'
@@ -225,7 +225,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'natcom',
     operatorName: 'Natcom (Recharge & Data)',
     adminCommissionRate: 2.0,
-    defaultFeeRate: 2.0,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'HTG',
     description: 'Recharge minutes & forfaits data Natcom Haïti'
@@ -234,7 +234,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'claro',
     operatorName: 'Claro (Recharge R.D.)',
     adminCommissionRate: 2.5,
-    defaultFeeRate: 2.0,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'DOP',
     description: 'Recharge téléphonique Claro République Dominicaine'
@@ -243,7 +243,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
     operator: 'altice',
     operatorName: 'Altice (Recharge R.D.)',
     adminCommissionRate: 2.5,
-    defaultFeeRate: 2.0,
+    defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'DOP',
     description: 'Recharge téléphonique Altice République Dominicaine'

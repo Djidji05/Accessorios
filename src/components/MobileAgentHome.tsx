@@ -173,7 +173,7 @@ export const MobileAgentHome: React.FC = () => {
   // Haïti Inbound specific states
   const [isHaitiInboundActive, setIsHaitiInboundActive] = useState<boolean>(false);
   const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('moncash');
-  const [inboundAmountHTG, setInboundAmountHTG] = useState<string>('');
+  const [inboundAmountUSD, setInboundAmountUSD] = useState<string>('');
   const [inboundProofImage, setInboundProofImage] = useState<string | null>(null);
   const [selectedHaitiInboundTx, setSelectedHaitiInboundTx] = useState<Transaction | null>(null);
   const inboundCameraInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -370,8 +370,8 @@ export const MobileAgentHome: React.FC = () => {
     if (!selectedService) return;
 
     const numAmountDOP = parseFloat(amountDOP) || 0;
-    const feeDOP = Math.round(numAmountDOP * 0.03);
-    const commissionDOP = Math.round(numAmountDOP * 0.01);
+    const feeDOP = Math.round(numAmountDOP * 0.005); // 0.5% frais de service guichet
+    const commissionDOP = Math.round(numAmountDOP * 0.01); // 1% commission admin
 
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
     const defaultReceiver = isNoBeneficiaryOperator 
@@ -431,15 +431,19 @@ export const MobileAgentHome: React.FC = () => {
       setFeedback({ type: 'error', message: "⚠️ La photo de preuve MonCash / Natcash est obligatoire pour que l'Admin puisse vérifier." });
       return;
     }
-    const numHTG = parseFloat(inboundAmountHTG) || 0;
-    if (numHTG <= 0) {
-      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Gourdes (HTG).' });
+    const numUSD = parseFloat(inboundAmountUSD) || 0;
+    if (numUSD <= 0) {
+      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Dollars (USD).' });
       return;
     }
 
-    const grossDOP = Math.round(numHTG / (dopToHtgRate || 2.35));
-    const feeDOP = Math.round(grossDOP * 0.01);
-    const commDOP = Math.round(grossDOP * 0.01);
+    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+      ? usdToHtgRate
+      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+
+    const grossDOP = Math.round(numUSD * usdToDop);
+    const feeDOP = Math.round(grossDOP * 0.005); // 0.5% frais de service guichet
+    const commDOP = Math.round(grossDOP * 0.01); // 1% commission admin
 
     const res = createTransaction({
       senderName: 'Client Haïti',
@@ -448,7 +452,7 @@ export const MobileAgentHome: React.FC = () => {
       receiverPhone: '+1 809 Comptoir RD',
       operator: inboundOperator,
       serviceType: 'haiti_inbound_cash',
-      amountHTG: numHTG,
+      amountUSD: numUSD,
       amountDOP: grossDOP,
       feeDOP,
       commissionDOP: commDOP,
@@ -459,7 +463,7 @@ export const MobileAgentHome: React.FC = () => {
       setFeedback({ type: 'success', message: res.message });
       setSelectedHaitiInboundTx(res.transaction);
       setIsHaitiInboundActive(false);
-      setInboundAmountHTG('');
+      setInboundAmountUSD('');
       setInboundProofImage(null);
     } else {
       setFeedback({ type: 'error', message: res.message });
@@ -508,8 +512,8 @@ export const MobileAgentHome: React.FC = () => {
       serviceType: 'transfer',
       amountUSD: amountVal,
       amountDOP: Math.round(amountVal * usdToDop),
-      feeDOP: Math.round(amountVal * 0.01 * usdToDop),
-      commissionDOP: Math.round(amountVal * 0.01 * usdToDop),
+      feeDOP: Math.round(amountVal * 0.005 * usdToDop), // 0.5% frais de service guichet
+      commissionDOP: Math.round(amountVal * 0.01 * usdToDop), // 1% commission admin
       proofUrl: zelleProofImage,
       zelleProofUrl: zelleProofImage,
       payoutCurrency: zellePayoutCurrency,
@@ -527,8 +531,11 @@ export const MobileAgentHome: React.FC = () => {
 
   // DEDICATED STREAMLINED HAÏTI INBOUND SCREEN
   if (isHaitiInboundActive) {
-    const numHTG = parseFloat(inboundAmountHTG) || 0;
-    const estDOP = Math.round(numHTG / (dopToHtgRate || 2.35));
+    const numUSD = parseFloat(inboundAmountUSD) || 0;
+    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+      ? usdToHtgRate
+      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+    const estDOP = Math.round(numUSD * usdToDop);
 
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-28 space-y-4 animate-in fade-in">
@@ -575,8 +582,22 @@ export const MobileAgentHome: React.FC = () => {
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
                 }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs">
-                  <img src="/moncash.png" alt="MonCash" className="w-full h-full object-contain" />
+                <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs overflow-hidden">
+                  <img
+                    src="/images/mon cash.jpg"
+                    alt="MonCash"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (!img.dataset.failed) {
+                        img.dataset.failed = '1';
+                        img.src = '/images/moncash.png';
+                      } else if (img.dataset.failed === '1') {
+                        img.dataset.failed = '2';
+                        img.src = '/moncash.png';
+                      }
+                    }}
+                  />
                 </div>
                 <span className="font-black text-xs text-slate-900 dark:text-white">MonCash</span>
               </button>
@@ -590,40 +611,54 @@ export const MobileAgentHome: React.FC = () => {
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
                 }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs">
-                  <img src="/natcash.png" alt="Natcash" className="w-full h-full object-contain" />
+                <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs overflow-hidden">
+                  <img
+                    src="/images/natcash.jpg"
+                    alt="Natcash"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (!img.dataset.failed) {
+                        img.dataset.failed = '1';
+                        img.src = '/images/natcash.png';
+                      } else if (img.dataset.failed === '1') {
+                        img.dataset.failed = '2';
+                        img.src = '/natcash.png';
+                      }
+                    }}
+                  />
                 </div>
                 <span className="font-black text-xs text-slate-900 dark:text-white">Natcash</span>
               </button>
             </div>
           </div>
 
-          {/* Montant Gourdes */}
+          {/* Montant USD */}
           <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              2. Somme Écrite sur la Preuve (HTG)
+              2. Somme Écrite sur la Preuve (USD)
             </label>
             <div className="relative">
               <input
                 type="number"
                 step="any"
                 min="1"
-                value={inboundAmountHTG}
-                onChange={(e) => setInboundAmountHTG(e.target.value)}
-                placeholder="Ex : 25000"
+                value={inboundAmountUSD}
+                onChange={(e) => setInboundAmountUSD(e.target.value)}
+                placeholder="Ex : 500"
                 required
                 className="w-full pl-4 pr-16 py-3.5 text-2xl font-black font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                HTG
+                USD ($)
               </span>
             </div>
 
-            {numHTG > 0 && (
+            {numUSD > 0 && (
               <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 flex items-center justify-between text-xs">
                 <div>
                   <span className="text-amber-800 dark:text-amber-200 font-bold block">Estimation Pesos (Brut) :</span>
-                  <span className="text-[10px] text-amber-600 dark:text-amber-400">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400">1 USD = {usdToDop.toFixed(2)} DOP</span>
                 </div>
                 <span className="text-lg font-black font-mono text-amber-700 dark:text-amber-300">
                   ~ {estDOP.toLocaleString()} DOP
@@ -1920,7 +1955,7 @@ export const MobileAgentHome: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
                           {isHaitiInboundTx
-                            ? `Dépôt Haïti (${(tx.amountHTG || 0).toLocaleString()} HTG)`
+                            ? `Dépôt Haïti ($${(tx.amountUSD || 0).toLocaleString()} USD)`
                             : isZelleTx
                             ? `Virement Zelle ($${tx.amountUSD || 0} USD)`
                             : tx.receiverName}
@@ -1939,7 +1974,7 @@ export const MobileAgentHome: React.FC = () => {
                       {isHaitiInboundTx
                         ? (tx.haitiInboundStatus === 'approved' || isCompleted
                             ? `${(tx.netPayoutAmount || tx.amountDOP || 0).toLocaleString()} DOP`
-                            : `${(tx.amountHTG || 0).toLocaleString()} HTG`)
+                            : `$${(tx.amountUSD || 0).toLocaleString()} USD`)
                         : isZelleTx 
                         ? (tx.zelleStatus === 'approved' || isCompleted 
                             ? `${(tx.netPayoutAmount || 0).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}` 

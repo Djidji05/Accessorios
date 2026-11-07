@@ -2586,7 +2586,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </p>
                     {currentUser.role === 'admin' && (
                       <p className="text-[11px] text-purple-600 mt-0.5">
-                        {t('Frais de service (1%):', 'Frais de service (1%):')} ${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD
+                        {t('Frais de service (0.5%):', 'Frais de service (0.5%):')} ${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.005 * 100) / 100)} USD
                       </p>
                     )}
                   </div>
@@ -2721,9 +2721,9 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   {(() => {
                     const numUSD = tx.amountUSD || (tx.amountDOP ? Math.round((tx.amountDOP / (tx.zelleExchangeRate || 60)) * 100) / 100 : 0);
                     const appliedRate = tx.zelleExchangeRate || (tx.amountDOP && numUSD ? tx.amountDOP / numUSD : 60);
-                    const zFeeUSD = tx.zelleFeeUSD || Math.round(numUSD * 0.035 * 100) / 100;
+                    const zFeeUSD = tx.zelleFeeUSD || Math.round(numUSD * 0.005 * 100) / 100;
                     const zFeeDOP = Math.round(zFeeUSD * appliedRate);
-                    const zCommUSD = tx.zelleCommissionUSD || Math.round(numUSD * 0.015 * 100) / 100;
+                    const zCommUSD = tx.zelleCommissionUSD || Math.round(numUSD * 0.01 * 100) / 100;
                     const zCommDOP = Math.round(zCommUSD * appliedRate);
                     const zPayoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
                     const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
@@ -2768,14 +2768,14 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           </div>
 
                           <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                            <span>{t('Frais de Service (3.5%) :')}</span>
+                            <span>{t('Frais de Service (0.5%) :')}</span>
                             <span className="font-mono font-bold text-amber-700">
                               -$${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
                             </span>
                           </div>
 
                           <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                            <span>{t('Commission Plateforme (1.5%) :')}</span>
+                            <span>{t('Commission Plateforme (1%) :')}</span>
                             <span className="font-mono font-bold text-emerald-700">
                               +$${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
                             </span>
@@ -4315,6 +4315,13 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             </span>
                             <span className="text-[10px] font-bold text-slate-400">({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'})</span>
                           </>
+                        ) : tx.serviceType === 'haiti_inbound_cash' ? (
+                          <>
+                            <span className="font-black text-amber-600 text-sm">
+                              ${(tx.amountUSD || 0).toLocaleString()} USD
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP)</span>
+                          </>
                         ) : (
                           <>
                             <span className="font-black text-emerald-600 text-sm">{tx.amountHTG.toLocaleString()} HTG</span>
@@ -4490,6 +4497,15 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           </span>
                           <span className="text-[10px] text-slate-400 font-semibold">
                             ({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'})
+                          </span>
+                        </>
+                      ) : tx.serviceType === 'haiti_inbound_cash' ? (
+                        <>
+                          <span className="font-black text-amber-600 text-sm block leading-tight">
+                            ${(tx.amountUSD || 0).toLocaleString()} USD
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            ({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP)
                           </span>
                         </>
                       ) : (

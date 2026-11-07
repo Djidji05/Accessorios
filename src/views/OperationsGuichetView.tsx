@@ -163,7 +163,7 @@ export const OperationsGuichetView: React.FC = () => {
 
   // Haïti Inbound States (Dépôt MonCash/Natcash Haïti -> Retrait RD)
   const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('moncash');
-  const [inboundAmountHTG, setInboundAmountHTG] = useState<string>('');
+  const [inboundAmountUSD, setInboundAmountUSD] = useState<string>('');
   const [inboundProofImage, setInboundProofImage] = useState<string | null>(null);
   const [selectedHaitiInboundTx, setSelectedHaitiInboundTx] = useState<Transaction | null>(null);
   const inboundCameraInputRef = useRef<HTMLInputElement>(null);
@@ -200,8 +200,8 @@ export const OperationsGuichetView: React.FC = () => {
 
   const numAmountDOP = parseFloat(amountDOP) || 0;
   const computedHTG = Math.round(numAmountDOP * dopToHtgRate);
-  const feeDOP = Math.round(numAmountDOP * 0.03); // 3% fee
-  const commissionDOP = Math.round(numAmountDOP * 0.01); // 1% commission
+  const feeDOP = Math.round(numAmountDOP * 0.005); // 0.5% frais de service guichet
+  const commissionDOP = Math.round(numAmountDOP * 0.01); // 1% commission admin
 
   // Filtrage des transactions récentes de l'opérateur au guichet
   const isAgentRD = currentUser.role === 'agent_rd';
@@ -267,15 +267,19 @@ export const OperationsGuichetView: React.FC = () => {
       setFeedback({ type: 'error', message: "⚠️ La photo de preuve MonCash / Natcash est obligatoire pour envoyer à l'Admin." });
       return;
     }
-    const numHTG = parseFloat(inboundAmountHTG) || 0;
-    if (numHTG <= 0) {
-      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Gourdes (HTG).' });
+    const numUSD = parseFloat(inboundAmountUSD) || 0;
+    if (numUSD <= 0) {
+      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Dollars (USD).' });
       return;
     }
 
-    const grossDOP = Math.round(numHTG / (dopToHtgRate || 2.35));
-    const feeDOP = Math.round(grossDOP * 0.01);
-    const commDOP = Math.round(grossDOP * 0.01);
+    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+      ? usdToHtgRate
+      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+
+    const grossDOP = Math.round(numUSD * usdToDop);
+    const feeDOP = Math.round(grossDOP * 0.005); // 0.5% frais de service guichet
+    const commDOP = Math.round(grossDOP * 0.01); // 1% commission admin
 
     const result = createTransaction({
       senderName: 'Client Haïti',
@@ -284,7 +288,7 @@ export const OperationsGuichetView: React.FC = () => {
       receiverPhone: '+1 809 Comptoir RD',
       operator: inboundOperator,
       serviceType: 'haiti_inbound_cash',
-      amountHTG: numHTG,
+      amountUSD: numUSD,
       amountDOP: grossDOP,
       feeDOP,
       commissionDOP: commDOP,
@@ -294,7 +298,7 @@ export const OperationsGuichetView: React.FC = () => {
     if (result.success && result.transaction) {
       setFeedback({ type: 'success', message: result.message });
       setSelectedHaitiInboundTx(result.transaction);
-      setInboundAmountHTG('');
+      setInboundAmountUSD('');
       setInboundProofImage(null);
     } else {
       setFeedback({ type: 'error', message: result.message });
@@ -349,8 +353,8 @@ export const OperationsGuichetView: React.FC = () => {
         serviceType: 'transfer',
         amountUSD: numUSD,
         amountDOP: Math.round(numUSD * usdToDop),
-        feeDOP: Math.round(numUSD * 0.01 * usdToDop),
-        commissionDOP: Math.round(numUSD * 0.01 * usdToDop),
+        feeDOP: Math.round(numUSD * 0.005 * usdToDop), // 0.5% frais de service guichet
+        commissionDOP: Math.round(numUSD * 0.01 * usdToDop), // 1% commission admin
         proofUrl: zelleProofImage,
         zelleProofUrl: zelleProofImage,
         payoutCurrency: zellePayoutCurrency,
@@ -632,12 +636,26 @@ export const OperationsGuichetView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-rose-100 flex items-center justify-center p-1.5">
-                      <img src="/moncash.png" alt="MonCash" className="w-full h-full object-contain" />
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-rose-100 flex items-center justify-center p-1.5 overflow-hidden">
+                      <img 
+                        src="/images/mon cash.jpg" 
+                        alt="MonCash" 
+                        className="w-full h-full object-contain" 
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          if (!img.dataset.failed) {
+                            img.dataset.failed = '1';
+                            img.src = '/images/moncash.png';
+                          } else if (img.dataset.failed === '1') {
+                            img.dataset.failed = '2';
+                            img.src = '/moncash.png';
+                          }
+                        }}
+                      />
                     </div>
                     <div>
                       <p className="font-black text-slate-900 text-sm">MonCash (Digicel)</p>
-                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Dollars (USD)</p>
                     </div>
                   </div>
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'moncash' ? 'border-rose-600 bg-rose-600' : 'border-slate-300'}`}>
@@ -655,12 +673,26 @@ export const OperationsGuichetView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-blue-100 flex items-center justify-center p-1.5">
-                      <img src="/natcash.png" alt="Natcash" className="w-full h-full object-contain" />
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-blue-100 flex items-center justify-center p-1.5 overflow-hidden">
+                      <img 
+                        src="/images/natcash.jpg" 
+                        alt="Natcash" 
+                        className="w-full h-full object-contain" 
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          if (!img.dataset.failed) {
+                            img.dataset.failed = '1';
+                            img.src = '/images/natcash.png';
+                          } else if (img.dataset.failed === '1') {
+                            img.dataset.failed = '2';
+                            img.src = '/natcash.png';
+                          }
+                        }}
+                      />
                     </div>
                     <div>
                       <p className="font-black text-slate-900 text-sm">Natcash (Natcom)</p>
-                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Dollars (USD)</p>
                     </div>
                   </div>
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'natcash' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
@@ -670,10 +702,10 @@ export const OperationsGuichetView: React.FC = () => {
               </div>
             </div>
 
-            {/* Étape 2: Somme Reçue en Gourdes (HTG) */}
+            {/* Étape 2: Somme Reçue en Dollars (USD) */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
               <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                {t('2. Somme Écrite sur la Preuve (HTG)', '2. Somme Écrite sur la Preuve (HTG)')}
+                {t('2. Somme Écrite sur la Preuve (USD)', '2. Somme Écrite sur la Preuve (USD)')}
               </label>
 
               <div className="relative">
@@ -681,32 +713,41 @@ export const OperationsGuichetView: React.FC = () => {
                   type="number"
                   step="any"
                   min="1"
-                  value={inboundAmountHTG}
-                  onChange={(e) => setInboundAmountHTG(e.target.value)}
-                  placeholder="Ex : 25000"
+                  value={inboundAmountUSD}
+                  onChange={(e) => setInboundAmountUSD(e.target.value)}
+                  placeholder="Ex : 500"
                   required
                   className="w-full pl-5 pr-20 py-4 text-2xl font-black font-mono text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-500/20"
                 />
                 <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                  HTG
+                  USD ($)
                 </span>
               </div>
 
               {/* Conversion Indicative */}
-              {parseFloat(inboundAmountHTG) > 0 && (
-                <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-amber-800 font-semibold block">{t('Conversion brute indicative en Pesos :', 'Conversion brute indicative en Pesos :')}</span>
-                    <span className="text-[11px] text-amber-700 font-bold">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
+              {(() => {
+                const numUSD = parseFloat(inboundAmountUSD) || 0;
+                const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+                  ? usdToHtgRate
+                  : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+                const estDOP = Math.round(numUSD * usdToDop);
+                if (numUSD <= 0) return null;
+
+                return (
+                  <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-amber-800 font-semibold block">{t('Conversion brute indicative en Pesos :', 'Conversion brute indicative en Pesos :')}</span>
+                      <span className="text-[11px] text-amber-700 font-bold">1 USD = {usdToDop.toFixed(2)} DOP</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black font-mono text-amber-800">
+                        ~ {estDOP.toLocaleString()} DOP
+                      </span>
+                      <span className="text-[10px] text-amber-600 block">{t('Frais de service (0.5%) déduits au versement', 'Frais de service (0.5%) déduits au versement')}</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xl font-black font-mono text-amber-800">
-                      ~ {Math.round(parseFloat(inboundAmountHTG) / (dopToHtgRate || 2.35)).toLocaleString()} DOP
-                    </span>
-                    <span className="text-[10px] text-amber-600 block">{t('Frais de 1% déduits à la confirmation', 'Frais de 1% déduits à la confirmation')}</span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Étape 3: Photo Preuve de Transaction */}
@@ -1192,7 +1233,7 @@ export const OperationsGuichetView: React.FC = () => {
                 const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
         ? usdToHtgRate
         : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-                const feeUSD = Math.round(numUSD * 0.01 * 100) / 100;
+                const feeUSD = Math.round(numUSD * 0.005 * 100) / 100;
                 const netUSD = Math.max(0, numUSD - feeUSD);
                 const netDOP = Math.round(netUSD * usdToDop);
                 const netUSDExact = Math.round(netUSD * 100) / 100;
@@ -1211,7 +1252,7 @@ export const OperationsGuichetView: React.FC = () => {
 
                     {currentUser.role === 'admin' && (
                       <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                        <span>{t('Frais de service (1%) :')}</span>
+                        <span>{t('Frais de service (0.5%) :')}</span>
                         <span className="font-mono font-bold text-slate-700">-${feeUSD.toFixed(2)} USD</span>
                       </div>
                     )}
@@ -1325,7 +1366,7 @@ export const OperationsGuichetView: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
-                  <span className="whitespace-nowrap">{t('fees', 'Frais de service (3%)')} :</span>
+                  <span className="whitespace-nowrap">{t('fees', 'Frais de service (0.5%)')} :</span>
                   <span className="font-mono font-bold whitespace-nowrap">{feeDOP.toLocaleString()} DOP</span>
                 </div>
 
@@ -1441,11 +1482,17 @@ export const OperationsGuichetView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3 text-right font-mono font-bold text-slate-700">
-                      {tx.amountDOP.toLocaleString()} DOP
+                      {tx.serviceType === 'haiti_inbound_cash'
+                        ? (tx.haitiInboundStatus === 'approved' || isCompleted
+                            ? `${(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP`
+                            : `~ ${tx.amountDOP.toLocaleString()} DOP`)
+                        : `${tx.amountDOP.toLocaleString()} DOP`}
                     </td>
 
                     <td className="py-3 px-3 text-right font-mono font-black text-blue-600 text-sm">
-                      {tx.amountHTG.toLocaleString()} HTG
+                      {tx.serviceType === 'haiti_inbound_cash'
+                        ? `$${(tx.amountUSD || 0).toLocaleString()} USD`
+                        : `${tx.amountHTG.toLocaleString()} HTG`}
                     </td>
 
                     <td className="py-3 px-3 text-center">
