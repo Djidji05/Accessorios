@@ -82,17 +82,24 @@ export const api = {
       const qs = query.toString();
       const txs = await request<Transaction[]>(`/transactions${qs ? `?${qs}` : ''}`);
       const token = localStorage.getItem('dalexis_token');
-      if (token && Array.isArray(txs)) {
-        return txs.map(t => ({
-          ...t,
-          proofUrl: t.proofUrl && t.proofUrl.startsWith('/api/') && !t.proofUrl.includes('token=')
+      if (Array.isArray(txs)) {
+        return txs.map(t => {
+          const finalProof = t.proofUrl && t.proofUrl.startsWith('/api/') && token && !t.proofUrl.includes('token=')
             ? `${t.proofUrl}?token=${encodeURIComponent(token)}`
-            : t.proofUrl
-        }));
+            : t.proofUrl;
+          return {
+            ...t,
+            proofUrl: finalProof,
+            zelleProofUrl: (t.operator === 'zelle') ? (finalProof || t.zelleProofUrl) : t.zelleProofUrl,
+            zelleStatus: t.operator === 'zelle'
+              ? (t.status === 'completed' ? 'approved' : t.status === 'cancelled' ? 'rejected' : 'pending_admin_check')
+              : t.zelleStatus,
+          };
+        });
       }
       return txs;
     },
-    create: (data: {
+    create: async (data: {
       senderName: string;
       senderPhone: string;
       receiverName: string;
@@ -100,13 +107,31 @@ export const api = {
       operator: OperatorCode;
       serviceType: ServiceType;
       amountDOP: number;
+      amountUSD?: number;
       feeDOP: number;
       commissionDOP: number;
+      proofUrl?: string;
+      proofNotes?: string;
       currentUserId?: string;
-    }) => request<{ success: boolean; message: string; transaction: Transaction }>('/transactions', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    }) => {
+      const res = await request<{ success: boolean; message: string; transaction: Transaction }>('/transactions', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      const token = localStorage.getItem('dalexis_token');
+      if (res?.transaction) {
+        const finalProof = res.transaction.proofUrl && res.transaction.proofUrl.startsWith('/api/') && token && !res.transaction.proofUrl.includes('token=')
+          ? `${res.transaction.proofUrl}?token=${encodeURIComponent(token)}`
+          : (res.transaction.proofUrl || data.proofUrl);
+        res.transaction = {
+          ...res.transaction,
+          proofUrl: finalProof,
+          zelleProofUrl: (res.transaction.operator === 'zelle') ? (finalProof || data.proofUrl) : res.transaction.zelleProofUrl,
+          zelleStatus: res.transaction.operator === 'zelle' ? 'pending_admin_check' : res.transaction.zelleStatus,
+        };
+      }
+      return res;
+    },
     complete: async (id: string, proofNotes: string, proofUrl?: string, actorName?: string) => {
       const res = await request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/complete`, {
         method: 'PATCH',

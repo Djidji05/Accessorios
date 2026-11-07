@@ -49,6 +49,7 @@ import { BottomNavBar } from './BottomNavBar';
 import { getOperatorLogo } from '../utils/operatorLogos';
 import { ZellePayoutModal } from './ZellePayoutModal';
 import { ImageViewerModal } from './ImageViewerModal';
+import { compressImage } from '../utils/imageCompressor';
 
 const SERVICES_LIST: {
   id: OperatorCode | 'more';
@@ -398,18 +399,19 @@ export const MobileAgentHome: React.FC = () => {
   };
 
   // Zelle Photo & Intake Handlers
-  const handleZelleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleZelleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      alert("⚠️ L'image est trop volumineuse (maximum 15 Mo).");
-      return;
+    try {
+      const compressed = await compressImage(file, 1200, 1200, 0.7);
+      setZelleProofImage(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setZelleProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setZelleProofImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleZelleSubmit = (e: React.FormEvent) => {

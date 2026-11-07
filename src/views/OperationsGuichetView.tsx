@@ -36,6 +36,7 @@ import { getOperatorLogo } from '../utils/operatorLogos';
 import { Pagination } from '../components/Pagination';
 import { ZellePayoutModal } from '../components/ZellePayoutModal';
 import { ImageViewerModal } from '../components/ImageViewerModal';
+import { compressImage } from '../utils/imageCompressor';
 
 const OPERATOR_VISUAL_CARDS: Record<
   OperatorCode,
@@ -232,18 +233,19 @@ export const OperationsGuichetView: React.FC = () => {
     }
   };
 
-  const handleZelleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleZelleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      alert("⚠️ L'image est trop volumineuse (maximum 15 Mo).");
-      return;
+    try {
+      const compressed = await compressImage(file, 1200, 1200, 0.7);
+      setZelleProofImage(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setZelleProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setZelleProofImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

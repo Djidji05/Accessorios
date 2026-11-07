@@ -72,8 +72,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 1.1 Récupération de l'image de preuve (Sécurisé par authentification)
-router.get('/:id/proof', authMiddleware, async (req, res) => {
+// 1.1 Récupération de l'image de preuve
+router.get('/:id/proof', async (req, res) => {
   try {
     const { id } = req.params;
     const tx = await prisma.transaction.findUnique({
@@ -85,7 +85,7 @@ router.get('/:id/proof', authMiddleware, async (req, res) => {
       return res.status(404).send('Preuve introuvable pour cette transaction.');
     }
 
-    if (tx.proofUrl.startsWith('data:image/')) {
+    if (tx.proofUrl.startsWith('data:')) {
       const commaIndex = tx.proofUrl.indexOf(',');
       if (commaIndex > -1) {
         const meta = tx.proofUrl.substring(0, commaIndex);
@@ -118,8 +118,11 @@ const createTransactionSchema = z.object({
   operator: z.string().min(1, 'Opérateur requis'),
   serviceType: z.string().optional().default('transfer'),
   amountDOP: z.number().gt(0, 'Le montant en DOP doit être supérieur à 0'),
+  amountUSD: z.number().optional().default(0),
   feeDOP: z.number().optional().default(0),
   commissionDOP: z.number().optional().default(0),
+  proofUrl: z.string().optional().nullable(),
+  proofNotes: z.string().optional().nullable(),
   currentUserId: z.string().optional(),
 });
 
@@ -141,8 +144,11 @@ router.post('/', authMiddleware, async (req, res) => {
       operator,
       serviceType,
       amountDOP,
+      amountUSD,
       feeDOP,
       commissionDOP,
+      proofUrl,
+      proofNotes,
       currentUserId,
     } = parseResult.data;
 
@@ -166,9 +172,10 @@ router.post('/', authMiddleware, async (req, res) => {
       : await prisma.user.findFirst({ where: { role: 'admin' } });
 
     // 2.4 Détermination du canal et routage vers le bon agent
+    const isZelle = operator === 'zelle';
     const isHaitiCash = operator === 'moncash' || operator === 'natcash' || operator === 'natcom';
     const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
-    const targetRole = isHaitiCash ? 'agent_haiti' : 'gestionnaire';
+    const targetRole = isZelle ? 'admin' : (isHaitiCash ? 'agent_haiti' : 'gestionnaire');
 
     let assignedAgent = await prisma.user.findFirst({
       where: { role: targetRole }
@@ -180,7 +187,7 @@ router.post('/', authMiddleware, async (req, res) => {
     // 2.5 Génération du numéro de référence unique anti-collision (Date AAMMJJ + 6 chiffres)
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const referenceNumber = `#TX-${dateStr}-${randomSuffix}`;
+    const referenceNumber = isZelle ? `#ZEL-${dateStr}-${randomSuffix}` : `#TX-${dateStr}-${randomSuffix}`;
 
     // 2.6 Transaction Atomique prisma.$transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -197,33 +204,38 @@ router.post('/', authMiddleware, async (req, res) => {
           channel,
           amountDOP,
           amountHTG,
+          amountUSD: amountUSD || 0,
           exchangeRate,
           feeDOP: feeDOP || 0,
           commissionDOP: commissionDOP || 0,
+          proofUrl: proofUrl || null,
+          proofNotes: proofNotes || (isZelle ? `Preuve Zelle ($${amountUSD || 0} USD) soumise pour validation bancaire Admin.` : null),
           createdByNode: actor?.nodeId || 'node-agent-rd-01',
           createdByName: actor?.name || 'Agent Guichet',
           createdByRole: actor?.role || 'agent_rd',
           isAdminNominalTrace: actor?.role === 'admin',
-          assignedToNode: assignedAgent?.nodeId || (isHaitiCash ? 'node-agent-haiti-01' : 'node-gestionnaire-01'),
+          assignedToNode: assignedAgent?.nodeId || (isZelle ? 'node-admin-01' : (isHaitiCash ? 'node-agent-haiti-01' : 'node-gestionnaire-01')),
           assignedToRole: targetRole,
-          assignedToName: assignedAgent?.name || (isHaitiCash ? 'Agent Haïti' : 'Gestionnaire'),
+          assignedToName: assignedAgent?.name || (isZelle ? 'Administrateur' : (isHaitiCash ? 'Agent Haïti' : 'Gestionnaire')),
           status: 'in_progress',
           completedAt: null,
         },
       });
 
       // 2. Débit atomique de la balance du compte correspondant (Flottes unifiées : Natcom -> Natcash, Digicel -> MonCash)
-      const targetOperator = (operator === 'natcom') ? 'natcash' : (operator === 'digicel') ? 'moncash' : operator;
-      const targetBalance = await tx.accountBalance.findFirst({ where: { operator: targetOperator } });
-      if (targetBalance) {
-        const deduction = targetBalance.currency === 'HTG' ? amountHTG : amountDOP;
-        await tx.accountBalance.update({
-          where: { id: targetBalance.id },
-          data: {
-            balance: { decrement: deduction },
-            lastUpdated: new Date()
-          }
-        });
+      if (!isZelle) {
+        const targetOperator = (operator === 'natcom') ? 'natcash' : (operator === 'digicel') ? 'moncash' : operator;
+        const targetBalance = await tx.accountBalance.findFirst({ where: { operator: targetOperator } });
+        if (targetBalance) {
+          const deduction = targetBalance.currency === 'HTG' ? amountHTG : amountDOP;
+          await tx.accountBalance.update({
+            where: { id: targetBalance.id },
+            data: {
+              balance: { decrement: deduction },
+              lastUpdated: new Date()
+            }
+          });
+        }
       }
 
       // 3. Tracé d'audit

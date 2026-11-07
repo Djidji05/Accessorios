@@ -986,12 +986,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // 1. Réception instantanée d'un nouveau transfert créé (0 délai)
         eventSource.addEventListener('TRANSACTION_CREATED', (e: MessageEvent) => {
           try {
-            const newTx = JSON.parse(e.data) as Transaction;
-            console.log('⚡ [SSE] Nouveau transfert reçu en direct (0s) :', newTx.referenceNumber);
+            const rawTx = JSON.parse(e.data) as Transaction;
+            console.log('⚡ [SSE] Nouveau transfert reçu en direct (0s) :', rawTx.referenceNumber);
+            const token = localStorage.getItem('dalexis_token');
+            const finalProof = rawTx.proofUrl && rawTx.proofUrl.startsWith('/api/') && token && !rawTx.proofUrl.includes('token=')
+              ? `${rawTx.proofUrl}?token=${encodeURIComponent(token)}`
+              : rawTx.proofUrl;
+            const newTx: Transaction = {
+              ...rawTx,
+              proofUrl: finalProof,
+              zelleProofUrl: rawTx.operator === 'zelle' ? (finalProof || rawTx.zelleProofUrl) : rawTx.zelleProofUrl,
+              zelleStatus: rawTx.operator === 'zelle'
+                ? (rawTx.status === 'completed' ? 'approved' : rawTx.status === 'cancelled' ? 'rejected' : 'pending_admin_check')
+                : rawTx.zelleStatus,
+            };
 
             setTransactions((prev) => {
               if (prev.some(t => t.id === newTx.id || t.referenceNumber === newTx.referenceNumber)) {
-                return prev;
+                return prev.map(t => (t.id === newTx.id || t.referenceNumber === newTx.referenceNumber ? { ...t, ...newTx } : t));
               }
               return [newTx, ...prev];
             });
@@ -1013,7 +1025,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // 2. Clôture de tâche / Preuve validée
         eventSource.addEventListener('TRANSACTION_COMPLETED', (e: MessageEvent) => {
           try {
-            const completedTx = JSON.parse(e.data) as Transaction;
+            const rawTx = JSON.parse(e.data) as Transaction;
+            const token = localStorage.getItem('dalexis_token');
+            const finalProof = rawTx.proofUrl && rawTx.proofUrl.startsWith('/api/') && token && !rawTx.proofUrl.includes('token=')
+              ? `${rawTx.proofUrl}?token=${encodeURIComponent(token)}`
+              : rawTx.proofUrl;
+            const completedTx: Transaction = {
+              ...rawTx,
+              proofUrl: finalProof,
+              zelleProofUrl: rawTx.operator === 'zelle' ? (finalProof || rawTx.zelleProofUrl) : rawTx.zelleProofUrl,
+              zelleStatus: rawTx.operator === 'zelle' ? 'approved' : rawTx.zelleStatus,
+            };
             setTransactions((prev) =>
               prev.map(t => (t.id === completedTx.id || t.referenceNumber === completedTx.referenceNumber ? { ...t, ...completedTx } : t))
             );
@@ -1341,7 +1363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     eventBus.publish(isZelle ? 'ZELLE_SUBMITTED' : 'TRANSACTION_CREATED', currentUser.nodeId, currentUser.role, logDetails);
 
-    // Persistance dans le Backend SQLite
+    // Persistance dans le Backend SQLite / MySQL
     api.transactions.create({
       senderName: data.senderName,
       senderPhone: data.senderPhone,
@@ -1350,13 +1372,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       operator: data.operator,
       serviceType: data.serviceType,
       amountDOP: finalAmountDOP,
+      amountUSD: isZelle ? finalAmountUSD : data.amountUSD,
       feeDOP: finalFeeDOP,
       commissionDOP: finalCommDOP,
+      proofUrl: proofImg,
+      proofNotes: newTx.proofNotes,
       currentUserId: currentUser.id,
     }).then((res) => {
       if (res.transaction) {
+        const finalProof = res.transaction.proofUrl || proofImg;
         setTransactions((prev) => [
-          { ...res.transaction, ...newTx, id: res.transaction.id },
+          {
+            ...newTx,
+            ...res.transaction,
+            proofUrl: finalProof,
+            zelleProofUrl: isZelle ? (finalProof || proofImg) : undefined,
+            id: res.transaction.id,
+          },
           ...prev.filter((t) => t.id !== newTxId && t.id !== res.transaction.id),
         ]);
       }
@@ -1416,6 +1448,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         `[ZELLE VALIDÉ PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} approuvée. Montant net à verser au client: ${payoutText}`
       );
 
+      // Synchronisation backend
+      api.transactions.complete(tx.id, proofNotes, tx.proofUrl, currentUser.name).catch(() => null);
+
       showToast(`✅ Zelle ${tx.referenceNumber} validé ! L'agent peut remettre ${payoutText} au client.`, 'success');
 
       return {
@@ -1446,6 +1481,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser.role,
         `[ZELLE REFUSÉ PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} refusée. Motif: ${cancellationReason}`
       );
+
+      // Synchronisation backend
+      api.transactions.cancel(tx.id, cancellationReason, currentUser.name).catch(() => null);
 
       showToast(`❌ Zelle ${tx.referenceNumber} refusé. L'agent a été averti de ne pas remettre d'argent.`, 'error');
 

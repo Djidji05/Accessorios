@@ -2569,7 +2569,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               {tx.operator === 'zelle' ? (
                 <div className="space-y-4">
                   {/* Proof Photo Display */}
-                  {(tx.zelleProofUrl || tx.proofUrl) && (
+                  {(tx.zelleProofUrl || tx.proofUrl) ? (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -2602,6 +2602,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           </span>
                         </div>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/70 text-amber-900 text-xs flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span>Aucune photo de preuve n'a encore été rattachée à cette transaction Zelle.</span>
                     </div>
                   )}
 
