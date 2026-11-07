@@ -1986,6 +1986,27 @@ export const TaskQueueView: React.FC = () => {
                                 <Coins className="w-3.5 h-3.5" />
                                 <span>{tx.haitiInboundStatus === 'approved' && !isCompleted ? 'Remettre Pesos' : 'Fiche Dépôt'}</span>
                               </button>
+                            ) : tx.operator === 'zelle' ? (
+                              <button
+                                onClick={() => setQueueZelleTx(tx)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                                  tx.zelleStatus === 'approved' || isCompleted
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    : tx.zelleStatus === 'rejected' || tx.status === 'cancelled'
+                                    ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                                    : 'bg-purple-600 hover:bg-purple-700 text-white animate-pulse'
+                                }`}
+                                title="Ouvrir la validation Zelle (OUI / NON)"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>
+                                  {tx.zelleStatus === 'approved' || isCompleted
+                                    ? 'Zelle Validé'
+                                    : tx.zelleStatus === 'rejected' || tx.status === 'cancelled'
+                                    ? 'Zelle Refusé'
+                                    : (isAdmin ? 'Vérifier Zelle (OUI/NON)' : 'Fiche Zelle')}
+                                </span>
+                              </button>
                             ) : (
                               <button
                                 onClick={() => setSelectedReceiptTx(tx)}
@@ -2271,6 +2292,75 @@ export const TaskQueueView: React.FC = () => {
                   </div>
                 )}
 
+                {/* 👑 Section Spécifique Zelle: Action Admin OUI/NON */}
+                {tx.operator === 'zelle' && (currentUser.role === 'admin' || currentUser.role === 'gestionnaire') && (
+                  <div className="p-4 bg-purple-50 dark:bg-purple-950/40 border-2 border-purple-300 dark:border-purple-800 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-extrabold text-xs">
+                        <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
+                        <span>Validation Zelle Admin (${(tx.amountUSD || 0).toLocaleString()} USD)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const target = tx;
+                          setRdDetailTx(null);
+                          setQueueZelleTx(target);
+                        }}
+                        className="text-[11px] font-bold text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Ouvrir Fiche Complète</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {!isCompleted && !isCancelled ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const res = validateZelleTransaction(tx.id, true);
+                            if (res.success) {
+                              setRdDetailTx(null);
+                            }
+                          }}
+                          className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>OUI, J'ai vu le Zelle (Valider)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const reason = prompt("Précisez le motif du refus (ex: Zelle non reçu) :", "Virement Zelle non constaté sur le compte bancaire");
+                            if (reason !== null) {
+                              const res = validateZelleTransaction(tx.id, false, reason);
+                              if (res.success) {
+                                setRdDetailTx(null);
+                              }
+                            }
+                          }}
+                          className="py-3 px-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span>NON, Non Reçu (Refuser)</span>
+                        </button>
+                      </div>
+                    ) : isCompleted ? (
+                      <div className="p-2.5 bg-emerald-100/80 rounded-xl text-emerald-900 font-bold text-xs flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                        <span>Virement validé par l'Admin. Fonds remis au client.</span>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-rose-100/80 rounded-xl text-rose-900 font-bold text-xs flex items-center gap-1.5">
+                        <XCircle className="w-4 h-4 text-rose-700 shrink-0" />
+                        <span>Virement refusé par l'Admin. Aucun décaissement autorisé.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                   <button
@@ -2311,7 +2401,7 @@ export const TaskQueueView: React.FC = () => {
     const tx = transactions.find((t) => t.id === selectedTxForDetails.id) || selectedTxForDetails;
     const isCompleted = tx.status === 'completed';
     const isCancelled = tx.status === 'cancelled';
-    const isInProgress = tx.status === 'in_progress';
+    const isInProgress = tx.status === 'in_progress' || tx.status === 'pending_routing';
     const elapsed = getElapsedInfo(tx.createdAt);
 
     return (
@@ -2795,7 +2885,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   })()}
 
                   {/* Admin OUI / NON Action Box */}
-                  {currentUser.role === 'admin' && (tx.zelleStatus === 'pending_admin_check' || tx.status === 'in_progress') ? (
+                  {(currentUser.role === 'admin' || currentUser.role === 'gestionnaire') && (tx.zelleStatus === 'pending_admin_check' || (!isCompleted && !isCancelled && tx.zelleStatus !== 'approved' && tx.zelleStatus !== 'rejected')) ? (
                     <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3">
                       <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
                         <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
@@ -4254,7 +4344,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   const elapsed = getElapsedInfo(tx.createdAt);
                   const isCompleted = tx.status === 'completed';
                   const isCancelled = tx.status === 'cancelled';
-                  const isInProgress = tx.status === 'in_progress';
+                  const isInProgress = tx.status === 'in_progress' || tx.status === 'pending_routing';
 
                   return (
                     <div 
@@ -4419,7 +4509,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               const elapsed = getElapsedInfo(tx.createdAt);
               const isCompleted = tx.status === 'completed';
               const isCancelled = tx.status === 'cancelled';
-              const isInProgress = tx.status === 'in_progress';
+              const isInProgress = tx.status === 'in_progress' || tx.status === 'pending_routing';
 
               return (
                 <div

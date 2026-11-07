@@ -50,10 +50,10 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
 
   if (!isOpen || !tx) return null;
 
-  const isAdmin = currentUser.role === 'admin';
-  const isPending = tx.zelleStatus === 'pending_admin_check' || (tx.status === 'in_progress' && tx.operator === 'zelle');
-  const isApproved = tx.zelleStatus === 'approved' || (tx.status === 'completed' && tx.operator === 'zelle');
-  const isRejected = tx.zelleStatus === 'rejected' || (tx.status === 'cancelled' && tx.operator === 'zelle');
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'gestionnaire';
+  const isApproved = tx.zelleStatus === 'approved' || tx.status === 'completed';
+  const isRejected = tx.zelleStatus === 'rejected' || tx.status === 'cancelled';
+  const isPending = !isApproved && !isRejected;
 
   const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
     ? usdToHtgRate
@@ -362,16 +362,40 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             </div>
           </div>
 
-          {/* 👑 ACTIONS ADMIN : OUI OU NON (SI TRANSACTION EN ATTENTE) */}
-          {isAdmin && isPending && (
-            <div className="p-4 rounded-3xl bg-purple-50/80 dark:bg-purple-950/40 border-2 border-purple-300 dark:border-purple-800 space-y-4">
-              <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-extrabold text-sm">
-                <HelpCircle className="w-5 h-5 text-purple-600" />
-                <span>{t("Question pour l'Administrateur : Avez-vous bien vu ce Zelle sur votre compte bancaire ?")}</span>
+          {/* 👑 ACTIONS ADMIN : OUI OU NON */}
+          {isAdmin && (
+            <div className={`p-4 rounded-3xl border-2 space-y-3.5 transition-all ${
+              isApproved
+                ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
+                : isRejected
+                ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800'
+                : 'bg-purple-50/90 dark:bg-purple-950/40 border-purple-400 dark:border-purple-700 shadow-md ring-4 ring-purple-500/10'
+            }`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-purple-950 dark:text-purple-200 font-black text-sm">
+                  <ShieldCheck className="w-5 h-5 text-purple-600 shrink-0" />
+                  <span>
+                    {isApproved
+                      ? t("✓ Virement Zelle validé par l'Administrateur")
+                      : isRejected
+                      ? t("✕ Virement Zelle refusé par l'Administrateur")
+                      : t("Question Administrateur : Avez-vous bien vu ce Zelle sur votre compte bancaire ?")}
+                  </span>
+                </div>
+                {isApproved && (
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                    ✅ Validé
+                  </span>
+                )}
+                {isRejected && (
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 shrink-0">
+                    ❌ Refusé
+                  </span>
+                )}
               </div>
 
               {showRejectInput ? (
-                <div className="space-y-3 p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-rose-300 dark:border-rose-800">
+                <div className="space-y-3 p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-rose-300 dark:border-rose-800 animate-in fade-in">
                   <label className="block text-xs font-bold text-rose-700 dark:text-rose-300">
                     {t("Motif du refus (optionnel) :")}
                   </label>
@@ -396,11 +420,11 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                       onClick={handleAdminReject}
                       className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm cursor-pointer"
                     >
-                      {t('Confirmer le Refus (NON)')}
+                      {isSubmitting ? 'Refus en cours...' : t('Confirmer le Refus (NON)')}
                     </button>
                   </div>
                 </div>
-              ) : (
+              ) : isPending ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   {/* BOUTON OUI */}
                   <button
@@ -410,7 +434,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-5 h-5" />
-                    <span>{t("OUI, J'ai bien vu le Zelle (Valider)")}</span>
+                    <span>{isSubmitting ? 'Validation...' : t("OUI, J'ai bien vu le Zelle (Valider)")}</span>
                   </button>
 
                   {/* BOUTON NON */}
@@ -424,28 +448,82 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     <span>{t("NON, Zelle non reçu (Refuser)")}</span>
                   </button>
                 </div>
+              ) : isApproved ? (
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-emerald-800 dark:text-emerald-300 font-bold">
+                    L'agent est autorisé à décaisser <strong>{netPayout.toLocaleString()} {payoutCurrency}</strong> au client.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectInput(true)}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                  >
+                    Annuler / Révoquer ce Zelle
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-rose-800 dark:text-rose-300 font-bold">
+                    Ce virement Zelle a été refusé. Aucun décaissement n'est autorisé.
+                  </span>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleAdminApprove}
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                  >
+                    Réactiver et Valider (OUI)
+                  </button>
+                </div>
               )}
             </div>
           )}
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedReceiptTx(tx)}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Printer className="w-4 h-4" />
-              <span>{t('Imprimer Reçu')}</span>
-            </button>
+          <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/60 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedReceiptTx(tx)}
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>{t('Imprimer Reçu')}</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
-            >
-              {t('Fermer')}
-            </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {t('Fermer')}
+              </button>
+            </div>
+
+            {/* Quick Sticky Admin Buttons in Footer */}
+            {isAdmin && isPending && !showRejectInput && (
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => setShowRejectInput(true)}
+                  className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-transform active:scale-95"
+                >
+                  <XCircle className="w-4 h-4 text-rose-600" />
+                  <span>{t('Refuser (NON)')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleAdminApprove}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-2 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>{isSubmitting ? 'Validation...' : t('Valider (OUI)')}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
