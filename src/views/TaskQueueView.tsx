@@ -1911,13 +1911,32 @@ export const TaskQueueView: React.FC = () => {
 
                         {/* Amount DOP */}
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-800">
-                          {tx.amountDOP.toLocaleString(dateLocale)} DOP
-                          <span className="text-[9px] text-slate-400 block font-normal">{t('Frais:', 'Frais:')} {tx.feeDOP} DOP</span>
+                          {tx.operator === 'zelle' ? (
+                            <>
+                              <span className="text-purple-700 font-black">${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                              {currentUser.role === 'admin' && (
+                                <span className="text-[9px] text-slate-400 block font-normal">{t('Frais:', 'Frais:')} ${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD</span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {tx.amountDOP.toLocaleString(dateLocale)} DOP
+                              {currentUser.role === 'admin' && (
+                                <span className="text-[9px] text-slate-400 block font-normal">{t('Frais:', 'Frais:')} {tx.feeDOP} DOP</span>
+                              )}
+                            </>
+                          )}
                         </td>
 
-                        {/* Amount Net HTG */}
+                        {/* Amount Net HTG / Zelle Net Payout */}
                         <td className="py-3.5 px-4 text-right font-mono font-black text-blue-600 text-sm">
-                          {tx.amountHTG.toLocaleString(dateLocale)} HTG
+                          {tx.operator === 'zelle' ? (
+                            <span className="text-emerald-700 font-black">
+                              {(tx.netPayoutAmount || tx.amountDOP).toLocaleString(dateLocale)} {tx.currencyPayout || 'DOP'}
+                            </span>
+                          ) : (
+                            `${tx.amountHTG.toLocaleString(dateLocale)} HTG`
+                          )}
                         </td>
 
                         {/* Real-time Status */}
@@ -2141,18 +2160,45 @@ export const TaskQueueView: React.FC = () => {
 
                 {/* Financial Box */}
                 <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-blue-800 uppercase">{t('Montant Net en Haïti', 'Montant Net en Haïti')}</span>
-                    <span className="font-semibold text-blue-700">{t('Taux appliqué :', 'Taux appliqué :')} 100 DOP = {Math.round(tx.exchangeRate * 100)} HTG</span>
-                  </div>
-                  <div className="text-3xl font-black text-blue-700 font-mono">
-                    {tx.amountHTG.toLocaleString(dateLocale)} HTG
-                  </div>
-                  <div className="text-xs text-blue-800/80 flex justify-between border-t border-blue-200/70 pt-2">
-                    <span>{t('Encaissé au comptoir :', 'Encaissé au comptoir :')} <strong>{tx.amountDOP.toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}</strong></span>
-                    <span>{t('Frais de service :', 'Frais de service :')} <strong>{tx.feeDOP} {t('Pesos', 'Pesos')}</strong></span>
-                    <span>{t('Commission :', 'Commission :')} <strong>{tx.commissionDOP} {t('Pesos', 'Pesos')}</strong></span>
-                  </div>
+                  {tx.operator === 'zelle' ? (
+                    <>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-blue-800 uppercase">{t('Montant Net à Verser (RD)', 'Montant Net à Verser (RD)')}</span>
+                        <span className="font-semibold text-blue-700">{t('Taux appliqué :', 'Taux appliqué :')} 1 USD = {tx.zelleExchangeRate || 58} DOP</span>
+                      </div>
+                      <div className="text-3xl font-black text-blue-700 font-mono">
+                        {(tx.netPayoutAmount || tx.amountDOP).toLocaleString(dateLocale)} {tx.currencyPayout || 'DOP'}
+                      </div>
+                      <div className="text-xs text-blue-800/80 flex justify-between border-t border-blue-200/70 pt-2">
+                        <span>{t('Montant Zelle :', 'Montant Zelle :')} <strong>${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</strong></span>
+                        {currentUser.role === 'admin' && (
+                          <>
+                            <span>{t('Frais (1%) :', 'Frais (1%) :')} <strong>${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD</strong></span>
+                            <span>{t('Commission :', 'Commission :')} <strong>${tx.zelleCommissionUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD</strong></span>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-blue-800 uppercase">{t('Montant Net en Haïti', 'Montant Net en Haïti')}</span>
+                        <span className="font-semibold text-blue-700">{t('Taux appliqué :', 'Taux appliqué :')} 100 DOP = {Math.round(tx.exchangeRate * 100)} HTG</span>
+                      </div>
+                      <div className="text-3xl font-black text-blue-700 font-mono">
+                        {tx.amountHTG.toLocaleString(dateLocale)} HTG
+                      </div>
+                      <div className="text-xs text-blue-800/80 flex justify-between border-t border-blue-200/70 pt-2">
+                        <span>{t('Encaissé au comptoir :', 'Encaissé au comptoir :')} <strong>{tx.amountDOP.toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}</strong></span>
+                        {currentUser.role === 'admin' && (
+                          <>
+                            <span>{t('Frais de service :', 'Frais de service :')} <strong>{tx.feeDOP} {t('Pesos', 'Pesos')}</strong></span>
+                            <span>{t('Commission :', 'Commission :')} <strong>{tx.commissionDOP} {t('Pesos', 'Pesos')}</strong></span>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Proof / Quittance Haïti si disponible */}
@@ -2502,19 +2548,50 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                 <OperatorBadge operator={tx.operator} />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
-                  <p className="text-xs font-bold text-slate-500 uppercase">{t('Montant Encaissé (RD)', 'Montant Encaissé (RD)')}</p>
-                  <p className="text-2xl font-black text-slate-900 font-mono mt-1">{tx.amountDOP.toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{t('Frais de transfert:', 'Frais de transfert:')} {tx.feeDOP} {t('Pesos', 'Pesos')}</p>
-                </div>
+              {tx.operator === 'zelle' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200/80">
+                    <p className="text-xs font-bold text-purple-800 uppercase">{t('Montant Zelle Reçu (USD)', 'Montant Zelle Reçu (USD)')}</p>
+                    <p className="text-2xl font-black text-purple-900 font-mono mt-1">
+                      ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                    </p>
+                    <p className="text-[11px] text-purple-700 font-bold mt-1">
+                      {t('Taux:', 'Taux:')} 1 USD = {tx.zelleExchangeRate || 58} DOP
+                    </p>
+                    {currentUser.role === 'admin' && (
+                      <p className="text-[11px] text-purple-600 mt-0.5">
+                        {t('Frais de service (1%):', 'Frais de service (1%):')} ${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD
+                      </p>
+                    )}
+                  </div>
 
-                <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200/80">
-                  <p className="text-xs font-bold text-blue-800 uppercase">{t('Montant à Verser (Haïti)', 'Montant à Verser (Haïti)')}</p>
-                  <p className="text-2xl font-black text-blue-700 font-mono mt-1">{tx.amountHTG.toLocaleString(dateLocale)} HTG</p>
-                  <p className="text-[11px] text-blue-600 font-bold mt-1">{t('Taux: 100 Pesos =', 'Taux: 100 Pesos =')} {Math.round(tx.exchangeRate * 100)} HTG</p>
+                  <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80">
+                    <p className="text-xs font-bold text-emerald-800 uppercase">{t('Montant à Verser au Client (RD)', 'Montant à Verser au Client (RD)')}</p>
+                    <p className="text-2xl font-black text-emerald-700 font-mono mt-1">
+                      {(tx.netPayoutAmount || tx.amountDOP || 0).toLocaleString(dateLocale)} {tx.currencyPayout || 'DOP'}
+                    </p>
+                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">
+                      {t('Mode de paiement:', 'Mode de paiement:')} {tx.currencyPayout === 'USD' ? 'Dollars (USD)' : 'Pesos (DOP)'}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+                    <p className="text-xs font-bold text-slate-500 uppercase">{t('Montant Encaissé (RD)', 'Montant Encaissé (RD)')}</p>
+                    <p className="text-2xl font-black text-slate-900 font-mono mt-1">{tx.amountDOP.toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}</p>
+                    {currentUser.role === 'admin' && (
+                      <p className="text-[11px] text-slate-400 mt-1">{t('Frais de transfert:', 'Frais de transfert:')} {tx.feeDOP} {t('Pesos', 'Pesos')}</p>
+                    )}
+                  </div>
+
+                  <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200/80">
+                    <p className="text-xs font-bold text-blue-800 uppercase">{t('Montant à Verser (Haïti)', 'Montant à Verser (Haïti)')}</p>
+                    <p className="text-2xl font-black text-blue-700 font-mono mt-1">{tx.amountHTG.toLocaleString(dateLocale)} HTG</p>
+                    <p className="text-[11px] text-blue-600 font-bold mt-1">{t('Taux: 100 Pesos =', 'Taux: 100 Pesos =')} {Math.round(tx.exchangeRate * 100)} HTG</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Parties Prenantes Card: Expéditeur & Bénéficiaire */}
@@ -2528,14 +2605,18 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                 
                 {/* Expéditeur */}
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t('Expéditeur (République Dominicaine)', 'Expéditeur (République Dominicaine)')}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                    {tx.operator === 'zelle' ? t('Expéditeur (USA / Zelle)', 'Expéditeur (USA / Zelle)') : t('Expéditeur (République Dominicaine)', 'Expéditeur (République Dominicaine)')}
+                  </span>
                   <p className="font-bold text-slate-900 text-sm">{tx.senderName}</p>
                   <p className="font-mono text-xs text-slate-600 font-semibold">{tx.senderPhone}</p>
                 </div>
 
                 {/* Bénéficiaire */}
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t('Bénéficiaire (Haïti)', 'Bénéficiaire (Haïti)')}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                    {tx.operator === 'zelle' ? t('Bénéficiaire / Client (RD)', 'Bénéficiaire / Client (RD)') : t('Bénéficiaire (Haïti)', 'Bénéficiaire (Haïti)')}
+                  </span>
                   <p className="font-bold text-slate-900 text-sm">{tx.receiverName}</p>
                   <div className="flex items-center gap-2 font-mono text-xs text-slate-700 font-bold">
                     <span>{tx.receiverPhone}</span>
@@ -3323,19 +3404,31 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
                 <span className="text-slate-500 font-medium">{t("Montant Envoyé", "Montant Envoyé")}</span>
-                <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{gestionnaireDetailTx.amountDOP.toLocaleString()} DOP</span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-                <span className="text-blue-700 dark:text-blue-400 font-bold">{t("Commission Admin (DOP)", "Commission Admin (DOP)")}</span>
-                <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
-                  +{(gestionnaireDetailTx.commissionDOP || Math.round(gestionnaireDetailTx.amountDOP * 0.01)).toLocaleString()} DOP
+                <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                  {gestionnaireDetailTx.operator === 'zelle'
+                    ? `${(gestionnaireDetailTx.amountUSD || Math.round(((gestionnaireDetailTx.amountDOP || 0) / (gestionnaireDetailTx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                    : `${gestionnaireDetailTx.amountDOP.toLocaleString()} DOP`}
                 </span>
               </div>
 
+              {currentUser.role === 'admin' && (
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+                  <span className="text-blue-700 dark:text-blue-400 font-bold">{t("Commission Admin", "Commission Admin")}</span>
+                  <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                    {gestionnaireDetailTx.operator === 'zelle'
+                      ? `+${(gestionnaireDetailTx.zelleCommissionUSD || (Math.round((gestionnaireDetailTx.amountUSD || 0) * 0.01 * 100) / 100)).toLocaleString()} USD`
+                      : `+${(gestionnaireDetailTx.commissionDOP || Math.round(gestionnaireDetailTx.amountDOP * 0.01)).toLocaleString()} DOP`}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
                 <span className="text-blue-700 dark:text-blue-400 font-bold">{t("Montant Reçu", "Montant Reçu")}</span>
-                <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{gestionnaireDetailTx.amountHTG.toLocaleString()} HTG</span>
+                <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">
+                  {gestionnaireDetailTx.operator === 'zelle'
+                    ? `${(gestionnaireDetailTx.netPayoutAmount || gestionnaireDetailTx.amountDOP).toLocaleString()} ${gestionnaireDetailTx.currencyPayout || 'DOP'}`
+                    : `${gestionnaireDetailTx.amountHTG.toLocaleString()} HTG`}
+                </span>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
@@ -3661,10 +3754,22 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           </div>
                         </td>
                         <td className="py-3.5 px-5 text-right font-black font-mono text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                          {tx.amountDOP.toLocaleString()} DOP
+                          {tx.operator === 'zelle' ? (
+                            <span className="text-purple-700 dark:text-purple-400">
+                              ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                            </span>
+                          ) : (
+                            `${tx.amountDOP.toLocaleString()} DOP`
+                          )}
                         </td>
                         <td className="py-3.5 px-5 text-right font-black font-mono text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
-                          {tx.amountHTG.toLocaleString()} HTG
+                          {tx.operator === 'zelle' ? (
+                            <span>
+                              {(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'}
+                            </span>
+                          ) : (
+                            `${tx.amountHTG.toLocaleString()} HTG`
+                          )}
                         </td>
                         <td className="py-3.5 px-5 text-center whitespace-nowrap">
                           {tx.status === 'completed' ? (
@@ -3784,12 +3889,25 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </div>
 
                     <div className="text-right">
-                      <span className="text-sm font-black font-mono text-slate-900 dark:text-white block">
-                        {tx.amountDOP.toLocaleString()} DOP
-                      </span>
-                      <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 block">
-                        {tx.amountHTG.toLocaleString()} HTG
-                      </span>
+                      {tx.operator === 'zelle' ? (
+                        <>
+                          <span className="text-sm font-black font-mono text-purple-700 dark:text-purple-400 block">
+                            ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          </span>
+                          <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 block">
+                            {(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-sm font-black font-mono text-slate-900 dark:text-white block">
+                            {tx.amountDOP.toLocaleString()} DOP
+                          </span>
+                          <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 block">
+                            {tx.amountHTG.toLocaleString()} HTG
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -4162,10 +4280,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         <span className="truncate">{tx.assignedToName}</span>
                       </div>
 
-                      {/* 5. Montant à payer HTG */}
+                      {/* 5. Montant à payer HTG / Zelle payout */}
                       <div className="col-span-2 text-right font-mono flex items-center justify-end gap-1.5 whitespace-nowrap">
-                        <span className="font-black text-emerald-600 text-sm">{tx.amountHTG.toLocaleString()} HTG</span>
-                        <span className="text-[10px] font-bold text-slate-400">({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})</span>
+                        {tx.operator === 'zelle' ? (
+                          <>
+                            <span className="font-black text-purple-700 text-sm">
+                              ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'})</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-black text-emerald-600 text-sm">{tx.amountHTG.toLocaleString()} HTG</span>
+                            <span className="text-[10px] font-bold text-slate-400">({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})</span>
+                          </>
+                        )}
                       </div>
 
                       {/* 6. Quick Action / Open Details Arrow */}
@@ -4310,12 +4439,25 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     </div>
 
                     <div className="text-right font-mono">
-                      <span className="font-black text-emerald-600 text-sm block leading-tight">
-                        {tx.amountHTG.toLocaleString()} HTG
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-semibold">
-                        ({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})
-                      </span>
+                      {tx.operator === 'zelle' ? (
+                        <>
+                          <span className="font-black text-purple-700 text-sm block leading-tight">
+                            ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            ({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'})
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-black text-emerald-600 text-sm block leading-tight">
+                            {tx.amountHTG.toLocaleString()} HTG
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            ({tx.amountDOP.toLocaleString()} {t("Pesos", "Pesos")})
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
 

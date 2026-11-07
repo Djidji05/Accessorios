@@ -440,8 +440,8 @@ export const MobileAgentHome: React.FC = () => {
       serviceType: 'transfer',
       amountUSD: amountVal,
       amountDOP: Math.round(amountVal * usdToDop),
-      feeDOP: Math.round(amountVal * 0.035 * usdToDop),
-      commissionDOP: Math.round(amountVal * 0.015 * usdToDop),
+      feeDOP: Math.round(amountVal * 0.01 * usdToDop),
+      commissionDOP: Math.round(amountVal * 0.01 * usdToDop),
       proofUrl: zelleProofImage,
       zelleProofUrl: zelleProofImage,
       payoutCurrency: zellePayoutCurrency,
@@ -472,7 +472,7 @@ export const MobileAgentHome: React.FC = () => {
       ? usdToHtgRate
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const numUSD = parseFloat(zelleAmountUSD) || 0;
-      const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
+      const feeUSD = Math.round(numUSD * 0.01 * 100) / 100;
       const netUSD = Math.max(0, numUSD - feeUSD);
       const netPayoutDOP = Math.round(netUSD * usdToDop);
       const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netUSD.toFixed(2)} USD`;
@@ -696,7 +696,6 @@ export const MobileAgentHome: React.FC = () => {
             <div className="bg-purple-950 text-white p-5 rounded-3xl space-y-3 shadow-md border border-purple-900">
               <div className="flex items-center justify-between text-xs text-purple-300">
                 <span className="font-bold uppercase tracking-wider">Vérification Requise par l'Admin</span>
-                <span className="font-mono text-[11px]">Frais service 3.5%</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-purple-900/60 border border-purple-700/60 space-y-1.5">

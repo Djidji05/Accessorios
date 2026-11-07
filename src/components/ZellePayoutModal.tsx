@@ -61,9 +61,9 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
   const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
-  const feeUSD = tx.zelleFeeUSD || Math.round(amountUSD * 0.035 * 100) / 100;
+  const feeUSD = tx.zelleFeeUSD || Math.round(amountUSD * 0.01 * 100) / 100;
   const feeDOP = Math.round(feeUSD * appliedRate);
-  const commUSD = tx.zelleCommissionUSD || Math.round(amountUSD * 0.015 * 100) / 100;
+  const commUSD = tx.zelleCommissionUSD || Math.round(amountUSD * 0.01 * 100) / 100;
   const commDOP = Math.round(commUSD * appliedRate);
   const netUSD = Math.round((amountUSD - feeUSD) * 100) / 100;
   const netPayout = tx.netPayoutAmount || (payoutCurrency === 'DOP' ? Math.round(netUSD * appliedRate) : netUSD);
@@ -328,19 +328,23 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Frais de Service (3.5%)')}</span>
-                <p className="text-sm font-black font-mono text-amber-600 dark:text-amber-400 mt-0.5">
-                  -${feeUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(-{feeDOP.toLocaleString()} DOP)</span>
-                </p>
-              </div>
+              {isAdmin && (
+                <>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Frais de Service (1%)', 'Frais de Service (1%)')}</span>
+                    <p className="text-sm font-black font-mono text-amber-600 dark:text-amber-400 mt-0.5">
+                      -${feeUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(-{feeDOP.toLocaleString()} DOP)</span>
+                    </p>
+                  </div>
 
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Commission Plateforme')}</span>
-                <p className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  +${commUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(+{commDOP.toLocaleString()} DOP)</span>
-                </p>
-              </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Commission Plateforme', 'Commission Plateforme')}</span>
+                    <p className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      +${commUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(+{commDOP.toLocaleString()} DOP)</span>
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                 <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Devise de remise au client :')}</span>

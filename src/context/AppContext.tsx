@@ -1314,8 +1314,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const finalAmountDOP = isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP;
     const finalAmountHTG = isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate);
 
-    const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
-    const zelleFeeRate = 3.5; // 3.5% Frais guichet / virement
+    const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.0;
+    const zelleFeeRate = 1.0; // 1% Frais de service Zelle
     const zelleFeeUSD = isZelle ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
     const zelleCommissionUSD = isZelle ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
 

@@ -66,6 +66,7 @@ export interface Transaction {
   zelleCommissionUSD?: number;
   netPayoutAmount?: number;
   netPayoutCurrency?: 'DOP' | 'HTG' | 'USD';
+  currencyPayout?: 'DOP' | 'HTG' | 'USD';
 
   // Distributed System Node Tracing
   createdByNode: string;

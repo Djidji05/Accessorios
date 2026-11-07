@@ -281,8 +281,8 @@ export const OperationsGuichetView: React.FC = () => {
         serviceType: 'transfer',
         amountUSD: numUSD,
         amountDOP: Math.round(numUSD * usdToDop),
-        feeDOP: Math.round(numUSD * 0.035 * usdToDop),
-        commissionDOP: Math.round(numUSD * 0.015 * usdToDop),
+        feeDOP: Math.round(numUSD * 0.01 * usdToDop),
+        commissionDOP: Math.round(numUSD * 0.01 * usdToDop),
         proofUrl: zelleProofImage,
         zelleProofUrl: zelleProofImage,
         payoutCurrency: zellePayoutCurrency,
@@ -881,7 +881,7 @@ export const OperationsGuichetView: React.FC = () => {
                 const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
         ? usdToHtgRate
         : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-                const feeUSD = Math.round(numUSD * 0.035 * 100) / 100;
+                const feeUSD = Math.round(numUSD * 0.01 * 100) / 100;
                 const netUSD = Math.max(0, numUSD - feeUSD);
                 const netDOP = Math.round(netUSD * usdToDop);
                 const netUSDExact = Math.round(netUSD * 100) / 100;
@@ -890,7 +890,7 @@ export const OperationsGuichetView: React.FC = () => {
                 return (
                   <div className="p-4 bg-purple-50/70 rounded-2xl space-y-3 text-xs border border-purple-200/70 font-sans">
                     <div className="flex justify-between items-center text-slate-600">
-                      <span className="font-medium">Taux de conversion :</span>
+                      <span className="font-medium">{t('Taux de conversion :')}</span>
                       <span className="font-mono font-bold text-slate-900">
                         {zellePayoutCurrency === 'DOP'
                           ? `1 USD = ${usdToDop.toFixed(2)} DOP`
@@ -898,10 +898,12 @@ export const OperationsGuichetView: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                      <span>Frais Zelle (3.5%) :</span>
-                      <span className="font-mono font-bold text-slate-700">-${feeUSD.toFixed(2)} USD</span>
-                    </div>
+                    {currentUser.role === 'admin' && (
+                      <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                        <span>{t('Frais de service (1%) :')}</span>
+                        <span className="font-mono font-bold text-slate-700">-${feeUSD.toFixed(2)} USD</span>
+                      </div>
+                    )}
 
                     <div className="p-3.5 bg-purple-100/80 rounded-2xl border border-purple-300 text-purple-950 space-y-1.5">
                       <div className="flex items-center gap-2 font-black text-xs text-purple-900">
