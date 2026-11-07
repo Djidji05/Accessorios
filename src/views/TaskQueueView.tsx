@@ -69,7 +69,9 @@ export const TaskQueueView: React.FC = () => {
     updateTransaction,
     createTransaction,
     validateZelleTransaction,
+    validateHaitiInboundTransaction,
     dopToHtgRate,
+    usdToHtgRate,
     setSelectedReceiptTx,
     setActiveTab,
     accountBalances,
@@ -2651,431 +2653,459 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         {/* 2-Column Professional Fintech Page Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Main Left Column: Financials, Parties & Proof Section */}
+          {/* Main Left Column: Proof & Validation Section */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Financial Summary Card */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-2xs">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-blue-600" />
-                  <span>{t('Détails Financiers & Conversion', 'Détails Financiers & Conversion')}</span>
-                </h3>
-                <OperatorBadge operator={tx.operator} />
-              </div>
+            {(() => {
+              const isHaitiInboundTx =
+                tx.serviceType === 'haiti_inbound_cash' ||
+                tx.senderName === 'Client Haïti' ||
+                tx.receiverName === 'Client Guichet RD' ||
+                Boolean(tx.haitiInboundStatus) ||
+                Boolean(tx.haitiInboundProofUrl) ||
+                Boolean(tx.referenceNumber?.startsWith('#INB-')) ||
+                Boolean(tx.proofNotes?.toLowerCase().includes('preuve réception'));
+              const isZelleOrInbound = tx.operator === 'zelle' || isHaitiInboundTx;
+              const proofImageToDisplay = tx.haitiInboundProofUrl || tx.zelleProofUrl || tx.proofUrl;
 
-              {tx.operator === 'zelle' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200/80">
-                    <p className="text-xs font-bold text-purple-800 uppercase">{t('Montant Zelle Reçu (USD)', 'Montant Zelle Reçu (USD)')}</p>
-                    <p className="text-2xl font-black text-purple-900 font-mono mt-1">
-                      ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                    </p>
-                    <p className="text-[11px] text-purple-700 font-bold mt-1">
-                      {t('Taux:', 'Taux:')} 1 USD = {tx.zelleExchangeRate || 58} DOP
-                    </p>
-                    {currentUser.role === 'admin' && (
-                      <p className="text-[11px] text-purple-600 mt-0.5">
-                        {t('Frais de service (0.5%):', 'Frais de service (0.5%):')} ${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.005 * 100) / 100)} USD
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200/80">
-                    <p className="text-xs font-bold text-emerald-800 uppercase">{t('Montant à Verser au Client (RD)', 'Montant à Verser au Client (RD)')}</p>
-                    <p className="text-2xl font-black text-emerald-700 font-mono mt-1">
-                      {(tx.netPayoutAmount || tx.amountDOP || 0).toLocaleString(dateLocale)} {tx.currencyPayout || 'DOP'}
-                    </p>
-                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-                      {t('Mode de paiement:', 'Mode de paiement:')} {tx.currencyPayout === 'USD' ? 'Dollars (USD)' : 'Pesos (DOP)'}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
-                    <p className="text-xs font-bold text-slate-500 uppercase">{t('Montant Encaissé (RD)', 'Montant Encaissé (RD)')}</p>
-                    <p className="text-2xl font-black text-slate-900 font-mono mt-1">{tx.amountDOP.toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}</p>
-                    {currentUser.role === 'admin' && (
-                      <p className="text-[11px] text-slate-400 mt-1">{t('Frais de transfert:', 'Frais de transfert:')} {tx.feeDOP} {t('Pesos', 'Pesos')}</p>
-                    )}
-                  </div>
-
-                  <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200/80">
-                    <p className="text-xs font-bold text-blue-800 uppercase">{t('Montant à Verser (Haïti)', 'Montant à Verser (Haïti)')}</p>
-                    <p className="text-2xl font-black text-blue-700 font-mono mt-1">{tx.amountHTG.toLocaleString(dateLocale)} HTG</p>
-                    <p className="text-[11px] text-blue-600 font-bold mt-1">{t('Taux: 100 Pesos =', 'Taux: 100 Pesos =')} {Math.round(tx.exchangeRate * 100)} HTG</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Parties Prenantes Card: Expéditeur & Bénéficiaire */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
-              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <User className="w-4 h-4 text-blue-600" />
-                <span>{t('Expéditeur & Bénéficiaire', 'Expéditeur & Bénéficiaire')}</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                
-                {/* Expéditeur */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                    {tx.operator === 'zelle' ? t('Expéditeur (USA / Zelle)', 'Expéditeur (USA / Zelle)') : t('Expéditeur (République Dominicaine)', 'Expéditeur (République Dominicaine)')}
-                  </span>
-                  <p className="font-bold text-slate-900 text-sm">{tx.senderName}</p>
-                  <p className="font-mono text-xs text-slate-600 font-semibold">{tx.senderPhone}</p>
-                </div>
-
-                {/* Bénéficiaire */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                    {tx.operator === 'zelle' ? t('Bénéficiaire / Client (RD)', 'Bénéficiaire / Client (RD)') : t('Bénéficiaire (Haïti)', 'Bénéficiaire (Haïti)')}
-                  </span>
-                  <p className="font-bold text-slate-900 text-sm">{tx.receiverName}</p>
-                  <div className="flex items-center gap-2 font-mono text-xs text-slate-700 font-bold">
-                    <span>{tx.receiverPhone}</span>
-                    <button
-                      onClick={(e) => copyToClipboard(e, tx.receiverPhone, tx.id)}
-                      className="p-1 rounded bg-slate-200/80 hover:bg-slate-300 text-slate-700 transition-colors"
-                      title={t('Copier le numéro', 'Copier le numéro')}
-                    >
-                      {copiedId === tx.id ? <Check className="w-3.5 h-3.5 text-blue-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Preuve & Formulaire de Validation */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
-              <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-purple-600" />
-                  <span>{tx.operator === 'zelle' ? 'Vérification Preuve Bancaire Zelle' : t('Preuve de Décaissement & Validation', 'Preuve de Décaissement & Validation')}</span>
-                </div>
-                {tx.operator === 'zelle' && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                    Service Zelle Direct
-                  </span>
-                )}
-              </h3>
-
-              {tx.operator === 'zelle' ? (
-                <div className="space-y-4">
-                  {/* Proof Photo Display */}
-                  {(tx.zelleProofUrl || tx.proofUrl) ? (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <Camera className="w-3.5 h-3.5 text-purple-600" />
-                          <span>Photo Preuve de Virement Zelle :</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setQueueLightboxUrl(tx.zelleProofUrl || tx.proofUrl || null)}
-                          className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Plein écran</span>
-                        </button>
-                      </div>
-
-                      <div 
-                        onClick={() => setQueueLightboxUrl(tx.zelleProofUrl || tx.proofUrl || null)}
-                        className="rounded-2xl overflow-hidden border-2 border-purple-200 bg-slate-950 p-2 shadow-md cursor-pointer group flex flex-col items-center justify-center"
-                      >
-                        <img
-                          src={tx.zelleProofUrl || tx.proofUrl}
-                          alt="Preuve Zelle"
-                          className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
-                        />
-                        <div className="flex items-center justify-between w-full px-2 pt-2 text-[10px] text-purple-300 font-bold">
-                          <span>📷 PREUVE REÇUE DU GUICHET</span>
-                          <span className="text-white group-hover:underline flex items-center gap-1">
-                            <Eye className="w-3 h-3" /> Cliquer pour zoomer
-                          </span>
-                        </div>
-                      </div>
+              return (
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
+                  <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-purple-600" />
+                      <span>
+                        {tx.operator === 'zelle'
+                          ? 'Vérification Preuve Bancaire Zelle'
+                          : isHaitiInboundTx
+                          ? `Vérification Réception Haïti (${tx.operator.toUpperCase()}) & Validation`
+                          : t('Preuve de Décaissement & Validation', 'Preuve de Décaissement & Validation')}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="p-4 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/70 text-amber-900 text-xs flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                      <span>Aucune photo de preuve n'a encore été rattachée à cette transaction Zelle.</span>
+                    <div className="flex items-center gap-2">
+                      <OperatorBadge operator={tx.operator} />
+                      {tx.operator === 'zelle' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                          Service Zelle Direct
+                        </span>
+                      )}
+                      {isHaitiInboundTx && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                          Réception Haïti → Retrait RD
+                        </span>
+                      )}
                     </div>
-                  )}
+                  </h3>
 
-                  {/* Financial Breakdown & Agent Card */}
-                  {(() => {
-                    const numUSD = tx.amountUSD || (tx.amountDOP ? Math.round((tx.amountDOP / (tx.zelleExchangeRate || 60)) * 100) / 100 : 0);
-                    const appliedRate = tx.zelleExchangeRate || (tx.amountDOP && numUSD ? tx.amountDOP / numUSD : 60);
-                    const zFeeUSD = tx.zelleFeeUSD || Math.round(numUSD * 0.005 * 100) / 100;
-                    const zFeeDOP = Math.round(zFeeUSD * appliedRate);
-                    const zCommUSD = tx.zelleCommissionUSD || Math.round(numUSD * 0.01 * 100) / 100;
-                    const zCommDOP = Math.round(zCommUSD * appliedRate);
-                    const zPayoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
-                    const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
-                    const zNetPayout = tx.netPayoutAmount || (zPayoutCurrency === 'DOP' ? Math.round(zNetUSD * appliedRate) : zNetUSD);
+                  {isZelleOrInbound ? (
+                    <div className="space-y-4">
+                      {/* Proof Photo Display */}
+                      {proofImageToDisplay ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                              <Camera className="w-3.5 h-3.5 text-purple-600" />
+                              <span>
+                                {isHaitiInboundTx
+                                  ? `Photo Preuve ${tx.operator.toUpperCase()} (Haïti) :`
+                                  : 'Photo Preuve de Virement Zelle :'}
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setQueueLightboxUrl(proofImageToDisplay || null)}
+                              className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Agrandir en plein écran</span>
+                            </button>
+                          </div>
 
-                    return (
-                      <div className="space-y-3">
-                        {/* Agent Qui a fait la transaction */}
-                        <div className="p-3 bg-purple-50/80 rounded-2xl border border-purple-200 flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                              {(tx.createdByName || 'A')[0].toUpperCase()}
-                            </div>
-                            <div>
-                              <span className="text-[10px] uppercase font-bold text-slate-500 block">{t('Agent Émetteur')}</span>
-                              <span className="font-bold text-slate-900">{tx.createdByName || 'Agent Guichet'}</span>
-                              <span className="text-[10px] text-purple-700 ml-1.5 font-bold uppercase tracking-wider">
-                                ({tx.createdByRole?.replace('_', ' ') || 'agent'})
+                          <div
+                            onClick={() => setQueueLightboxUrl(proofImageToDisplay || null)}
+                            className="rounded-2xl overflow-hidden border-2 border-purple-200 bg-slate-950 p-2 shadow-md cursor-pointer group flex flex-col items-center justify-center"
+                          >
+                            <img
+                              src={proofImageToDisplay}
+                              alt="Preuve de transaction"
+                              className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
+                            />
+                            <div className="flex items-center justify-between w-full px-2 pt-2 text-[10px] text-purple-300 font-bold">
+                              <span>📷 QUITTANCE ENREGISTRÉE</span>
+                              <span className="text-white group-hover:underline flex items-center gap-1">
+                                <Eye className="w-3 h-3" /> Agrandir en plein écran
                               </span>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <span className="text-[10px] uppercase font-bold text-slate-500 block">{t("Date & Heure d'envoi")}</span>
-                            <span className="font-mono text-slate-700 font-bold text-[11px]">
-                              {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
                         </div>
-
-                        {/* Grille financière complète */}
-                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
-                          <div className="flex justify-between items-center text-slate-700">
-                            <span className="font-bold">{t('Somme reçue par Zelle :')}</span>
-                            <span className="font-mono font-black text-purple-700 text-sm">$${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                            <span>{t('Taux appliqué :')}</span>
-                            <span className="font-mono font-bold text-slate-800">
-                              1 USD = {appliedRate.toFixed(2)} DOP
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                            <span>{t('Frais de Service (0.5%) :')}</span>
-                            <span className="font-mono font-bold text-amber-700">
-                              -$${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                            <span>{t('Commission Plateforme (1%) :')}</span>
-                            <span className="font-mono font-bold text-emerald-700">
-                              +$${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
-                            </span>
-                          </div>
-
-                          <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                            <span className="font-black text-xs uppercase tracking-tight text-slate-900">
-                              {t('Montant net à remettre au client :')}
-                            </span>
-                            <span className="font-mono font-black text-emerald-600 text-xl">
-                              {zPayoutCurrency === 'USD' ? `$${zNetPayout.toLocaleString()} USD` : `${zNetPayout.toLocaleString()} DOP`}
-                            </span>
-                          </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/70 text-amber-900 text-xs flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <span>Aucune photo de preuve n'a encore été rattachée à cette transaction.</span>
                         </div>
-                      </div>
-                    );
-                  })()}
+                      )}
 
-                  {/* Admin OUI / NON Action Box */}
-                  {(currentUser.role === 'admin' || currentUser.role === 'gestionnaire') && (tx.zelleStatus === 'pending_admin_check' || (!isCompleted && !isCancelled && tx.zelleStatus !== 'approved' && tx.zelleStatus !== 'rejected')) ? (
-                    <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3">
-                      <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                        <span>Avez-vous bien vu le virement Zelle sur votre compte bancaire ?</span>
+                      {/* Financial Breakdown & Agent Card */}
+                      {(() => {
+                        const baseUsdRate = usdToHtgRate && usdToHtgRate <= 100 ? usdToHtgRate : 58;
+                        const appliedRate =
+                          tx.zelleExchangeRate && tx.zelleExchangeRate > 10
+                            ? tx.zelleExchangeRate
+                            : tx.exchangeRate && tx.exchangeRate > 10
+                            ? tx.exchangeRate
+                            : baseUsdRate;
+                        const numUSD =
+                          tx.amountUSD ||
+                          (tx.amountDOP ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : 0);
+                        const grossDOP = tx.amountDOP || Math.round(numUSD * appliedRate);
+                        const zFeeUSD = tx.zelleFeeUSD || Math.round(numUSD * 0.005 * 100) / 100;
+                        const zFeeDOP = tx.feeDOP || Math.round(grossDOP * 0.005);
+                        const zCommUSD = tx.zelleCommissionUSD || Math.round(numUSD * 0.01 * 100) / 100;
+                        const zCommDOP = tx.commissionDOP || Math.round(grossDOP * 0.01);
+                        const zPayoutCurrency = tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP';
+                        const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
+                        const zNetPayout =
+                          tx.netPayoutAmount ||
+                          (zPayoutCurrency === 'DOP' ? grossDOP - zFeeDOP : zNetUSD);
+
+                        const isPendingAdminDecision =
+                          !isCompleted &&
+                          !isCancelled &&
+                          tx.zelleStatus !== 'approved' &&
+                          tx.zelleStatus !== 'rejected' &&
+                          tx.haitiInboundStatus !== 'approved' &&
+                          tx.haitiInboundStatus !== 'rejected';
+
+                        return (
+                          <div className="space-y-4">
+                            {/* Agent Qui a fait la transaction */}
+                            <div className="p-3 bg-purple-50/80 rounded-2xl border border-purple-200 flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                                  {(tx.createdByName || 'A')[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-slate-500 block">{t('Agent Émetteur')}</span>
+                                  <span className="font-bold text-slate-900">{tx.createdByName || 'Agent Guichet'}</span>
+                                  <span className="text-[10px] text-purple-700 ml-1.5 font-bold uppercase tracking-wider">
+                                    ({tx.createdByRole?.replace('_', ' ') || 'agent'})
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[10px] uppercase font-bold text-slate-500 block">{t("Date & Heure d'envoi")}</span>
+                                <span className="font-mono text-slate-700 font-bold text-[11px]">
+                                  {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Grille financière complète */}
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
+                              <div className="flex justify-between items-center text-slate-700">
+                                <span className="font-bold">
+                                  {isHaitiInboundTx
+                                    ? `Somme reçue sur la preuve (${tx.operator.toUpperCase()}) :`
+                                    : t('Somme reçue par Zelle :')}
+                                </span>
+                                <span className="font-mono font-black text-purple-700 text-sm">
+                                  ${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                <span>{t('Taux appliqué :')}</span>
+                                <span className="font-mono font-bold text-slate-800">
+                                  1 USD = {appliedRate.toFixed(2)} DOP
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                <span>{t('Frais de Service Guichet (0.5%) :')}</span>
+                                <span className="font-mono font-bold text-amber-700">
+                                  -${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                <span>{t('Commission Admin (1%) :')}</span>
+                                <span className="font-mono font-bold text-emerald-700">
+                                  +${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
+                                </span>
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <span className="font-black text-xs uppercase tracking-tight text-slate-900">
+                                  {t('Montant net à remettre au client (RD) :')}
+                                </span>
+                                <span className="font-mono font-black text-emerald-600 text-xl">
+                                  {zPayoutCurrency === 'USD' ? `$${zNetPayout.toLocaleString()} USD` : `${zNetPayout.toLocaleString()} DOP`}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Admin OUI / NON Action Box */}
+                            {(currentUser.role === 'admin' || currentUser.role === 'gestionnaire') && isPendingAdminDecision ? (
+                              <div className="p-5 bg-amber-50 border-2 border-amber-400 rounded-2xl space-y-3.5 shadow-sm">
+                                <div className="flex items-center gap-2 text-amber-950 font-black text-sm">
+                                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                                  <span>
+                                    {isHaitiInboundTx
+                                      ? `Avez-vous bien reçu ce transfert ${tx.operator.toUpperCase()} sur votre compte Haïti ?`
+                                      : 'Avez-vous bien vu le virement Zelle sur votre compte bancaire ?'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-amber-900 leading-relaxed">
+                                  Vérifiez votre compte {isHaitiInboundTx ? tx.operator.toUpperCase() : 'bancaire Zelle'} pour la somme de{' '}
+                                  <strong>${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</strong> (~{grossDOP.toLocaleString()} DOP).
+                                  Cliquez sur <strong>OUI</strong> pour valider et autoriser le paiement de <strong>{zNetPayout.toLocaleString()} {zPayoutCurrency}</strong> au client, ou sur <strong>NON</strong> pour annuler.
+                                </p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const res = isHaitiInboundTx
+                                        ? validateHaitiInboundTransaction(tx.id, true)
+                                        : validateZelleTransaction(tx.id, true);
+                                      if (res.success) {
+                                        setSelectedTxForDetails({
+                                          ...tx,
+                                          status: 'completed',
+                                          zelleStatus: 'approved',
+                                          haitiInboundStatus: 'approved',
+                                          netPayoutAmount: zNetPayout,
+                                        });
+                                      }
+                                    }}
+                                    className="py-4 px-5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                                  >
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    <span>OUI, Valider la transaction</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const defaultReason = isHaitiInboundTx
+                                        ? `Transfert ${tx.operator.toUpperCase()} non reçu sur le compte`
+                                        : 'Virement Zelle non constaté sur le compte bancaire';
+                                      const reason = prompt('Précisez le motif de l\'annulation / refus :', defaultReason);
+                                      if (reason !== null) {
+                                        const res = isHaitiInboundTx
+                                          ? validateHaitiInboundTransaction(tx.id, false, reason)
+                                          : validateZelleTransaction(tx.id, false, reason);
+                                        if (res.success) {
+                                          setSelectedTxForDetails({
+                                            ...tx,
+                                            status: 'cancelled',
+                                            zelleStatus: 'rejected',
+                                            haitiInboundStatus: 'rejected',
+                                            cancellationReason: reason,
+                                            zelleAdminNote: reason,
+                                            haitiInboundAdminNote: reason,
+                                          });
+                                        }
+                                      }
+                                    }}
+                                    className="py-4 px-5 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                                  >
+                                    <XCircle className="w-5 h-5" />
+                                    <span>NON, Annuler la transaction</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : tx.zelleStatus === 'approved' || tx.haitiInboundStatus === 'approved' || tx.status === 'completed' ? (
+                              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-900">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                                <div>
+                                  <p className="font-black">
+                                    ✓ {isHaitiInboundTx ? `Réception ${tx.operator.toUpperCase()}` : 'Zelle'} Validée & Confirmée par l'Administrateur
+                                  </p>
+                                  <p className="text-[11px] text-emerald-800">
+                                    L'Agent est autorisé à remettre <strong>{zNetPayout.toLocaleString()} {zPayoutCurrency}</strong> au client.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : tx.zelleStatus === 'rejected' || tx.haitiInboundStatus === 'rejected' || tx.status === 'cancelled' ? (
+                              <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-900">
+                                <XCircle className="w-6 h-6 text-rose-600 flex-shrink-0" />
+                                <div>
+                                  <p className="font-black">
+                                    ✕ {isHaitiInboundTx ? `Réception ${tx.operator.toUpperCase()}` : 'Zelle'} Refusée / Annulée par l'Administrateur
+                                  </p>
+                                  <p className="text-[11px] text-rose-800">
+                                    Motif : {tx.haitiInboundAdminNote || tx.zelleAdminNote || tx.cancellationReason || 'Transfert non reçu.'} — Aucun paiement autorisé.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-xs text-amber-900">
+                                <Clock className="w-6 h-6 text-amber-600 flex-shrink-0 animate-pulse" />
+                                <div>
+                                  <p className="font-black">⏳ En Attente de Vérification Admin</p>
+                                  <p className="text-[11px] text-amber-800">
+                                    Un message a été envoyé à l'Administrateur pour vérifier la réception des fonds. Ne remettez pas l'argent avant validation !
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : tx.proofNotes ? (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl font-mono text-xs text-blue-900 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-blue-800 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                          <span>{t('✓ Preuve de paiement enregistrée :', '✓ Preuve de paiement enregistrée :')}</span>
+                        </p>
+                        {tx.completedAt && (
+                          <span className="text-[10px] text-slate-500 font-sans font-bold">
+                            {t('Clôturé le', 'Clôturé le')} {new Date(tx.completedAt).toLocaleString(dateLocale)}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[11px] text-amber-800 leading-relaxed">
-                        Vérifiez vos notifications bancaires pour le montant de <strong>${(tx.amountUSD || 0).toLocaleString()} USD</strong>. Cliquez sur OUI pour autoriser immédiatement l'agent à verser les fonds, ou NON pour refuser.
+
+                      <p className="text-slate-800 font-sans font-semibold bg-white/90 p-3 rounded-xl border border-blue-100">
+                        {tx.proofNotes}
                       </p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const res = validateZelleTransaction(tx.id, true);
-                            if (res.success) {
-                              setSelectedTxForDetails({ ...tx, status: 'completed', zelleStatus: 'approved' });
-                            }
-                          }}
-                          className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>OUI, J'ai bien vu (Valider)</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const reason = prompt("Précisez le motif du refus (ex: Zelle non reçu sur le compte) :", "Virement Zelle non constaté sur le compte bancaire");
-                            if (reason !== null) {
-                              const res = validateZelleTransaction(tx.id, false, reason);
-                              if (res.success) {
-                                setSelectedTxForDetails({ ...tx, status: 'cancelled', zelleStatus: 'rejected', zelleAdminNote: reason });
-                              }
-                            }
-                          }}
-                          className="py-3.5 px-4 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          <span>NON, Pas reçu (Refuser)</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : tx.zelleStatus === 'approved' || tx.status === 'completed' ? (
-                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-900">
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
-                      <div>
-                        <p className="font-black">✓ Zelle Validé & Confirmé par l'Administrateur</p>
-                        <p className="text-[11px] text-emerald-800">
-                          L'Agent est autorisé à remettre <strong>{(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.netPayoutCurrency || 'DOP'}</strong> au client.
-                        </p>
-                      </div>
-                    </div>
-                  ) : tx.zelleStatus === 'rejected' || tx.status === 'cancelled' ? (
-                    <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-900">
-                      <XCircle className="w-6 h-6 text-rose-600 flex-shrink-0" />
-                      <div>
-                        <p className="font-black">✕ Zelle Refusé par l'Administrateur</p>
-                        <p className="text-[11px] text-rose-800">
-                          Motif : {tx.zelleAdminNote || 'Virement Zelle non reçu.'} — Aucun paiement autorisé.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-xs text-amber-900">
-                      <Clock className="w-6 h-6 text-amber-600 flex-shrink-0 animate-pulse" />
-                      <div>
-                        <p className="font-black">⏳ En Attente de Vérification Bancaire Admin</p>
-                        <p className="text-[11px] text-amber-800">
-                          Un message a été envoyé à l'Administrateur pour vérifier la réception des fonds. Ne remettez pas l'argent avant validation !
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : tx.proofNotes ? (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl font-mono text-xs text-blue-900 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-blue-800 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                      <span>{t('✓ Preuve de paiement enregistrée :', '✓ Preuve de paiement enregistrée :')}</span>
-                    </p>
-                    {tx.completedAt && (
-                      <span className="text-[10px] text-slate-500 font-sans font-bold">
-                        {t('Clôturé le', 'Clôturé le')} {new Date(tx.completedAt).toLocaleString(dateLocale)}
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-slate-800 font-sans font-semibold bg-white/90 p-3 rounded-xl border border-blue-100">
-                    {tx.proofNotes}
-                  </p>
-
-                  {/* Visual Proof Image Preview if available */}
-                  {tx.proofUrl && (
-                    <div className="pt-1">
-                      <span className="text-[10px] font-black uppercase text-blue-800 tracking-wider block mb-1.5 font-sans">
-                        {t('Capture / Quittance de paiement associée :', 'Capture / Quittance de paiement associée :')}
-                      </span>
-                      <div 
-                        onClick={() => setQueueLightboxUrl(tx.proofUrl || null)}
-                        className="relative rounded-2xl overflow-hidden border-2 border-blue-300 bg-slate-950 p-2 shadow-md cursor-pointer group"
-                      >
-                        <img 
-                          src={tx.proofUrl} 
-                          alt={t('Quittance de transaction', 'Quittance de transaction')} 
-                          className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
-                        />
-                        <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold font-sans">
-                          <span>📷 QUITTANCE ENREGISTRÉE</span>
-                          <span className="text-white group-hover:underline flex items-center gap-1">
-                            <Eye className="w-3 h-3" /> {t('Agrandir en plein écran', 'Agrandir en plein écran')}
+                      {/* Visual Proof Image Preview if available */}
+                      {tx.proofUrl && (
+                        <div className="pt-1">
+                          <span className="text-[10px] font-black uppercase text-blue-800 tracking-wider block mb-1.5 font-sans">
+                            {t('Capture / Quittance de paiement associée :', 'Capture / Quittance de paiement associée :')}
                           </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : isInProgress ? (
-                <form onSubmit={handleValidateTask} className="space-y-4 pt-1">
-                  
-                  {/* Preuve Visuelle : Photo / Capture de Quittance */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
-                      <span>{t('Preuve Photographique ou Capture d\'Écran :', 'Preuve Photographique ou Capture d\'Écran :')}</span>
-                      <span className="text-[10px] text-purple-600 font-semibold">{t('Photo ou screenshot quittance', 'Photo ou screenshot quittance')}</span>
-                    </label>
-
-                    {proofImage ? (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img 
-                            src={proofImage} 
-                            alt={t('Aperçu quittance', 'Aperçu quittance')} 
-                            className="w-14 h-14 rounded-xl object-cover border border-blue-300 shadow-2xs flex-shrink-0"
-                          />
-                          <div className="truncate">
-                            <span className="text-xs font-bold text-slate-900 block truncate">
-                              {t('✓ Capture / Reçu attaché', '✓ Capture / Reçu attaché')}
-                            </span>
-                            <span className="text-[10px] text-blue-600 font-semibold block">
-                              {t('Prête pour validation et archivage', 'Prête pour validation et archivage')}
-                            </span>
+                          <div 
+                            onClick={() => setQueueLightboxUrl(tx.proofUrl || null)}
+                            className="relative rounded-2xl overflow-hidden border-2 border-blue-300 bg-slate-950 p-2 shadow-md cursor-pointer group"
+                          >
+                            <img 
+                              src={tx.proofUrl} 
+                              alt={t('Quittance de transaction', 'Quittance de transaction')} 
+                              className="max-h-[480px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
+                            />
+                            <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold font-sans">
+                              <span>📷 QUITTANCE ENREGISTRÉE</span>
+                              <span className="text-white group-hover:underline flex items-center gap-1">
+                                <Eye className="w-3 h-3" /> {t('Agrandir en plein écran', 'Agrandir en plein écran')}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setProofImage(null)}
-                          className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors flex-shrink-0 cursor-pointer"
-                          title={t('Supprimer la capture', 'Supprimer la capture')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="border-2 border-dashed border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all group">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Camera className="w-5 h-5" />
+                      )}
+
+                      {/* Boutons OUI / NON pour valider ou annuler si la transaction est encore En Attente */}
+                      {!isCompleted && !isCancelled && (currentUser.role === 'admin' || currentUser.role === 'gestionnaire') && (
+                        <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-2xl space-y-3 font-sans">
+                          <p className="font-black text-amber-950 text-xs flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>Souhaitez-vous valider ou annuler cette transaction ?</span>
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                completeTask(tx.id, tx.proofNotes || 'Validé par Admin', tx.proofUrl);
+                                setSelectedTxForDetails({ ...tx, status: 'completed', completedAt: new Date().toISOString() });
+                              }}
+                              className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>OUI, Valider la transaction</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const reason = prompt('Motif de l\'annulation :', 'Preuve non conforme / Transaction annulée par l\'Administrateur');
+                                if (reason !== null) {
+                                  cancelTransaction(tx.id, reason);
+                                  setSelectedTxForDetails({ ...tx, status: 'cancelled', cancellationReason: reason });
+                                }
+                              }}
+                              className="py-3.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>NON, Annuler la transaction</span>
+                            </button>
+                          </div>
                         </div>
-                        <span className="text-xs font-bold text-slate-700 group-hover:text-blue-700">
-                          {t('Joindre la capture ou le reçu opérateur', 'Joindre la capture ou le reçu opérateur')} ({tx.operator.toUpperCase()})
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {t('Formats : PNG, JPG, JPEG (Max 10 Mo)', 'Formats : PNG, JPG, JPEG (Max 10 Mo)')}
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleDetailProofUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : isInProgress ? (
+                    <form onSubmit={handleValidateTask} className="space-y-4 pt-1">
+                      
+                      {/* Preuve Visuelle : Photo / Capture de Quittance */}
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                          <span>{t('Preuve Photographique ou Capture d\'Écran :', 'Preuve Photographique ou Capture d\'Écran :')}</span>
+                          <span className="text-[10px] text-purple-600 font-semibold">{t('Photo ou screenshot quittance', 'Photo ou screenshot quittance')}</span>
+                        </label>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{t('Valider & Clôturer la Transaction', 'Valider & Clôturer la Transaction')}</span>
-                  </button>
-                </form>
-              ) : isCancelled ? (
-                <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-mono">
-                  <p className="font-bold">✕ {t('Transaction Annulée', 'Transaction Annulée')}</p>
-                  <p className="mt-1">{t('Motif :', 'Motif :')} {tx.cancellationReason || t("Annulé par l'administrateur", "Annulé par l'administrateur")}</p>
+                        {proofImage ? (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <img 
+                                src={proofImage} 
+                                alt={t('Aperçu quittance', 'Aperçu quittance')} 
+                                className="w-14 h-14 rounded-xl object-cover border border-blue-300 shadow-2xs flex-shrink-0"
+                              />
+                              <div className="truncate">
+                                <span className="text-xs font-bold text-slate-900 block truncate">
+                                  {t('✓ Capture / Reçu attaché', '✓ Capture / Reçu attaché')}
+                                </span>
+                                <span className="text-[10px] text-blue-600 font-semibold block">
+                                  {t('Prête pour validation et archivage', 'Prête pour validation et archivage')}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setProofImage(null)}
+                              className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors flex-shrink-0 cursor-pointer"
+                              title={t('Supprimer la capture', 'Supprimer la capture')}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="border-2 border-dashed border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all group">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Camera className="w-5 h-5" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 group-hover:text-blue-700">
+                              {t('Joindre la capture ou le reçu opérateur', 'Joindre la capture ou le reçu opérateur')} ({tx.operator.toUpperCase()})
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {t('Formats : PNG, JPG, JPEG (Max 10 Mo)', 'Formats : PNG, JPG, JPEG (Max 10 Mo)')}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleDetailProofUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{t('Valider & Clôturer la Transaction', 'Valider & Clôturer la Transaction')}</span>
+                      </button>
+                    </form>
+                  ) : isCancelled ? (
+                    <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-mono">
+                      <p className="font-bold">✕ {t('Transaction Annulée', 'Transaction Annulée')}</p>
+                      <p className="mt-1">{t('Motif :', 'Motif :')} {tx.cancellationReason || t("Annulé par l'administrateur", "Annulé par l'administrateur")}</p>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-
+              );
+            })()}
           </div>
 
           {/* Right Sidebar: Responsable & Agence */}
@@ -3089,8 +3119,29 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               </h4>
 
               <div className="p-3 bg-slate-50 rounded-xl space-y-1">
-                <p className="text-xs font-bold text-slate-900">{tx.assignedToName}</p>
-                <p className="text-[11px] text-slate-500 capitalize">{tx.assignedToRole.replace('_', ' ')}</p>
+                {(() => {
+                  const isHaitiInboundTx =
+                    tx.serviceType === 'haiti_inbound_cash' ||
+                    tx.senderName === 'Client Haïti' ||
+                    tx.receiverName === 'Client Guichet RD' ||
+                    Boolean(tx.haitiInboundStatus) ||
+                    Boolean(tx.haitiInboundProofUrl) ||
+                    Boolean(tx.referenceNumber?.startsWith('#INB-'));
+                  if (isHaitiInboundTx || tx.operator === 'zelle') {
+                    return (
+                      <>
+                        <p className="text-xs font-bold text-slate-900">Administrateur</p>
+                        <p className="text-[11px] text-purple-600 font-semibold">Vérification & Validation Admin</p>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <p className="text-xs font-bold text-slate-900">{tx.assignedToName}</p>
+                      <p className="text-[11px] text-slate-500 capitalize">{tx.assignedToRole.replace('_', ' ')}</p>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
@@ -4405,10 +4456,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             </span>
                             <span className="text-[10px] font-bold text-slate-400">({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'})</span>
                           </>
-                        ) : tx.serviceType === 'haiti_inbound_cash' ? (
+                        ) : (tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || tx.receiverName === 'Client Guichet RD' || Boolean(tx.haitiInboundStatus)) ? (
                           <>
                             <span className="font-black text-amber-600 text-sm">
-                              ${(tx.amountUSD || 0).toLocaleString()} USD
+                              ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / 58) * 100) / 100).toLocaleString()} USD
                             </span>
                             <span className="text-[10px] font-bold text-slate-400">({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP)</span>
                           </>
@@ -4422,7 +4473,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                       {/* 6. Quick Action / Open Details Arrow */}
                       <div className="col-span-1 flex items-center justify-end">
-                        {tx.serviceType === 'haiti_inbound_cash' ? (
+                        {(tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || tx.receiverName === 'Client Guichet RD' || Boolean(tx.haitiInboundStatus)) ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -4435,10 +4486,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                 : 'bg-rose-600 hover:bg-rose-700 text-white'
                             }`}
-                            title="Ouvrir la fiche de vérification Réception Haïti"
+                            title="Ouvrir la fiche de vérification Réception Haïti (OUI / NON)"
                           >
                             <Coins className="w-3.5 h-3.5" />
-                            <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier Dépôt' : 'Fiche Dépôt'}</span>
+                            <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier (OUI/NON)' : 'Fiche Dépôt'}</span>
                           </button>
                         ) : tx.operator === 'zelle' ? (
                           <button
@@ -4589,10 +4640,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             ({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} {tx.currencyPayout || 'DOP'})
                           </span>
                         </>
-                      ) : tx.serviceType === 'haiti_inbound_cash' ? (
+                      ) : (tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || tx.receiverName === 'Client Guichet RD' || Boolean(tx.haitiInboundStatus)) ? (
                         <>
                           <span className="font-black text-amber-600 text-sm block leading-tight">
-                            ${(tx.amountUSD || 0).toLocaleString()} USD
+                            ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / 58) * 100) / 100).toLocaleString()} USD
                           </span>
                           <span className="text-[10px] text-slate-400 font-semibold">
                             ({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP)
@@ -4613,7 +4664,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                   {/* Action button */}
                   <div className="flex items-center justify-end gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                    {tx.serviceType === 'haiti_inbound_cash' ? (
+                    {(tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || tx.receiverName === 'Client Guichet RD' || Boolean(tx.haitiInboundStatus)) ? (
                       <button
                         onClick={() => setQueueHaitiInboundTx(tx)}
                         className={`w-full py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer ${
@@ -4625,7 +4676,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         }`}
                       >
                         <Coins className="w-4 h-4" />
-                        <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier Dépôt Haïti' : 'Consulter Fiche Dépôt'}</span>
+                        <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier Dépôt (OUI / NON)' : 'Consulter Fiche Dépôt'}</span>
                       </button>
                     ) : tx.operator === 'zelle' ? (
                       <button

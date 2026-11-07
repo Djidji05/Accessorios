@@ -1042,13 +1042,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const finalProof = rawTx.proofUrl && rawTx.proofUrl.startsWith('/api/') && token && !rawTx.proofUrl.includes('token=')
               ? `${rawTx.proofUrl}?token=${encodeURIComponent(token)}`
               : rawTx.proofUrl;
+            const isHaitiInboundSse =
+              rawTx.serviceType === 'haiti_inbound_cash' ||
+              rawTx.senderName === 'Client Haïti' ||
+              rawTx.receiverName === 'Client Guichet RD' ||
+              Boolean(rawTx.referenceNumber?.startsWith('#INB-'));
             const newTx: Transaction = {
               ...rawTx,
+              serviceType: isHaitiInboundSse ? 'haiti_inbound_cash' : rawTx.serviceType,
               proofUrl: finalProof,
               zelleProofUrl: rawTx.operator === 'zelle' ? (finalProof || rawTx.zelleProofUrl) : rawTx.zelleProofUrl,
               zelleStatus: rawTx.operator === 'zelle'
                 ? (rawTx.status === 'completed' ? 'approved' : rawTx.status === 'cancelled' ? 'rejected' : 'pending_admin_check')
                 : rawTx.zelleStatus,
+              haitiInboundProofUrl: isHaitiInboundSse ? (finalProof || rawTx.haitiInboundProofUrl) : rawTx.haitiInboundProofUrl,
+              haitiInboundStatus: isHaitiInboundSse
+                ? (rawTx.status === 'completed' ? 'approved' : rawTx.status === 'cancelled' ? 'rejected' : 'pending_admin_check')
+                : rawTx.haitiInboundStatus,
             };
 
             setTransactions((prev) => {
@@ -1446,7 +1456,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       operator: data.operator,
       serviceType: data.serviceType,
       amountDOP: finalAmountDOP,
-      amountUSD: isZelle ? finalAmountUSD : data.amountUSD,
+      amountUSD: (isZelle || isHaitiInbound) ? finalAmountUSD : data.amountUSD,
       feeDOP: finalFeeDOP,
       commissionDOP: finalCommDOP,
       proofUrl: proofImg,
@@ -1459,8 +1469,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           {
             ...newTx,
             ...res.transaction,
+            serviceType: isHaitiInbound ? 'haiti_inbound_cash' : res.transaction.serviceType,
             proofUrl: finalProof,
             zelleProofUrl: isZelle ? (finalProof || proofImg) : undefined,
+            haitiInboundProofUrl: isHaitiInbound ? (finalProof || proofImg) : undefined,
+            haitiInboundStatus: isHaitiInbound ? 'pending_admin_check' : undefined,
             id: res.transaction.id,
           },
           ...prev.filter((t) => t.id !== newTxId && t.id !== res.transaction.id),
@@ -1598,6 +1611,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (t.id === transactionId) {
             return {
               ...t,
+              status: 'completed',
+              completedAt: new Date().toISOString(),
               haitiInboundStatus: 'approved',
               amountDOP: grossDOP,
               feeDOP,

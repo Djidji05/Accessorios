@@ -87,13 +87,23 @@ export const api = {
           const finalProof = t.proofUrl && t.proofUrl.startsWith('/api/') && token && !t.proofUrl.includes('token=')
             ? `${t.proofUrl}?token=${encodeURIComponent(token)}`
             : t.proofUrl;
+          const isHaitiInbound =
+            t.serviceType === 'haiti_inbound_cash' ||
+            t.senderName === 'Client Haïti' ||
+            t.receiverName === 'Client Guichet RD' ||
+            Boolean(t.referenceNumber?.startsWith('#INB-'));
           return {
             ...t,
+            serviceType: isHaitiInbound ? 'haiti_inbound_cash' : t.serviceType,
             proofUrl: finalProof,
             zelleProofUrl: (t.operator === 'zelle') ? (finalProof || t.zelleProofUrl) : t.zelleProofUrl,
             zelleStatus: t.operator === 'zelle'
               ? (t.status === 'completed' ? 'approved' : t.status === 'cancelled' ? 'rejected' : 'pending_admin_check')
               : t.zelleStatus,
+            haitiInboundProofUrl: isHaitiInbound ? (finalProof || t.haitiInboundProofUrl) : t.haitiInboundProofUrl,
+            haitiInboundStatus: isHaitiInbound
+              ? (t.status === 'completed' ? 'approved' : t.status === 'cancelled' ? 'rejected' : 'pending_admin_check')
+              : t.haitiInboundStatus,
           };
         });
       }
@@ -123,11 +133,18 @@ export const api = {
         const finalProof = res.transaction.proofUrl && res.transaction.proofUrl.startsWith('/api/') && token && !res.transaction.proofUrl.includes('token=')
           ? `${res.transaction.proofUrl}?token=${encodeURIComponent(token)}`
           : (res.transaction.proofUrl || data.proofUrl);
+        const isHaitiInbound =
+          res.transaction.serviceType === 'haiti_inbound_cash' ||
+          data.serviceType === 'haiti_inbound_cash' ||
+          res.transaction.senderName === 'Client Haïti';
         res.transaction = {
           ...res.transaction,
+          serviceType: isHaitiInbound ? 'haiti_inbound_cash' : res.transaction.serviceType,
           proofUrl: finalProof,
           zelleProofUrl: (res.transaction.operator === 'zelle') ? (finalProof || data.proofUrl) : res.transaction.zelleProofUrl,
           zelleStatus: res.transaction.operator === 'zelle' ? 'pending_admin_check' : res.transaction.zelleStatus,
+          haitiInboundProofUrl: isHaitiInbound ? (finalProof || data.proofUrl) : res.transaction.haitiInboundProofUrl,
+          haitiInboundStatus: isHaitiInbound ? 'pending_admin_check' : res.transaction.haitiInboundStatus,
         };
       }
       return res;
