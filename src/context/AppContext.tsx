@@ -92,12 +92,14 @@ interface AppContextType {
     feeDOP: number;
     commissionDOP: number;
     amountUSD?: number;
+    amountHTG?: number;
     proofUrl?: string;
     zelleProofUrl?: string;
     payoutCurrency?: 'DOP' | 'HTG' | 'USD';
   }) => { success: boolean; message: string; transaction?: Transaction };
   
   validateZelleTransaction: (transactionId: string, approved: boolean, note?: string) => { success: boolean; message: string };
+  validateHaitiInboundTransaction: (transactionId: string, approved: boolean, note?: string) => { success: boolean; message: string };
   completeTask: (transactionId: string, proofNotes: string, proofUrl?: string) => { success: boolean; message: string };
   cancelTransaction: (transactionId: string, reason: string) => { success: boolean; message: string };
   updateTransaction: (transactionId: string, updatedFields: Partial<Transaction>) => { success: boolean; message: string };
@@ -1258,6 +1260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     feeDOP: number;
     commissionDOP: number;
     amountUSD?: number;
+    amountHTG?: number;
     proofUrl?: string;
     zelleProofUrl?: string;
     payoutCurrency?: 'DOP' | 'HTG' | 'USD';
@@ -1306,13 +1309,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    // Calculs spécifiques Zelle si applicable (Taux USD -> DOP direct)
+    // Calculs spécifiques Zelle & Réception Haïti si applicable
+    const isHaitiInbound = data.serviceType === 'haiti_inbound_cash';
     const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
       ? usdToHtgRate
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
     const finalAmountUSD = data.amountUSD || (isZelle && data.amountDOP > 0 ? Math.round((data.amountDOP / usdToDop) * 100) / 100 : 0);
-    const finalAmountDOP = isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP;
-    const finalAmountHTG = isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate);
+    const finalAmountHTG = isHaitiInbound 
+      ? (data.amountHTG || 0)
+      : (isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate));
+    const finalAmountDOP = isHaitiInbound
+      ? Math.round(finalAmountHTG / (dopToHtgRate || 2.35))
+      : (isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP);
 
     const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.0;
     const zelleFeeRate = 1.0; // 1% Frais de service Zelle
@@ -1321,31 +1329,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const payoutCurrency = data.payoutCurrency || 'DOP';
     const netUSD = finalAmountUSD - zelleFeeUSD;
-    const netPayoutAmount = payoutCurrency === 'DOP'
-      ? Math.round(netUSD * usdToDop)
-      : payoutCurrency === 'HTG'
-      ? Math.round(netUSD * (usdToDop * (dopToHtgRate || 2.35)))
-      : Math.round(netUSD * 100) / 100;
+    const netPayoutAmount = isHaitiInbound
+      ? (finalAmountDOP - Math.round(finalAmountDOP * 0.01))
+      : (payoutCurrency === 'DOP'
+        ? Math.round(netUSD * usdToDop)
+        : payoutCurrency === 'HTG'
+        ? Math.round(netUSD * (usdToDop * (dopToHtgRate || 2.35)))
+        : Math.round(netUSD * 100) / 100);
 
-    const finalFeeDOP = isZelle ? Math.round(zelleFeeUSD * usdToDop) : data.feeDOP;
-    const finalCommDOP = isZelle ? Math.round(zelleCommissionUSD * usdToDop) : data.commissionDOP;
+    const finalFeeDOP = isHaitiInbound
+      ? Math.round(finalAmountDOP * 0.01)
+      : (isZelle ? Math.round(zelleFeeUSD * usdToDop) : data.feeDOP);
+    const finalCommDOP = isHaitiInbound
+      ? Math.round(finalAmountDOP * 0.01)
+      : (isZelle ? Math.round(zelleCommissionUSD * usdToDop) : data.commissionDOP);
 
     // 3. Determine Channel & Intelligent Task Routing :
-    // - Zelle Direct -> Admin pour vérification bancaire
+    // - Zelle Direct & Réception Haïti Inbound -> Admin pour vérification bancaire / compte
     // - Haïti Cash / Mobile Money (MonCash, Natcash, Natcom) -> Agent Haïti
     // - Télécoms & Numériques (Digicel, Claro, Altice) -> Gestionnaire
     const isHaitiCashChannel = data.operator === 'moncash' || data.operator === 'natcash' || data.operator === 'natcom';
     const channel: ChannelType = isHaitiCashChannel ? 'haiti_cash' : 'digital_telecom';
     
-    const assignedRole: Role = isZelle ? 'admin' : (isHaitiCashChannel ? 'agent_haiti' : 'gestionnaire');
+    const assignedRole: Role = (isZelle || isHaitiInbound) ? 'admin' : (isHaitiCashChannel ? 'agent_haiti' : 'gestionnaire');
     const assignedUser = availableUsers.find((u) => u.role === assignedRole);
-    const assignedNodeId = assignedUser ? assignedUser.nodeId : (isZelle ? 'node-admin-01' : (isHaitiCashChannel ? 'node-agent-haiti-01' : 'node-gestionnaire-01'));
-    const assignedName = assignedUser ? assignedUser.name : (isZelle ? 'Administrateur' : (isHaitiCashChannel ? 'Agent Haïti' : 'Gestionnaire'));
+    const assignedNodeId = assignedUser ? assignedUser.nodeId : ((isZelle || isHaitiInbound) ? 'node-admin-01' : (isHaitiCashChannel ? 'node-agent-haiti-01' : 'node-gestionnaire-01'));
+    const assignedName = assignedUser ? assignedUser.name : ((isZelle || isHaitiInbound) ? 'Administrateur' : (isHaitiCashChannel ? 'Agent Haïti' : 'Gestionnaire'));
 
     const newTxId = `tx_${Date.now()}`;
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const refNum = isZelle ? `#ZEL-${dateStr}-${randomSuffix}` : `#TX-${dateStr}-${randomSuffix}`;
+    const refNum = isZelle ? `#ZEL-${dateStr}-${randomSuffix}` : isHaitiInbound ? `#INB-${dateStr}-${randomSuffix}` : `#TX-${dateStr}-${randomSuffix}`;
     const proofImg = data.proofUrl || data.zelleProofUrl;
 
     const newTx: Transaction = {
@@ -1371,11 +1385,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       zelleExchangeRate: isZelle ? usdToDop : undefined,
       zelleFeeUSD: isZelle ? zelleFeeUSD : undefined,
       zelleCommissionUSD: isZelle ? zelleCommissionUSD : undefined,
-      netPayoutAmount: isZelle ? netPayoutAmount : undefined,
-      netPayoutCurrency: isZelle ? payoutCurrency : undefined,
+      netPayoutAmount: (isZelle || isHaitiInbound) ? netPayoutAmount : undefined,
+      netPayoutCurrency: (isZelle || isHaitiInbound) ? payoutCurrency : undefined,
+
+      // Haïti Inbound Flow
+      haitiInboundStatus: isHaitiInbound ? 'pending_admin_check' : undefined,
+      haitiInboundProofUrl: isHaitiInbound ? proofImg : undefined,
       
       proofUrl: proofImg,
-      proofNotes: isZelle ? `Preuve Zelle ($${finalAmountUSD} USD) soumise par ${currentUser.name}. En attente de vérification bancaire par l'Administrateur.` : undefined,
+      proofNotes: isHaitiInbound
+        ? `Preuve réception ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG) soumise par ${currentUser.name}. En attente de confirmation par l'Administrateur.`
+        : (isZelle ? `Preuve Zelle ($${finalAmountUSD} USD) soumise par ${currentUser.name}. En attente de vérification bancaire par l'Administrateur.` : undefined),
 
       createdByNode: currentUser.nodeId,
       createdByName: currentUser.name,
@@ -1392,8 +1412,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setTransactions((prev) => [newTx, ...prev]);
 
-    // Update balances: Natcom shares the Natcash balance and Digicel shares the MonCash balance
-    if (!isZelle) {
+    // Update balances: Natcom shares the Natcash balance and Digicel shares the MonCash balance (Inbound does not deduct yet)
+    if (!isZelle && !isHaitiInbound) {
       setAccountBalances((prev) =>
         prev.map((b) => {
           const targetOperator = data.operator === 'natcom' ? 'natcash' : data.operator === 'digicel' ? 'moncash' : data.operator;
@@ -1450,16 +1470,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const toastMsg = isZelle
       ? `Preuve Zelle ($${finalAmountUSD} USD) enregistrée ! Transmise à l'Admin pour vérification de compte. Ne donnez pas l'argent avant validation.`
-      : isHaitiCashChannel
+      : isHaitiInbound
+        ? `Preuve ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG) enregistrée ! Transmise à l'Admin pour vérification de compte. Ne donnez pas les Pesos avant validation.`
+        : isHaitiCashChannel
         ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP (${Math.round(data.amountDOP * dopToHtgRate).toLocaleString()} HTG).`
         : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP.`;
-    showToast(toastMsg, isZelle ? 'info' : 'success');
+    showToast(toastMsg, (isZelle || isHaitiInbound) ? 'info' : 'success');
 
     return {
       success: true,
       message: isZelle
         ? `Virement Zelle de $${finalAmountUSD} USD soumis ! Un message a été envoyé à l'Admin pour vérifier son compte. Attendez sa validation.`
-        : isHaitiCashChannel
+        : isHaitiInbound
+          ? `Dépôt ${data.operator.toUpperCase()} de ${finalAmountHTG.toLocaleString()} HTG soumis ! L'Admin a été notifié pour vérifier son compte. Attendez sa validation.`
+          : isHaitiCashChannel
           ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise à l'agent en Haïti pour validation avec photo de preuve.`
           : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée et mise en attente ! Transmise au Gestionnaire pour validation avec photo de preuve.`,
       transaction: newTx,
@@ -1543,7 +1567,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         success: true,
         message: `Zelle refusé. L'agent a été notifié de ne pas payer le client.`
       };
-    };
+    }
+  };
+
+  // Validate Haïti Inbound Transaction by Admin (MonCash / Natcash)
+  const validateHaitiInboundTransaction = (transactionId: string, approved: boolean, note?: string) => {
+    const tx = transactions.find((t) => t.id === transactionId);
+    if (!tx) {
+      return { success: false, message: 'Transaction introuvable.' };
+    }
+
+    if (approved) {
+      const appliedRate = tx.exchangeRate || dopToHtgRate || 2.35;
+      const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : Math.round(tx.amountHTG / appliedRate);
+      const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.01);
+      const commDOP = tx.commissionDOP > 0 ? tx.commissionDOP : Math.round(grossDOP * 0.01);
+      const netPayout = tx.netPayoutAmount && tx.netPayoutAmount > 0 ? tx.netPayoutAmount : (grossDOP - feeDOP);
+      const payoutText = `${netPayout.toLocaleString()} DOP`;
+
+      const proofNotes = `[RÉCEPTION ${tx.operator.toUpperCase()} CONFIRMÉE PAR L'ADMIN ${currentUser.name}] Somme de ${tx.amountHTG.toLocaleString()} HTG vérifiée sur le compte. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
+
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id === transactionId) {
+            return {
+              ...t,
+              haitiInboundStatus: 'approved',
+              amountDOP: grossDOP,
+              feeDOP,
+              commissionDOP: commDOP,
+              netPayoutAmount: netPayout,
+              netPayoutCurrency: 'DOP',
+              proofNotes,
+            };
+          }
+          return t;
+        })
+      );
+
+      // Audit log & Event bus
+      eventBus.publish(
+        'TRANSACTION_UPDATED',
+        currentUser.nodeId,
+        currentUser.role,
+        `[RÉCEPTION HAÏTI VALIDÉE PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} approuvée. Montant net à verser au client: ${payoutText}`
+      );
+
+      // Synchronisation backend
+      api.transactions.complete(tx.id, proofNotes, tx.proofUrl, currentUser.name).catch(() => null);
+
+      showToast(`✅ Réception ${tx.operator.toUpperCase()} validée ! L'agent peut remettre ${payoutText} au client.`, 'success');
+
+      return {
+        success: true,
+        message: `Réception confirmée avec succès ! L'agent a été notifié qu'il peut remettre ${payoutText} au client.`
+      };
+    } else {
+      const cancellationReason = note || `Transfert ${tx.operator.toUpperCase()} non reçu / non visible sur le compte de l'Administrateur.`;
+
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id === transactionId) {
+            return {
+              ...t,
+              status: 'cancelled',
+              haitiInboundStatus: 'rejected',
+              cancelledAt: new Date().toISOString(),
+              cancellationReason,
+            };
+          }
+          return t;
+        })
+      );
+
+      eventBus.publish(
+        'TRANSACTION_CANCELLED',
+        currentUser.nodeId,
+        currentUser.role,
+        `[RÉCEPTION HAÏTI REFUSÉE PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} refusée. Motif: ${cancellationReason}`
+      );
+
+      // Synchronisation backend
+      api.transactions.cancel(tx.id, cancellationReason, currentUser.name).catch(() => null);
+
+      showToast(`❌ Réception ${tx.referenceNumber} refusée. L'agent a été averti de ne pas remettre d'argent.`, 'error');
+
+      return {
+        success: true,
+        message: `Transaction rejetée. L'agent a été notifié de ne pas payer le client.`
+      };
+    }
   };
 
   // Complete & Validate Task (Agent Haïti / Gestionnaire / Admin)
@@ -2057,6 +2170,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recordAgentDeposit,
         createTransaction,
         validateZelleTransaction,
+        validateHaitiInboundTransaction,
         completeTask,
         cancelTransaction,
         updateTransaction,

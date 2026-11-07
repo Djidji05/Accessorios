@@ -26,7 +26,8 @@ import {
   Upload,
   Trash2,
   Eye,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Coins
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
@@ -35,6 +36,7 @@ import { MobileAgentHome } from '../components/MobileAgentHome';
 import { getOperatorLogo } from '../utils/operatorLogos';
 import { Pagination } from '../components/Pagination';
 import { ZellePayoutModal } from '../components/ZellePayoutModal';
+import { HaitiInboundPayoutModal } from '../components/HaitiInboundPayoutModal';
 import { ImageViewerModal } from '../components/ImageViewerModal';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -156,6 +158,17 @@ export const OperationsGuichetView: React.FC = () => {
   const [receiverName, setReceiverName] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
 
+  // Mode Guichet : Sortant (Envois/Recharges) vs Entrant (Réception Haïti)
+  const [guichetMode, setGuichetMode] = useState<'outbound' | 'inbound_haiti'>('outbound');
+
+  // Haïti Inbound States (Dépôt MonCash/Natcash Haïti -> Retrait RD)
+  const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('moncash');
+  const [inboundAmountHTG, setInboundAmountHTG] = useState<string>('');
+  const [inboundProofImage, setInboundProofImage] = useState<string | null>(null);
+  const [selectedHaitiInboundTx, setSelectedHaitiInboundTx] = useState<Transaction | null>(null);
+  const inboundCameraInputRef = useRef<HTMLInputElement>(null);
+  const inboundFileInputRef = useRef<HTMLInputElement>(null);
+
   // Zelle Specific States
   const [zelleProofImage, setZelleProofImage] = useState<string | null>(null);
   const [zelleAmountUSD, setZelleAmountUSD] = useState<string>('100');
@@ -230,6 +243,61 @@ export const OperationsGuichetView: React.FC = () => {
       setDopToHtgRate(newR);
       setIsEditingRate(false);
       setFeedback({ type: 'success', message: `Taux de change mis à jour avec succès : 100 Pesos = ${Math.round(newR * 100)} HTG` });
+    }
+  };
+
+  const handleInboundProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 1200, 1200, 0.7);
+      setInboundProofImage(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setInboundProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleInboundSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inboundProofImage) {
+      setFeedback({ type: 'error', message: "⚠️ La photo de preuve MonCash / Natcash est obligatoire pour envoyer à l'Admin." });
+      return;
+    }
+    const numHTG = parseFloat(inboundAmountHTG) || 0;
+    if (numHTG <= 0) {
+      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Gourdes (HTG).' });
+      return;
+    }
+
+    const grossDOP = Math.round(numHTG / (dopToHtgRate || 2.35));
+    const feeDOP = Math.round(grossDOP * 0.01);
+    const commDOP = Math.round(grossDOP * 0.01);
+
+    const result = createTransaction({
+      senderName: 'Client Haïti',
+      senderPhone: '+509 Haïti',
+      receiverName: 'Client Guichet RD',
+      receiverPhone: '+1 809 Comptoir RD',
+      operator: inboundOperator,
+      serviceType: 'haiti_inbound_cash',
+      amountHTG: numHTG,
+      amountDOP: grossDOP,
+      feeDOP,
+      commissionDOP: commDOP,
+      proofUrl: inboundProofImage,
+    });
+
+    if (result.success && result.transaction) {
+      setFeedback({ type: 'success', message: result.message });
+      setSelectedHaitiInboundTx(result.transaction);
+      setInboundAmountHTG('');
+      setInboundProofImage(null);
+    } else {
+      setFeedback({ type: 'error', message: result.message });
     }
   };
 
@@ -507,7 +575,250 @@ export const OperationsGuichetView: React.FC = () => {
         </div>
       )}
 
-      {/* 2. MAIN GUICHET FORM LAYOUT */}
+      {/* 2. MODE SWITCHER: ENVOI SORTANT vs RÉCEPTION HAÏTI */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl w-full sm:w-fit shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setGuichetMode('outbound')}
+          className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            guichetMode === 'outbound'
+              ? 'bg-white text-slate-900 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Send className="w-4 h-4 text-blue-600" />
+          <span>{t('Envoi & Recharge (Sortant)', 'Envoi & Recharge (Sortant)')}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setGuichetMode('inbound_haiti')}
+          className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            guichetMode === 'inbound_haiti'
+              ? 'bg-amber-500 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Coins className="w-4 h-4" />
+          <span>{t('Réception Haïti (MonCash / Natcash)', 'Réception Haïti (MonCash / Natcash)')}</span>
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-white/20 text-white uppercase tracking-wider">
+            {t('RD Retrait', 'RD Retrait')}
+          </span>
+        </button>
+      </div>
+
+      {guichetMode === 'inbound_haiti' ? (
+        <form onSubmit={handleInboundSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Étape 1: Choix MonCash ou Natcash */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                  {t('1. Compte de Réception en Haïti', '1. Compte de Réception en Haïti')}
+                </label>
+                <span className="text-[11px] font-bold text-slate-400">
+                  {t('Choisissez MonCash ou Natcash', 'Choisissez MonCash ou Natcash')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setInboundOperator('moncash')}
+                  className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
+                    inboundOperator === 'moncash'
+                      ? 'border-rose-600 bg-rose-50/50 ring-4 ring-rose-500/20 shadow-sm'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-rose-100 flex items-center justify-center p-1.5">
+                      <img src="/moncash.png" alt="MonCash" className="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 text-sm">MonCash (Digicel)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG)</p>
+                    </div>
+                  </div>
+                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'moncash' ? 'border-rose-600 bg-rose-600' : 'border-slate-300'}`}>
+                    {inboundOperator === 'moncash' && <span className="w-2 h-2 rounded-full bg-white" />}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInboundOperator('natcash')}
+                  className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
+                    inboundOperator === 'natcash'
+                      ? 'border-blue-600 bg-blue-50/50 ring-4 ring-blue-500/20 shadow-sm'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-blue-100 flex items-center justify-center p-1.5">
+                      <img src="/natcash.png" alt="Natcash" className="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 text-sm">Natcash (Natcom)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG)</p>
+                    </div>
+                  </div>
+                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'natcash' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                    {inboundOperator === 'natcash' && <span className="w-2 h-2 rounded-full bg-white" />}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Étape 2: Somme Reçue en Gourdes (HTG) */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+              <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                {t('2. Somme Écrite sur la Preuve (HTG)', '2. Somme Écrite sur la Preuve (HTG)')}
+              </label>
+
+              <div className="relative">
+                <input
+                  type="number"
+                  step="any"
+                  min="1"
+                  value={inboundAmountHTG}
+                  onChange={(e) => setInboundAmountHTG(e.target.value)}
+                  placeholder="Ex : 25000"
+                  required
+                  className="w-full pl-5 pr-20 py-4 text-2xl font-black font-mono text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-500/20"
+                />
+                <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
+                  HTG
+                </span>
+              </div>
+
+              {/* Conversion Indicative */}
+              {parseFloat(inboundAmountHTG) > 0 && (
+                <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-amber-800 font-semibold block">{t('Conversion brute indicative en Pesos :', 'Conversion brute indicative en Pesos :')}</span>
+                    <span className="text-[11px] text-amber-700 font-bold">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-black font-mono text-amber-800">
+                      ~ {Math.round(parseFloat(inboundAmountHTG) / (dopToHtgRate || 2.35)).toLocaleString()} DOP
+                    </span>
+                    <span className="text-[10px] text-amber-600 block">{t('Frais de 1% déduits à la confirmation', 'Frais de 1% déduits à la confirmation')}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Étape 3: Photo Preuve de Transaction */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+              <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                {t('3. Preuve de la Transaction (Capture d\'écran ou Photo Reçu)', '3. Preuve de la Transaction (Capture d\'écran ou Photo Reçu)')}
+              </label>
+
+              <input
+                ref={inboundCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleInboundProofUpload}
+                className="hidden"
+              />
+              <input
+                ref={inboundFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleInboundProofUpload}
+                className="hidden"
+              />
+
+              {!inboundProofImage ? (
+                <div className="p-6 border-2 border-dashed border-amber-300 rounded-3xl bg-amber-50/40 text-center space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-amber-600 mx-auto border border-amber-100">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900">{t('Ajouter la photo de preuve MonCash / Natcash', 'Ajouter la photo de preuve MonCash / Natcash')}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{t('Capture d\'écran du SMS de confirmation ou de l\'application mobile.', 'Capture d\'écran du SMS de confirmation ou de l\'application mobile.')}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto pt-1">
+                    <button
+                      type="button"
+                      onClick={() => inboundCameraInputRef.current?.click()}
+                      className="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-98 transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>{t('Prendre une Photo', 'Prendre une Photo')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => inboundFileInputRef.current?.click()}
+                      className="px-4 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-2xs cursor-pointer active:scale-98 transition-all"
+                    >
+                      <Upload className="w-4 h-4 text-slate-500" />
+                      <span>{t('Importer une Image', 'Importer une Image')}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative rounded-2xl overflow-hidden border-2 border-amber-300 bg-black/5 p-2">
+                  <div className="aspect-video sm:aspect-2/1 rounded-xl overflow-hidden bg-black/10 flex items-center justify-center relative group">
+                    <img src={inboundProofImage} alt="Preuve" className="w-full h-full object-contain" />
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl mt-2 border border-slate-200">
+                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{t('Photo de preuve chargée avec succès', 'Photo de preuve chargée avec succès')}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setInboundProofImage(null)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{t('Supprimer', 'Supprimer')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bouton de Soumission */}
+            <button
+              type="submit"
+              className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
+            >
+              <Send className="w-5 h-5 text-white" />
+              <span>{t('Envoyer la Preuve à l\'Admin pour Confirmation', 'Envoyer la Preuve à l\'Admin pour Confirmation')}</span>
+            </button>
+          </div>
+
+          {/* Right Column (Instructions & Summary) */}
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+              <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider flex items-center gap-2">
+                <Coins className="w-4 h-4 text-amber-600" />
+                <span>{t('Comment fonctionne ce flux ?', 'Comment fonctionne ce flux ?')}</span>
+              </h4>
+              <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+                  <span className="font-extrabold text-slate-900 block">1. Saisie de la Preuve</span>
+                  <p className="text-[11px] text-slate-500">Le client en RD vous présente la preuve du transfert MonCash ou Natcash reçu en Haïti.</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+                  <span className="font-extrabold text-slate-900 block">2. Validation par l'Admin</span>
+                  <p className="text-[11px] text-slate-500">L'administrateur vérifie son compte en temps réel et confirme la bonne réception des fonds.</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 space-y-1">
+                  <span className="font-extrabold text-slate-900 block">3. Remise des Pesos (DOP)</span>
+                  <p className="text-[11px] text-slate-500">Dès validation, l'application affiche le montant net calculé à remettre au client au guichet.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      ) : (
+      /* 2. MAIN GUICHET FORM LAYOUT */
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Form Inputs (Left 2 Columns) */}
@@ -1055,6 +1366,7 @@ export const OperationsGuichetView: React.FC = () => {
         </div>
 
       </form>
+      )}
 
       {/* 3. RECENT CASHIER TRANSACTIONS LIST */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
@@ -1137,7 +1449,24 @@ export const OperationsGuichetView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3 text-center">
-                      {tx.operator === 'zelle' ? (
+                      {tx.serviceType === 'haiti_inbound_cash' ? (
+                        tx.haitiInboundStatus === 'approved' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            {isCompleted ? 'Pesos remis' : 'Prêt versement'}
+                          </span>
+                        ) : tx.haitiInboundStatus === 'rejected' || tx.status === 'cancelled' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                            Refusé Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            Attente Vérif. Admin
+                          </span>
+                        )
+                      ) : tx.operator === 'zelle' ? (
                         tx.zelleStatus === 'approved' || isCompleted ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -1173,7 +1502,16 @@ export const OperationsGuichetView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3 text-center">
-                      {tx.operator === 'zelle' ? (
+                      {tx.serviceType === 'haiti_inbound_cash' ? (
+                        <button
+                          onClick={() => setSelectedHaitiInboundTx(tx)}
+                          className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+                          title="Ouvrir la fiche Réception Haïti (MonCash / Natcash)"
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          <span>Fiche Dépôt</span>
+                        </button>
+                      ) : tx.operator === 'zelle' ? (
                         <button
                           onClick={() => setSelectedZellePayoutTx(tx)}
                           className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
@@ -1228,6 +1566,14 @@ export const OperationsGuichetView: React.FC = () => {
         <ZellePayoutModal
           tx={selectedZellePayoutTx}
           onClose={() => setSelectedZellePayoutTx(null)}
+        />
+      )}
+
+      {/* Haïti Inbound Payout & Admin Verification Modal */}
+      {selectedHaitiInboundTx && (
+        <HaitiInboundPayoutModal
+          tx={selectedHaitiInboundTx}
+          onClose={() => setSelectedHaitiInboundTx(null)}
         />
       )}
 

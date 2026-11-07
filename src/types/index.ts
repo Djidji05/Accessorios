@@ -2,7 +2,7 @@ export type Role = 'admin' | 'agent_rd' | 'agent_haiti' | 'gestionnaire';
 
 export type OperatorCode = 'moncash' | 'natcash' | 'digicel' | 'natcom' | 'claro' | 'altice' | 'zelle';
 
-export type ServiceType = 'cash_out' | 'transfer' | 'topup_mobile' | 'bill_payment';
+export type ServiceType = 'cash_out' | 'transfer' | 'topup_mobile' | 'bill_payment' | 'haiti_inbound_cash';
 
 export interface ServiceCommissionConfig {
   serviceType: ServiceType;
@@ -67,6 +67,11 @@ export interface Transaction {
   netPayoutAmount?: number;
   netPayoutCurrency?: 'DOP' | 'HTG' | 'USD';
   currencyPayout?: 'DOP' | 'HTG' | 'USD';
+
+  // Haïti Inbound Flow (Dépôt MonCash/Natcash Haïti -> Retrait RD)
+  haitiInboundStatus?: 'pending_admin_check' | 'approved' | 'rejected';
+  haitiInboundProofUrl?: string;
+  haitiInboundAdminNote?: string;
 
   // Distributed System Node Tracing
   createdByNode: string;

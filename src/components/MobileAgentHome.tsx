@@ -40,7 +40,8 @@ import {
   ChevronDown,
   Camera,
   Upload,
-  Trash2
+  Trash2,
+  Coins
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, ServiceType, Transaction } from '../types';
@@ -48,6 +49,7 @@ import { OperatorBadge } from './OperatorBadge';
 import { BottomNavBar } from './BottomNavBar';
 import { getOperatorLogo } from '../utils/operatorLogos';
 import { ZellePayoutModal } from './ZellePayoutModal';
+import { HaitiInboundPayoutModal } from './HaitiInboundPayoutModal';
 import { ImageViewerModal } from './ImageViewerModal';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -167,6 +169,15 @@ export const MobileAgentHome: React.FC = () => {
   const [senderPhone, setSenderPhone] = useState('');
   const [receiverName, setReceiverName] = useState('');
   const [receiverPhone, setReceiverPhone] = useState('');
+
+  // Haïti Inbound specific states
+  const [isHaitiInboundActive, setIsHaitiInboundActive] = useState<boolean>(false);
+  const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('moncash');
+  const [inboundAmountHTG, setInboundAmountHTG] = useState<string>('');
+  const [inboundProofImage, setInboundProofImage] = useState<string | null>(null);
+  const [selectedHaitiInboundTx, setSelectedHaitiInboundTx] = useState<Transaction | null>(null);
+  const inboundCameraInputRef = React.useRef<HTMLInputElement | null>(null);
+  const inboundFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Zelle specific agent intake states
   const [zelleProofImage, setZelleProofImage] = useState<string | null>(null);
@@ -398,6 +409,63 @@ export const MobileAgentHome: React.FC = () => {
     }
   };
 
+  // Haïti Inbound Photo & Intake Handlers
+  const handleInboundProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 1200, 1200, 0.7);
+      setInboundProofImage(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setInboundProofImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleInboundSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inboundProofImage) {
+      setFeedback({ type: 'error', message: "⚠️ La photo de preuve MonCash / Natcash est obligatoire pour que l'Admin puisse vérifier." });
+      return;
+    }
+    const numHTG = parseFloat(inboundAmountHTG) || 0;
+    if (numHTG <= 0) {
+      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Gourdes (HTG).' });
+      return;
+    }
+
+    const grossDOP = Math.round(numHTG / (dopToHtgRate || 2.35));
+    const feeDOP = Math.round(grossDOP * 0.01);
+    const commDOP = Math.round(grossDOP * 0.01);
+
+    const res = createTransaction({
+      senderName: 'Client Haïti',
+      senderPhone: '+509 Haïti',
+      receiverName: 'Client Guichet RD',
+      receiverPhone: '+1 809 Comptoir RD',
+      operator: inboundOperator,
+      serviceType: 'haiti_inbound_cash',
+      amountHTG: numHTG,
+      amountDOP: grossDOP,
+      feeDOP,
+      commissionDOP: commDOP,
+      proofUrl: inboundProofImage,
+    });
+
+    if (res.success && res.transaction) {
+      setFeedback({ type: 'success', message: res.message });
+      setSelectedHaitiInboundTx(res.transaction);
+      setIsHaitiInboundActive(false);
+      setInboundAmountHTG('');
+      setInboundProofImage(null);
+    } else {
+      setFeedback({ type: 'error', message: res.message });
+    }
+  };
+
   // Zelle Photo & Intake Handlers
   const handleZelleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -456,6 +524,191 @@ export const MobileAgentHome: React.FC = () => {
       setFeedback({ type: 'error', message: res.message });
     }
   };
+
+  // DEDICATED STREAMLINED HAÏTI INBOUND SCREEN
+  if (isHaitiInboundActive) {
+    const numHTG = parseFloat(inboundAmountHTG) || 0;
+    const estDOP = Math.round(numHTG / (dopToHtgRate || 2.35));
+
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-28 space-y-4 animate-in fade-in">
+        <header className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md -mx-4 -mt-4 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between shadow-2xs">
+          <button
+            type="button"
+            onClick={() => {
+              setIsHaitiInboundActive(false);
+              setFeedback(null);
+            }}
+            className="p-2 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs hover:bg-slate-100 cursor-pointer"
+            title="Retour"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Coins className="w-4 h-4 text-amber-600" />
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+              {t('Réception Haïti → Retrait RD', 'Réception Haïti → Retrait RD')}
+            </h3>
+          </div>
+          <div className="w-9" />
+        </header>
+
+        {feedback && (
+          <div className={`p-4 rounded-2xl text-xs font-bold ${feedback.type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
+            {feedback.message}
+          </div>
+        )}
+
+        <form onSubmit={handleInboundSubmit} className="space-y-4">
+          {/* Opérateur MonCash ou Natcash */}
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              1. Choix du Compte de Réception (Haïti)
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setInboundOperator('moncash')}
+                className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                  inboundOperator === 'moncash'
+                    ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/40 ring-4 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs">
+                  <img src="/moncash.png" alt="MonCash" className="w-full h-full object-contain" />
+                </div>
+                <span className="font-black text-xs text-slate-900 dark:text-white">MonCash</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInboundOperator('natcash')}
+                className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                  inboundOperator === 'natcash'
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 ring-4 ring-blue-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs">
+                  <img src="/natcash.png" alt="Natcash" className="w-full h-full object-contain" />
+                </div>
+                <span className="font-black text-xs text-slate-900 dark:text-white">Natcash</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Montant Gourdes */}
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              2. Somme Écrite sur la Preuve (HTG)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="any"
+                min="1"
+                value={inboundAmountHTG}
+                onChange={(e) => setInboundAmountHTG(e.target.value)}
+                placeholder="Ex : 25000"
+                required
+                className="w-full pl-4 pr-16 py-3.5 text-2xl font-black font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
+                HTG
+              </span>
+            </div>
+
+            {numHTG > 0 && (
+              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-amber-800 dark:text-amber-200 font-bold block">Estimation Pesos (Brut) :</span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
+                </div>
+                <span className="text-lg font-black font-mono text-amber-700 dark:text-amber-300">
+                  ~ {estDOP.toLocaleString()} DOP
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Photo Preuve */}
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              3. Preuve (Capture d'écran / Photo)
+            </label>
+            <input
+              ref={inboundCameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleInboundProofUpload}
+              className="hidden"
+            />
+            <input
+              ref={inboundFileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleInboundProofUpload}
+              className="hidden"
+            />
+
+            {!inboundProofImage ? (
+              <div className="p-5 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 text-center space-y-3">
+                <Camera className="w-8 h-8 text-amber-600 mx-auto" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Ajoutez la capture d'écran reçue du client
+                </p>
+                <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => inboundCameraInputRef.current?.click()}
+                    className="py-2.5 px-3 bg-amber-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => inboundFileInputRef.current?.click()}
+                    className="py-2.5 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>Galerie</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="aspect-video rounded-2xl overflow-hidden bg-black/10 border border-amber-300 flex items-center justify-center">
+                  <img src={inboundProofImage} alt="Preuve" className="w-full h-full object-contain" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInboundProofImage(null)}
+                  className="w-full py-2 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Remplacer la photo</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Bouton de validation */}
+          <button
+            type="submit"
+            className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 cursor-pointer active:scale-98 transition-all"
+          >
+            <Send className="w-4 h-4" />
+            <span>Envoyer à l'Admin pour Vérification</span>
+          </button>
+        </form>
+
+        <BottomNavBar />
+      </div>
+    );
+  }
 
   // IF A SERVICE IS CLICKED: Render the Transfer Form Page, Confirmation Page, or Success Page
   if (selectedService) {
@@ -1516,6 +1769,31 @@ export const MobileAgentHome: React.FC = () => {
       </div>
 
 
+      {/* Banner Réception Haïti (MonCash / Natcash) -> Retrait RD */}
+      <div 
+        onClick={() => {
+          setIsHaitiInboundActive(true);
+          setFeedback(null);
+        }}
+        className="p-4 rounded-3xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20 flex items-center justify-between cursor-pointer active:scale-98 transition-transform"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shadow-xs">
+            <Coins className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-black text-sm text-white">{t('Réception Haïti (MonCash / Natcash)', 'Réception Haïti (MonCash / Natcash)')}</p>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-white/25 text-white uppercase">
+                Dépôt
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-100 font-medium">{t('Preuve photo & versement de Pesos au guichet', 'Preuve photo & versement de Pesos au guichet')}</p>
+          </div>
+        </div>
+        <ChevronRight className="w-5 h-5 text-white/80" />
+      </div>
+
       {/* 3. TOP SERVICES SECTION */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -1612,19 +1890,24 @@ export const MobileAgentHome: React.FC = () => {
             recentTxs.map((tx) => {
               const isCompleted = tx.status === 'completed';
               const isZelleTx = tx.operator === 'zelle';
+              const isHaitiInboundTx = tx.serviceType === 'haiti_inbound_cash';
 
               return (
                 <div
                   key={tx.id}
                   onClick={() => {
-                    if (isZelleTx) {
+                    if (isHaitiInboundTx) {
+                      setSelectedHaitiInboundTx(tx);
+                    } else if (isZelleTx) {
                       setSelectedZellePayoutTx(tx);
                     } else {
                       setSelectedReceiptTx(tx);
                     }
                   }}
                   className={`p-3.5 rounded-2xl bg-white dark:bg-slate-900 border shadow-2xs flex items-center justify-between gap-3 transition-all cursor-pointer ${
-                    isZelleTx
+                    isHaitiInboundTx
+                      ? 'border-amber-300 dark:border-amber-800/80 hover:border-amber-400 bg-amber-50/30 dark:bg-amber-950/20'
+                      : isZelleTx
                       ? 'border-purple-200 dark:border-purple-800/80 hover:border-purple-400 bg-purple-50/20'
                       : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
@@ -1636,12 +1919,16 @@ export const MobileAgentHome: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
-                          {isZelleTx ? `Virement Zelle ($${tx.amountUSD || 0} USD)` : tx.receiverName}
+                          {isHaitiInboundTx
+                            ? `Dépôt Haïti (${(tx.amountHTG || 0).toLocaleString()} HTG)`
+                            : isZelleTx
+                            ? `Virement Zelle ($${tx.amountUSD || 0} USD)`
+                            : tx.receiverName}
                         </span>
                       </div>
 
                       <span className="text-[10px] text-slate-400 font-mono block">
-                        {tx.referenceNumber} • {isZelleTx ? (tx.senderName || 'Client Zelle') : tx.receiverPhone}
+                        {tx.referenceNumber} • {isHaitiInboundTx ? (tx.operator === 'natcash' ? 'Natcash' : 'MonCash') : isZelleTx ? (tx.senderName || 'Client Zelle') : tx.receiverPhone}
                       </span>
                     </div>
                   </div>
@@ -1649,7 +1936,11 @@ export const MobileAgentHome: React.FC = () => {
                   {/* Right: Amounts & Receipt Action */}
                   <div className="text-right flex-shrink-0">
                     <span className="font-mono font-black text-slate-900 dark:text-white text-xs block">
-                      {isZelleTx 
+                      {isHaitiInboundTx
+                        ? (tx.haitiInboundStatus === 'approved' || isCompleted
+                            ? `${(tx.netPayoutAmount || tx.amountDOP || 0).toLocaleString()} DOP`
+                            : `${(tx.amountHTG || 0).toLocaleString()} HTG`)
+                        : isZelleTx 
                         ? (tx.zelleStatus === 'approved' || isCompleted 
                             ? `${(tx.netPayoutAmount || 0).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}` 
                             : `$${tx.amountUSD || 0} USD`)
@@ -1657,7 +1948,25 @@ export const MobileAgentHome: React.FC = () => {
                     </span>
                     
                     <div className="flex items-center gap-1.5 justify-end mt-0.5">
-                      {isZelleTx ? (
+                      {isHaitiInboundTx ? (
+                        isCompleted ? (
+                          <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded">
+                            ✅ Pesos Remis
+                          </span>
+                        ) : tx.haitiInboundStatus === 'approved' ? (
+                          <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded animate-pulse">
+                            💵 Prêt Versement
+                          </span>
+                        ) : tx.haitiInboundStatus === 'rejected' || tx.status === 'cancelled' ? (
+                          <span className="text-[9px] font-black text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 px-1.5 py-0.5 rounded">
+                            ❌ Refusé Admin
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 px-1.5 py-0.5 rounded animate-pulse">
+                            ⏳ Vérif. Admin
+                          </span>
+                        )
+                      ) : isZelleTx ? (
                         tx.zelleStatus === 'approved' || isCompleted ? (
                           <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded">
                             ✅ Zelle Validé
@@ -1688,14 +1997,16 @@ export const MobileAgentHome: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isZelleTx) {
+                          if (isHaitiInboundTx) {
+                            setSelectedHaitiInboundTx(tx);
+                          } else if (isZelleTx) {
                             setSelectedZellePayoutTx(tx);
                           } else {
                             setSelectedReceiptTx(tx);
                           }
                         }}
                         className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                        title={isZelleTx ? "Voir Fiche Validation Zelle" : t("Télécharger ou partager le reçu PDF")}
+                        title={isHaitiInboundTx ? "Voir Fiche Retrait Haïti" : isZelleTx ? "Voir Fiche Validation Zelle" : t("Télécharger ou partager le reçu PDF")}
                       >
                         <FileText className="w-3.5 h-3.5" />
                       </button>
@@ -1713,6 +2024,12 @@ export const MobileAgentHome: React.FC = () => {
         tx={selectedZellePayoutTx}
         isOpen={Boolean(selectedZellePayoutTx)}
         onClose={() => setSelectedZellePayoutTx(null)}
+      />
+
+      {/* Certified Haiti Inbound Payout Modal */}
+      <HaitiInboundPayoutModal
+        tx={selectedHaitiInboundTx}
+        onClose={() => setSelectedHaitiInboundTx(null)}
       />
     </div>
   );

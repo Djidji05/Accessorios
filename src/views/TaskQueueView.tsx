@@ -35,6 +35,7 @@ import {
   Filter,
   Landmark,
   Percent,
+  Coins,
   LogOut,
   FolderArchive,
   Download,
@@ -51,6 +52,7 @@ import { exportTransactionsToCSV, exportTransactionsToPDF } from '../utils/expor
 import { Pagination } from '../components/Pagination';
 import { ImageViewerModal } from '../components/ImageViewerModal';
 import { ZellePayoutModal } from '../components/ZellePayoutModal';
+import { HaitiInboundPayoutModal } from '../components/HaitiInboundPayoutModal';
 
 export const TaskQueueView: React.FC = () => {
   const [selectedRange, setSelectedRange] = useState<DateRange>({
@@ -88,6 +90,7 @@ export const TaskQueueView: React.FC = () => {
   const [selectedTxForDetails, setSelectedTxForDetails] = useState<Transaction | null>(null);
   const [queueLightboxUrl, setQueueLightboxUrl] = useState<string | null>(null);
   const [queueZelleTx, setQueueZelleTx] = useState<Transaction | null>(null);
+  const [queueHaitiInboundTx, setQueueHaitiInboundTx] = useState<Transaction | null>(null);
 
   // Dedicated Agent Haïti Modal & Workflow States
   const [haitiDetailTx, setHaitiDetailTx] = useState<Transaction | null>(null);
@@ -1951,6 +1954,18 @@ export const TaskQueueView: React.FC = () => {
                               <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
                               <span>{t('Clôturé / Validé', 'Clôturé / Validé')}</span>
                             </span>
+                          ) : tx.serviceType === 'haiti_inbound_cash' ? (
+                            tx.haitiInboundStatus === 'approved' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs animate-pulse">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>{t('Prêt pour versement', 'Prêt pour versement')}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse">
+                                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                <span>{t('Vérif. Admin en cours', 'Vérif. Admin en cours')}</span>
+                              </span>
+                            )
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-orange-100 text-orange-900 border border-orange-300 shadow-2xs">
                               <Clock className="w-3.5 h-3.5 text-orange-600 animate-pulse" />
@@ -1962,20 +1977,31 @@ export const TaskQueueView: React.FC = () => {
                         {/* Action Receipt Button */}
                         <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => setSelectedReceiptTx(tx)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
-                                tx.status === 'cancelled'
-                                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                                  : isCompleted
-                                  ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                              }`}
-                              title={tx.status === 'cancelled' ? t("Reçu officiel d'annulation", "Reçu officiel d'annulation") : isCompleted ? t("Télécharger ou partager le reçu PDF", "Télécharger ou partager le reçu PDF") : t("Bordereau provisoire (PDF)", "Bordereau provisoire (PDF)")}
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                              <span>{tx.status === 'cancelled' ? t("Reçu Annulé", "Reçu Annulé") : isCompleted ? t("Reçu (PDF)", "Reçu (PDF)") : t("Bordereau", "Bordereau")}</span>
-                            </button>
+                            {tx.serviceType === 'haiti_inbound_cash' ? (
+                              <button
+                                onClick={() => setQueueHaitiInboundTx(tx)}
+                                className="px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs bg-amber-500 hover:bg-amber-600 text-white"
+                                title="Fiche Réception Haïti"
+                              >
+                                <Coins className="w-3.5 h-3.5" />
+                                <span>{tx.haitiInboundStatus === 'approved' && !isCompleted ? 'Remettre Pesos' : 'Fiche Dépôt'}</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setSelectedReceiptTx(tx)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                                  tx.status === 'cancelled'
+                                    ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                                    : isCompleted
+                                    ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                }`}
+                                title={tx.status === 'cancelled' ? t("Reçu officiel d'annulation", "Reçu officiel d'annulation") : isCompleted ? t("Télécharger ou partager le reçu PDF", "Télécharger ou partager le reçu PDF") : t("Bordereau provisoire (PDF)", "Bordereau provisoire (PDF)")}
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>{tx.status === 'cancelled' ? t("Reçu Annulé", "Reçu Annulé") : isCompleted ? t("Reçu (PDF)", "Reçu (PDF)") : t("Bordereau", "Bordereau")}</span>
+                              </button>
+                            )}
 
                             <button
                               onClick={() => setRdDetailTx(tx)}
@@ -4299,7 +4325,25 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                       {/* 6. Quick Action / Open Details Arrow */}
                       <div className="col-span-1 flex items-center justify-end">
-                        {tx.operator === 'zelle' ? (
+                        {tx.serviceType === 'haiti_inbound_cash' ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQueueHaitiInboundTx(tx);
+                            }}
+                            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                              tx.haitiInboundStatus === 'pending_admin_check' || isInProgress
+                                ? 'bg-amber-600 hover:bg-amber-700 text-white animate-pulse'
+                                : tx.haitiInboundStatus === 'approved' || isCompleted
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                : 'bg-rose-600 hover:bg-rose-700 text-white'
+                            }`}
+                            title="Ouvrir la fiche de vérification Réception Haïti"
+                          >
+                            <Coins className="w-3.5 h-3.5" />
+                            <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier Dépôt' : 'Fiche Dépôt'}</span>
+                          </button>
+                        ) : tx.operator === 'zelle' ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -4463,7 +4507,21 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                   {/* Action button */}
                   <div className="flex items-center justify-end gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                    {tx.operator === 'zelle' ? (
+                    {tx.serviceType === 'haiti_inbound_cash' ? (
+                      <button
+                        onClick={() => setQueueHaitiInboundTx(tx)}
+                        className={`w-full py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                          tx.haitiInboundStatus === 'pending_admin_check' || isInProgress
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white animate-pulse'
+                            : tx.haitiInboundStatus === 'approved' || isCompleted
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-rose-600 hover:bg-rose-700 text-white'
+                        }`}
+                      >
+                        <Coins className="w-4 h-4" />
+                        <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier Dépôt Haïti' : 'Consulter Fiche Dépôt'}</span>
+                      </button>
+                    ) : tx.operator === 'zelle' ? (
                       <button
                         onClick={() => setQueueZelleTx(tx)}
                         className={`w-full py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer ${
@@ -4825,6 +4883,14 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         <ZellePayoutModal
           tx={queueZelleTx}
           onClose={() => setQueueZelleTx(null)}
+        />
+      )}
+
+      {/* Haïti Inbound Payout Details Modal */}
+      {queueHaitiInboundTx && (
+        <HaitiInboundPayoutModal
+          tx={queueHaitiInboundTx}
+          onClose={() => setQueueHaitiInboundTx(null)}
         />
       )}
 
