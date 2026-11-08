@@ -539,21 +539,21 @@ export const OperationsGuichetView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedReceiptTx(lastCreatedTx)}
-                className="px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                className="px-3.5 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
-                <FileText className="w-4 h-4 text-blue-100" />
-                <span>{t('download_receipt', 'Reçu Guichet (PDF / Partager)')}</span>
+                <FileText className="w-4 h-4 text-blue-100 shrink-0" />
+                <span>{t('download_receipt', 'Reçu PDF')}</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('tasks')}
-                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs transition-all border border-slate-700 flex items-center gap-2 cursor-pointer"
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
-                <span>{t('my_transactions_day', 'Suivre dans Mes Transactions')}</span>
-                <ChevronRight className="w-4 h-4" />
+                <span>{t('my_transactions_day', 'Suivre')}</span>
+                <ChevronRight className="w-4 h-4 shrink-0" />
               </button>
 
               <button
@@ -584,29 +584,29 @@ export const OperationsGuichetView: React.FC = () => {
         <button
           type="button"
           onClick={() => setGuichetMode('outbound')}
-          className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
             guichetMode === 'outbound'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Send className="w-4 h-4 text-blue-600" />
-          <span>{t('Envoi & Recharge (Sortant)', 'Envoi & Recharge (Sortant)')}</span>
+          <Send className="w-4 h-4 text-blue-600 shrink-0" />
+          <span>{t('Envoi & Recharge', 'Envoi & Recharge')}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setGuichetMode('inbound_haiti')}
-          className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
             guichetMode === 'inbound_haiti'
               ? 'bg-amber-500 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Coins className="w-4 h-4" />
-          <span>{t('Réception Haïti (MonCash / Natcash)', 'Réception Haïti (MonCash / Natcash)')}</span>
+          <Coins className="w-4 h-4 shrink-0" />
+          <span>{t('Réception Haïti', 'Réception Haïti')}</span>
           <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-white/20 text-white uppercase tracking-wider">
-            {t('RD Retrait', 'RD Retrait')}
+            {t('RD', 'RD')}
           </span>
         </button>
       </div>
@@ -827,10 +827,10 @@ export const OperationsGuichetView: React.FC = () => {
             {/* Bouton de Soumission */}
             <button
               type="submit"
-              className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer whitespace-nowrap"
             >
-              <Send className="w-5 h-5 text-white" />
-              <span>{t('Envoyer la Preuve à l\'Admin pour Confirmation', 'Envoyer la Preuve à l\'Admin pour Confirmation')}</span>
+              <Send className="w-4 h-4 text-white shrink-0" />
+              <span>{t('Envoyer à l\'Admin', 'Envoyer à l\'Admin')}</span>
             </button>
           </div>
 
@@ -1285,14 +1285,14 @@ export const OperationsGuichetView: React.FC = () => {
               <button
                 type="submit"
                 disabled={isOperatorLocked || !zelleProofImage}
-                className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                className={`w-full py-3.5 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer whitespace-nowrap ${
                   isOperatorLocked || !zelleProofImage
                     ? 'bg-slate-400 cursor-not-allowed shadow-none'
                     : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/25 hover:shadow-xl hover:shadow-purple-600/30 active:scale-[0.99]'
                 }`}
               >
-                <Send className="w-4 h-4" />
-                <span>Valider et Envoyer pour Vérification Admin</span>
+                <Send className="w-4 h-4 shrink-0" />
+                <span>Envoyer à l'Admin</span>
               </button>
             </div>
           ) : (
@@ -1393,14 +1393,14 @@ export const OperationsGuichetView: React.FC = () => {
               <button
                 type="submit"
                 disabled={isOperatorLocked}
-                className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
+                className={`w-full py-3.5 rounded-2xl font-black text-xs text-white transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer whitespace-nowrap ${
                   isOperatorLocked 
                     ? 'bg-slate-400 cursor-not-allowed shadow-none' 
                     : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 active:scale-[0.99]'
                 }`}
               >
-                <Send className="w-4 h-4" />
-                <span>{t('validate_transaction', 'Valider et Envoyer au Flux')}</span>
+                <Send className="w-4 h-4 shrink-0" />
+                <span>{t('validate_transaction', 'Valider & Envoyer')}</span>
               </button>
             </div>
           )}

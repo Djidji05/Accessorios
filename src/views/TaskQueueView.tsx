@@ -1686,10 +1686,10 @@ export const TaskQueueView: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveTab('guichet')}
-              className="px-5 py-3 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-md flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-md flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
-              <PlusCircle className="w-4 h-4 text-blue-100" />
-              <span>{t('Nouvelle Transaction', 'Nouvelle Transaction')}</span>
+              <PlusCircle className="w-4 h-4 text-blue-100 shrink-0" />
+              <span>+ {t('Nouveau', 'Nouveau')}</span>
             </button>
           </div>
         </div>
@@ -1982,16 +1982,16 @@ export const TaskQueueView: React.FC = () => {
                             {tx.serviceType === 'haiti_inbound_cash' ? (
                               <button
                                 onClick={() => setQueueHaitiInboundTx(tx)}
-                                className="px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs bg-amber-500 hover:bg-amber-600 text-white"
+                                className="px-2.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs bg-amber-500 hover:bg-amber-600 text-white whitespace-nowrap"
                                 title="Fiche Réception Haïti"
                               >
-                                <Coins className="w-3.5 h-3.5" />
-                                <span>{tx.haitiInboundStatus === 'approved' && !isCompleted ? 'Remettre Pesos' : 'Fiche Dépôt'}</span>
+                                <Coins className="w-3.5 h-3.5 shrink-0" />
+                                <span>{tx.haitiInboundStatus === 'approved' && !isCompleted ? 'Payer' : 'Détails'}</span>
                               </button>
                             ) : tx.operator === 'zelle' ? (
                               <button
                                 onClick={() => setQueueZelleTx(tx)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap ${
                                   tx.zelleStatus === 'approved' || isCompleted
                                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                     : tx.zelleStatus === 'rejected' || tx.status === 'cancelled'
@@ -2000,19 +2000,19 @@ export const TaskQueueView: React.FC = () => {
                                 }`}
                                 title="Ouvrir la validation Zelle (OUI / NON)"
                               >
-                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                                 <span>
                                   {tx.zelleStatus === 'approved' || isCompleted
-                                    ? 'Zelle Validé'
+                                    ? 'Validé'
                                     : tx.zelleStatus === 'rejected' || tx.status === 'cancelled'
-                                    ? 'Zelle Refusé'
-                                    : (isAdmin ? 'Vérifier Zelle (OUI/NON)' : 'Fiche Zelle')}
+                                    ? 'Refusé'
+                                    : (isAdmin ? 'Vérifier' : 'Détails')}
                                 </span>
                               </button>
                             ) : (
                               <button
                                 onClick={() => setSelectedReceiptTx(tx)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap ${
                                   tx.status === 'cancelled'
                                     ? 'bg-rose-600 hover:bg-rose-700 text-white'
                                     : isCompleted
@@ -2021,8 +2021,8 @@ export const TaskQueueView: React.FC = () => {
                                 }`}
                                 title={tx.status === 'cancelled' ? t("Reçu officiel d'annulation", "Reçu officiel d'annulation") : isCompleted ? t("Télécharger ou partager le reçu PDF", "Télécharger ou partager le reçu PDF") : t("Bordereau provisoire (PDF)", "Bordereau provisoire (PDF)")}
                               >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>{tx.status === 'cancelled' ? t("Reçu Annulé", "Reçu Annulé") : isCompleted ? t("Reçu (PDF)", "Reçu (PDF)") : t("Bordereau", "Bordereau")}</span>
+                                <FileText className="w-3.5 h-3.5 shrink-0" />
+                                <span>{tx.status === 'cancelled' ? t("Annulé", "Annulé") : isCompleted ? t("Reçu", "Reçu") : t("Bordereau", "Bordereau")}</span>
                               </button>
                             )}
 
@@ -2137,14 +2137,14 @@ export const TaskQueueView: React.FC = () => {
                       setRdDetailTx(null);
                       setSelectedReceiptTx(target);
                     }}
-                    className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap shrink-0 ${
                       isCancelled
                         ? 'bg-rose-600 hover:bg-rose-700 text-white'
                         : 'bg-slate-900 hover:bg-slate-800 text-white'
                     }`}
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>{isCancelled ? t('Reçu Annulé (PDF)', 'Reçu Annulé (PDF)') : t('Reçu (PDF / Partager)', 'Reçu (PDF / Partager)')}</span>
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span>{t('Reçu PDF', 'Reçu PDF')}</span>
                   </button>
                 </div>
 
@@ -2326,10 +2326,10 @@ export const TaskQueueView: React.FC = () => {
                               setRdDetailTx(null);
                             }
                           }}
-                          className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                          className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all whitespace-nowrap"
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>OUI, J'ai vu le Zelle (Valider)</span>
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>OUI, Valider</span>
                         </button>
 
                         <button
@@ -2343,10 +2343,10 @@ export const TaskQueueView: React.FC = () => {
                               }
                             }
                           }}
-                          className="py-3 px-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                          className="py-3 px-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all whitespace-nowrap"
                         >
-                          <XCircle className="w-4 h-4" />
-                          <span>NON, Non Reçu (Refuser)</span>
+                          <XCircle className="w-4 h-4 shrink-0" />
+                          <span>NON, Refuser</span>
                         </button>
                       </div>
                     ) : isCompleted ? (
@@ -2380,12 +2380,12 @@ export const TaskQueueView: React.FC = () => {
                       setRdDetailTx(null);
                       setSelectedReceiptTx(target);
                     }}
-                    className={`px-6 py-2.5 font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer ${
+                    className={`px-5 py-2.5 font-black text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                       isCancelled ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
                     }`}
                   >
-                    <FileText className="w-4 h-4" />
-                    <span>{isCancelled ? t('Reçu Annulé (PDF)', 'Reçu Annulé (PDF)') : t('Reçu Officiel (PDF / Partager)', 'Reçu Officiel (PDF / Partager)')}</span>
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span>{t('Reçu PDF', 'Reçu PDF')}</span>
                   </button>
                 </div>
 
@@ -2410,25 +2410,25 @@ export const TaskQueueView: React.FC = () => {
       <div className="p-6 space-y-6 max-w-[1400px] mx-auto font-sans animate-in fade-in">
         
         {/* Navigation Bar / Back button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => {
                 setSelectedTxForDetails(null);
                 setIsEditingAdmin(false);
               }}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold"
+              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{t('Retour au Flux', 'Retour au Flux')}</span>
+              <ArrowLeft className="w-4 h-4 shrink-0" />
+              <span>{t('Retour', 'Retour')}</span>
             </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-extrabold text-slate-900 font-mono tracking-tight">
-                  {t('Transaction', 'Transaction')} {tx.referenceNumber}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 font-mono tracking-tight whitespace-nowrap">
+                  {tx.referenceNumber}
                 </h2>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold capitalize ${
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold capitalize whitespace-nowrap shrink-0 ${
                   isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
                   isCancelled ? 'bg-rose-100 text-rose-800 border border-rose-200' :
                   'bg-orange-100 text-orange-900 border border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800'
@@ -2436,14 +2436,14 @@ export const TaskQueueView: React.FC = () => {
                   {tx.status === 'completed' ? t('Clôturée', 'Clôturée') : tx.status === 'cancelled' ? t('Annulée', 'Annulée') : t('En Attente', 'En Attente')}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-xs text-slate-500 font-medium mt-0.5 whitespace-nowrap">
                 {t('Créée le', 'Créée le')} {new Date(tx.createdAt).toLocaleString(dateLocale)} ({elapsed.text})
               </p>
             </div>
           </div>
 
           {/* Page Header Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
             
             {/* Admin Edit Trigger */}
             {currentUser.role === 'admin' && (
@@ -2452,24 +2452,24 @@ export const TaskQueueView: React.FC = () => {
                   if (isEditingAdmin) setIsEditingAdmin(false);
                   else startAdminEdit(tx);
                 }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                   isEditingAdmin 
                     ? 'bg-slate-200 text-slate-800 hover:bg-slate-300' 
                     : 'bg-blue-600 text-white hover:bg-blue-700 shadow-2xs'
                 }`}
               >
-                <Edit className="w-4 h-4" />
-                <span>{isEditingAdmin ? t('Annuler la Modification', 'Annuler la Modification') : t('Modifier la Transaction', 'Modifier la Transaction')}</span>
+                <Edit className="w-3.5 h-3.5 shrink-0" />
+                <span>{isEditingAdmin ? t('Fermer', 'Fermer') : t('Modifier', 'Modifier')}</span>
               </button>
             )}
 
             <button
               onClick={() => setSelectedReceiptTx(tx)}
-              className="px-3.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+              className="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 whitespace-nowrap shrink-0"
               title={t('Consulter et télécharger le reçu officiel (PDF)', 'Consulter et télécharger le reçu officiel (PDF)')}
             >
-              <Download className="w-4 h-4 text-emerald-400" />
-              <span>{t('Télécharger Reçu PDF', 'Télécharger Reçu PDF')}</span>
+              <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>{t('Reçu PDF', 'Reçu PDF')}</span>
             </button>
 
             {/* Gestionnaire Quality Control: Report Anomaly to Admin (Superviser sans modifier) */}
@@ -2486,11 +2486,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     setTimeout(() => setFeedback(null), 5000);
                   }
                 }}
-                className="px-3.5 py-2 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className="px-3 py-2 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
                 title={t("Superviser sans modifier : signaler une anomalie pour correction par l'Admin", "Superviser sans modifier : signaler une anomalie pour correction par l'Admin")}
               >
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <span>{t('Signaler une Anomalie', 'Signaler une Anomalie')}</span>
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{t('Signaler', 'Signaler')}</span>
               </button>
             )}
 
@@ -2503,10 +2503,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                     setSelectedTxForDetails({ ...tx, status: 'cancelled', cancellationReason: reason });
                   }
                 }}
-                className="px-3.5 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors flex items-center gap-1.5"
+                className="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <XCircle className="w-4 h-4" />
-                <span>{t('Annuler Transaction', 'Annuler Transaction')}</span>
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{t('Annuler', 'Annuler')}</span>
               </button>
             )}
           </div>
@@ -2640,10 +2640,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{t('Enregistrer la Modification Admin', 'Enregistrer la Modification Admin')}</span>
+                  <span>{t('Enregistrer', 'Enregistrer')}</span>
                 </button>
               </div>
             </form>
@@ -2712,10 +2712,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             <button
                               type="button"
                               onClick={() => setQueueLightboxUrl(proofImageToDisplay || null)}
-                              className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1 cursor-pointer"
+                              className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span>Agrandir en plein écran</span>
+                              <span>Plein écran</span>
                             </button>
                           </div>
 
@@ -2730,8 +2730,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             />
                             <div className="flex items-center justify-between w-full px-2 pt-2 text-[10px] text-purple-300 font-bold">
                               <span>📷 QUITTANCE ENREGISTRÉE</span>
-                              <span className="text-white group-hover:underline flex items-center gap-1">
-                                <Eye className="w-3 h-3" /> Agrandir en plein écran
+                              <span className="text-white group-hover:underline flex items-center gap-1 whitespace-nowrap">
+                                <Eye className="w-3 h-3" /> Plein écran
                               </span>
                             </div>
                           </div>
@@ -2876,10 +2876,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                         });
                                       }
                                     }}
-                                    className="py-4 px-5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                                    className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap"
                                   >
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    <span>OUI, Valider la transaction</span>
+                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                    <span>OUI, Valider</span>
                                   </button>
 
                                   <button
@@ -2906,10 +2906,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                         }
                                       }
                                     }}
-                                    className="py-4 px-5 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                                    className="py-3.5 px-4 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap"
                                   >
-                                    <XCircle className="w-5 h-5" />
-                                    <span>NON, Annuler la transaction</span>
+                                    <XCircle className="w-4 h-4 shrink-0" />
+                                    <span>NON, Annuler</span>
                                   </button>
                                 </div>
                               </div>
@@ -2987,8 +2987,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             />
                             <div className="flex items-center justify-between w-full px-2 pt-1.5 text-[10px] text-blue-300 font-bold font-sans">
                               <span>📷 QUITTANCE ENREGISTRÉE</span>
-                              <span className="text-white group-hover:underline flex items-center gap-1">
-                                <Eye className="w-3 h-3" /> {t('Agrandir en plein écran', 'Agrandir en plein écran')}
+                              <span className="text-white group-hover:underline flex items-center gap-1 whitespace-nowrap">
+                                <Eye className="w-3 h-3" /> {t('Plein écran', 'Plein écran')}
                               </span>
                             </div>
                           </div>
@@ -3009,10 +3009,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                 completeTask(tx.id, tx.proofNotes || 'Validé par Admin', tx.proofUrl);
                                 setSelectedTxForDetails({ ...tx, status: 'completed', completedAt: new Date().toISOString() });
                               }}
-                              className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                              className="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap"
                             >
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>OUI, Valider la transaction</span>
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              <span>OUI, Valider</span>
                             </button>
                             <button
                               type="button"
@@ -3023,10 +3023,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                   setSelectedTxForDetails({ ...tx, status: 'cancelled', cancellationReason: reason });
                                 }
                               }}
-                              className="py-3.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                              className="py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap"
                             >
-                              <XCircle className="w-4 h-4" />
-                              <span>NON, Annuler la transaction</span>
+                              <XCircle className="w-4 h-4 shrink-0" />
+                              <span>NON, Annuler</span>
                             </button>
                           </div>
                         </div>
@@ -3091,10 +3091,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                       <button
                         type="submit"
-                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>{t('Valider & Clôturer la Transaction', 'Valider & Clôturer la Transaction')}</span>
+                        <span>{t('Valider', 'Valider')}</span>
                       </button>
                     </form>
                   ) : isCancelled ? (
@@ -3686,20 +3686,20 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
             <button
               type="button"
               onClick={() => setSelectedReceiptTx(tx)}
-              className={`w-full py-3.5 rounded-2xl font-black text-xs text-white active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+              className={`w-full py-3.5 rounded-2xl font-black text-xs text-white active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
                 isCancelled ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700'
               }`}
             >
-              <FileText className="w-4 h-4 text-blue-400" />
-              <span>{isCancelled ? t("Reçu Annulé (PDF / Partager)", "Reçu Annulé (PDF / Partager)") : t("Reçu Officiel (PDF / Partager)", "Reçu Officiel (PDF / Partager)")}</span>
+              <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>{t("Reçu PDF", "Reçu PDF")}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setGestionnaireDetailTx(null)}
-              className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block"
+              className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block whitespace-nowrap"
             >
-              {t("Retour au flux", "Retour au flux")}
+              {t("Retour", "Retour")}
             </button>
           </div>
 
@@ -4247,11 +4247,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   setIsAddTxModalOpen(true);
                 }
               }}
-              className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl sm:rounded-2xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer whitespace-nowrap"
+              className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0"
               title={isAdmin ? t("Espace Opérations", "Espace Opérations") : t("Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)", "Ajouter et émettre directement une nouvelle transaction (MonCash, Digicel, Claro, Altice)")}
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ {t("Ajouter une Transaction", "Ajouter une Transaction")}</span>
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span>+ {t("Nouveau", "Nouveau")}</span>
             </button>
           )}
         </div>
@@ -4479,7 +4479,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                               e.stopPropagation();
                               setQueueHaitiInboundTx(tx);
                             }}
-                            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer whitespace-nowrap ${
                               tx.haitiInboundStatus === 'pending_admin_check' || isInProgress
                                 ? 'bg-amber-600 hover:bg-amber-700 text-white animate-pulse'
                                 : tx.haitiInboundStatus === 'approved' || isCompleted
@@ -4488,8 +4488,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             }`}
                             title="Ouvrir la fiche de vérification Réception Haïti (OUI / NON)"
                           >
-                            <Coins className="w-3.5 h-3.5" />
-                            <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier (OUI/NON)' : 'Fiche Dépôt'}</span>
+                            <Coins className="w-3.5 h-3.5 shrink-0" />
+                            <span>{isAdmin && (tx.haitiInboundStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier' : 'Détails'}</span>
                           </button>
                         ) : tx.operator === 'zelle' ? (
                           <button
@@ -4497,7 +4497,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                               e.stopPropagation();
                               setQueueZelleTx(tx);
                             }}
-                            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer whitespace-nowrap ${
                               tx.zelleStatus === 'pending_admin_check' || isInProgress
                                 ? 'bg-purple-600 hover:bg-purple-700 text-white animate-pulse'
                                 : tx.zelleStatus === 'approved' || isCompleted
@@ -4506,8 +4506,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             }`}
                             title="Ouvrir la fiche de vérification Zelle"
                           >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>{isAdmin && (tx.zelleStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier (OUI/NON)' : 'Fiche Zelle'}</span>
+                            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                            <span>{isAdmin && (tx.zelleStatus === 'pending_admin_check' || isInProgress) ? 'Vérifier' : 'Détails'}</span>
                           </button>
                         ) : isInProgress ? (
                           <button
@@ -4515,11 +4515,11 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                               e.stopPropagation();
                               setSelectedTxForDetails(tx);
                             }}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer whitespace-nowrap"
                             title={t("Prendre en charge, valider et clôturer avec quittance", "Prendre en charge, valider et clôturer avec quittance")}
                           >
                             <span>{t("Traiter", "Traiter")}</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
                           </button>
                         ) : isCompleted ? (
                           <button
@@ -4527,10 +4527,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                               e.stopPropagation();
                               setSelectedReceiptTx(tx);
                             }}
-                            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
+                            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer whitespace-nowrap"
                             title={t("Consulter et télécharger le reçu", "Consulter et télécharger le reçu")}
                           >
-                            <FileText className="w-3.5 h-3.5" />
+                            <FileText className="w-3.5 h-3.5 shrink-0" />
                             <span>{t("Reçu", "Reçu")}</span>
                           </button>
                         ) : (

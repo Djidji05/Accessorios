@@ -431,10 +431,10 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleAdminApprove}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
                   >
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>{isSubmitting ? 'Validation...' : t("OUI, J'ai bien vu le Zelle (Valider)")}</span>
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>{isSubmitting ? 'Validation...' : t("OUI, Valider")}</span>
                   </button>
 
                   {/* BOUTON NON */}
@@ -442,10 +442,10 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => setShowRejectInput(true)}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
                   >
-                    <XCircle className="w-5 h-5" />
-                    <span>{t("NON, Zelle non reçu (Refuser)")}</span>
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    <span>{t("NON, Refuser")}</span>
                   </button>
                 </div>
               ) : isApproved ? (

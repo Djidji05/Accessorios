@@ -317,10 +317,10 @@ export const HistoryView: React.FC = () => {
             <button
               type="button"
               onClick={() => setHistoryZelleTx(tx)}
-              className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 rounded-2xl font-black text-xs text-white bg-purple-600 hover:bg-purple-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Consulter la Fiche de Décaissement Zelle (Taux & Net)</span>
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span>Fiche Zelle</span>
             </button>
           )}
 
@@ -333,29 +333,29 @@ export const HistoryView: React.FC = () => {
                 setProofImage(null);
                 setProofError(null);
               }}
-              className="w-full py-3.5 rounded-2xl font-black text-xs text-slate-950 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 rounded-2xl font-black text-xs text-slate-950 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
-              <Upload className="w-4 h-4" />
-              <span>{t('Valider avec Preuve', 'Valider avec Preuve')}</span>
+              <Upload className="w-4 h-4 shrink-0" />
+              <span>{t('Valider', 'Valider')}</span>
             </button>
           )}
 
           <button
             type="button"
             onClick={() => setSelectedReceiptTx(tx)}
-            className="w-full py-3.5 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 rounded-2xl font-black text-xs text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             title={t('Télécharger Reçu (PDF / Partager)', 'Télécharger Reçu (PDF / Partager)')}
           >
-            <Download className="w-4 h-4 text-emerald-400" />
-            <span>{t('Télécharger Reçu (PDF / Partager)', 'Télécharger Reçu (PDF / Partager)')}</span>
+            <Download className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{t('Reçu PDF', 'Reçu PDF')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setInspectedTx(null)}
-            className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block"
+            className="w-full py-2.5 rounded-2xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-center block whitespace-nowrap"
           >
-            {t("Retour à l'historique", "Retour à l'historique")}
+            {t("Retour", "Retour")}
           </button>
         </div>
 

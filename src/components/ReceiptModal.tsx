@@ -238,11 +238,11 @@ export const ReceiptModal: React.FC = () => {
               }
             }}
             disabled={isDownloading}
-            className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 whitespace-nowrap"
             title={t("Télécharger le reçu officiel au format PDF")}
           >
-            <FileText className="w-4 h-4" />
-            <span>{isDownloading ? t('Génération PDF...') : t('Télécharger en PDF')}</span>
+            <FileText className="w-4 h-4 shrink-0" />
+            <span>{isDownloading ? t('PDF...') : t('Télécharger PDF')}</span>
           </button>
 
           <button
@@ -261,11 +261,11 @@ export const ReceiptModal: React.FC = () => {
               }
             }}
             disabled={isSharing}
-            className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 whitespace-nowrap"
             title={t("Partager le reçu PDF via WhatsApp, Email ou messagerie")}
           >
-            {copiedShare ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-            <span>{copiedShare ? t('PDF Partagé !') : t('Partager le Reçu (PDF)')}</span>
+            {copiedShare ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Share2 className="w-4 h-4 shrink-0" />}
+            <span>{copiedShare ? t('Partagé !') : t('Partager')}</span>
           </button>
         </div>
 

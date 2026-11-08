@@ -324,7 +324,7 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
               {t('Fermer', 'Fermer')}
             </button>
 
-            <div className="flex items-center gap-2.5 ml-auto">
+            <div className="flex items-center gap-2 ml-auto">
               {/* ADMIN ACTIONS: Approve or Reject */}
               {isAdmin && isPending && !showRejectInput && (
                 <>
@@ -332,20 +332,20 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
                     type="button"
                     onClick={() => setShowRejectInput(true)}
                     disabled={isSubmitting}
-                    className="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition-transform active:scale-95"
+                    className="px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition-transform active:scale-95 whitespace-nowrap"
                   >
-                    <XCircle className="w-4 h-4 text-rose-600" />
-                    <span>{t('Rejeter', 'Rejeter')}</span>
+                    <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{t('NON, Refuser', 'NON, Refuser')}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleAdminApprove}
                     disabled={isSubmitting}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-2 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer whitespace-nowrap"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>{isSubmitting ? 'Validation...' : t('Confirmer la Réception sur mon Compte', 'Confirmer la Réception sur mon Compte')}</span>
+                    <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                    <span>{isSubmitting ? 'Validation...' : t('OUI, Valider', 'OUI, Valider')}</span>
                   </button>
                 </>
               )}
@@ -356,10 +356,10 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
                   type="button"
                   onClick={handleAgentDisburse}
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-2 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <Coins className="w-4 h-4 text-white" />
-                  <span>{isSubmitting ? 'Finalisation...' : `${t('Remettre', 'Remettre')} ${netPayout.toLocaleString()} DOP au Client`}</span>
+                  <Coins className="w-4 h-4 text-white shrink-0" />
+                  <span>{isSubmitting ? 'Finalisation...' : `${t('Payer', 'Payer')} (${netPayout.toLocaleString()} DOP)`}</span>
                 </button>
               )}
 
@@ -371,10 +371,10 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
                     setSelectedReceiptTx(tx);
                     onClose();
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-xs cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
                 >
-                  <FileText className="w-4 h-4" />
-                  <span>{t('Reçu de Paiement', 'Reçu de Paiement')}</span>
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span>{t('Reçu PDF', 'Reçu PDF')}</span>
                 </button>
               )}
             </div>
