@@ -2658,7 +2658,113 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
               const proofImageToDisplay = tx.haitiInboundProofUrl || tx.zelleProofUrl || tx.proofUrl;
 
               return (
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
+                <>
+                  {/* Pour les transactions standard (Natcash, MonCash sortant, Digicel, Natcom, Claro, Altice) : Afficher les Détails Financiers & Bénéficiaire */}
+                  {!isZelleOrInbound && (
+                    <>
+                      {/* 1. Détails Financiers & Conversion */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-blue-600" />
+                            <span>{t('Détails Financiers & Conversion', 'Détails Financiers & Conversion')}</span>
+                          </h3>
+                          <OperatorBadge operator={tx.operator} />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {/* Montant Encaissé (RD) */}
+                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                              {t('Montant Encaissé (RD)', 'Montant Encaissé (RD)')}
+                            </span>
+                            <p className="text-2xl font-black text-slate-900 font-mono">
+                              {(tx.amountDOP || 0).toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}
+                            </p>
+                            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                              <span>{t('Frais de service (0.5%) :', 'Frais de service (0.5%) :')} <strong>{(tx.feeDOP ?? Math.round((tx.amountDOP || 0) * 0.005)).toLocaleString(dateLocale)} DOP</strong></span>
+                              {currentUser.role === 'admin' && (
+                                <span className="text-emerald-700 font-bold">Comm. (1%) : {(tx.commissionDOP ?? Math.round((tx.amountDOP || 0) * 0.01)).toLocaleString(dateLocale)} DOP</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Montant à Verser (Haïti) */}
+                          <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1">
+                            <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block">
+                              {t('Montant à Verser (Haïti)', 'Montant à Verser (Haïti)')}
+                            </span>
+                            <p className="text-2xl font-black text-blue-600 font-mono">
+                              {(tx.amountHTG || 0).toLocaleString(dateLocale)} HTG
+                            </p>
+                            <p className="text-[11px] font-bold text-blue-600 pt-1">
+                              {t('Taux :', 'Taux :')} 100 {t('Pesos', 'Pesos')} = {Math.round((tx.exchangeRate || dopToHtgRate || 2) * 100)} HTG
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. Informations Bénéficiaire & Numéro de Compte */}
+                      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
+                        <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+                          <User className="w-4 h-4 text-blue-600" />
+                          <span>{t('Informations Bénéficiaire & Compte', 'Informations Bénéficiaire & Compte')}</span>
+                        </h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {/* Bénéficiaire / Nom */}
+                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                              {['digicel', 'natcom', 'claro', 'altice'].includes(tx.operator)
+                                ? t('Type de Service Télécom', 'Type de Service Télécom')
+                                : t('Bénéficiaire (Haïti)', 'Bénéficiaire (Haïti)')}
+                            </span>
+                            <p className="font-black text-slate-900 text-base">
+                              {tx.receiverName || `Client ${tx.operator.toUpperCase()}`}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {t('Opérateur :', 'Opérateur :')} <strong className="uppercase">{tx.operator}</strong>
+                            </p>
+                          </div>
+
+                          {/* Numéro de Téléphone / Portefeuille */}
+                          <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200/80 space-y-1.5">
+                            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
+                              {t('Numéro de Téléphone / Portefeuille', 'Numéro de Téléphone / Portefeuille')}
+                            </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-mono font-black text-slate-900 text-base">
+                                {tx.receiverPhone}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => copyToClipboard(e, tx.receiverPhone, tx.id)}
+                                className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                                title={t('Copier le numéro', 'Copier le numéro')}
+                              >
+                                {copiedId === tx.id ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>{t('Copié', 'Copié')}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>{t('Copier', 'Copier')}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                              {t('Saisi par :', 'Saisi par :')} <strong>{tx.createdByName || tx.senderName}</strong>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xs">
                   <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <Upload className="w-4 h-4 text-purple-600" />
@@ -3093,7 +3199,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                       <p className="mt-1">{t('Motif :', 'Motif :')} {tx.cancellationReason || t("Annulé par l'administrateur", "Annulé par l'administrateur")}</p>
                     </div>
                   ) : null}
-                </div>
+                  </div>
+                </>
               );
             })()}
           </div>
