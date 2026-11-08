@@ -88,20 +88,6 @@ export const BottomNavBar: React.FC = () => {
             <span className="text-[10px] tracking-tight font-semibold">{t('bnav_history', 'Historique')}</span>
           </button>
 
-          {/* Dépôts / Versements */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('settlements')}
-            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
-              activeTab === 'settlements'
-                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
-            }`}
-          >
-            <Landmark className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_deposits', 'Dépôts')}</span>
-          </button>
-
           {/* Paramètres */}
           <button
             type="button"

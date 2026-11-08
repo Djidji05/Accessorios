@@ -37,7 +37,7 @@ const AppContent: React.FC = () => {
       return allowedForRD.includes(activeTab) ? activeTab : 'guichet';
     }
     if (isAgentHaiti) {
-      const allowedForHaiti: typeof activeTab[] = ['tasks', 'overview', 'history', 'notifications', 'treasury', 'settlements', 'settings'];
+      const allowedForHaiti: typeof activeTab[] = ['tasks', 'overview', 'history', 'notifications', 'treasury', 'settings'];
       return allowedForHaiti.includes(activeTab) ? activeTab : 'tasks';
     }
     if (isGestionnaire) {

@@ -315,27 +315,6 @@ export const Sidebar: React.FC = () => {
                 </div>
               )}
             </button>
-
-            {/* 💵 Versements & Liquidations Hebdomadaires */}
-            <button
-              onClick={() => setActiveTab('settlements')}
-              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-xl text-xs transition-all ${
-                activeTab === 'settlements' 
-                  ? 'bg-slate-900 text-white font-bold shadow-xs' 
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
-              }`}
-              title={t('Versements & Liquidations')}
-            >
-              <Landmark className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settlements' ? 'text-white' : 'text-slate-500'}`} />
-              {!isSidebarCollapsed && (
-                <div className="text-left">
-                  <span className="block font-bold leading-tight">{t('Versements & Liquidations')}</span>
-                  <span className={`text-[10px] block font-medium ${activeTab === 'settlements' ? 'text-slate-300' : 'text-slate-400'}`}>
-                    {t('Solde & Dépôts Admin')}
-                  </span>
-                </div>
-              )}
-            </button>
           </nav>
         ) : isGestionnaire ? (
           /* CAS PARTICULIER 3 : GESTIONNAIRE (Exactement 5 Menus : Tableau de bord, Flux Numérique, Trésorerie, Supervision, Historique) */
