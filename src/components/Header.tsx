@@ -198,9 +198,7 @@ export const Header: React.FC = () => {
               >
                 <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
               </button>
-              <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
-              <span className="text-slate-300 dark:text-slate-700 font-bold">/</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[120px]">
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[140px]">
                 {activeTab === 'overview' ? (isAgentHaiti ? t('nav_tasks', 'Tâches') : t('nav_dashboard', 'Dashboard')) : 
                  activeTab === 'guichet' ? t('nav_guichet', 'Guichet') : 
                  activeTab === 'history' ? t('nav_history', 'Historique') :
