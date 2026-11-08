@@ -109,13 +109,6 @@ export const TaskQueueView: React.FC = () => {
   const [gestionnaireOperatorFilter, setGestionnaireOperatorFilter] = useState<string>('all');
   const [gestionnaireSearchQuery, setGestionnaireSearchQuery] = useState('');
 
-  // Masquer la barre de navigation quand un détail de transaction ou modal de validation est ouvert
-  React.useEffect(() => {
-    setIsTransactionDetailOpen(
-      !!(selectedTxForDetails || haitiDetailTx || haitiProofModalTx || gestionnaireDetailTx || gestionnaireProofModalTx)
-    );
-    return () => setIsTransactionDetailOpen(false);
-  }, [selectedTxForDetails, haitiDetailTx, haitiProofModalTx, gestionnaireDetailTx, gestionnaireProofModalTx, setIsTransactionDetailOpen]);
   const [haitiProofImage, setHaitiProofImage] = useState<string | null>(null);
   const [haitiSmsCode, setHaitiSmsCode] = useState<string>('');
   const [haitiNotes, setHaitiNotes] = useState<string>('');
@@ -131,6 +124,14 @@ export const TaskQueueView: React.FC = () => {
   const [rdOperatorFilter, setRdOperatorFilter] = useState<string>('all');
   const [rdSearchQuery, setRdSearchQuery] = useState('');
   const [rdCopiedPhoneId, setRdCopiedPhoneId] = useState<string | null>(null);
+
+  // Masquer la barre de navigation quand un détail de transaction ou modal de validation est ouvert
+  React.useEffect(() => {
+    setIsTransactionDetailOpen(
+      !!(selectedTxForDetails || haitiDetailTx || haitiProofModalTx || rdDetailTx || gestionnaireDetailTx || gestionnaireProofModalTx)
+    );
+    return () => setIsTransactionDetailOpen(false);
+  }, [selectedTxForDetails, haitiDetailTx, haitiProofModalTx, rdDetailTx, gestionnaireDetailTx, gestionnaireProofModalTx, setIsTransactionDetailOpen]);
 
   // Pagination states
   const [haitiPage, setHaitiPage] = useState<number>(1);
@@ -1178,7 +1179,7 @@ export const TaskQueueView: React.FC = () => {
           const isCompleted = currentHaitiTx.status === 'completed';
 
           return (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in">
+            <div className="fixed inset-0 !m-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in">
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full max-h-[92vh] flex flex-col p-4 sm:p-6 space-y-4 animate-in zoom-in-95 my-auto">
                 
                 {/* Header */}
@@ -1400,7 +1401,7 @@ export const TaskQueueView: React.FC = () => {
 
         {/* MODAL 2: 📁 PAGE / ÉCRAN DÉDIÉ : DÉCAISSEMENT & PREUVE PHOTO */}
         {haitiProofModalTx && (
-          <div className="fixed inset-0 z-50 bg-slate-900/80 sm:bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="fixed inset-0 !m-0 z-50 bg-slate-900/80 sm:bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto animate-in fade-in">
             <div className="bg-white dark:bg-slate-900 min-h-screen sm:min-h-0 sm:rounded-3xl border-0 sm:border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full p-4 sm:p-6 space-y-4 animate-in zoom-in-95 flex flex-col justify-between">
               
               {/* Top Header with Back Button */}
@@ -2055,7 +2056,7 @@ export const TaskQueueView: React.FC = () => {
           const isHaitiOp = ['moncash', 'natcash', 'natcom'].includes(tx.operator);
 
           return (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+            <div className="fixed inset-0 !m-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
               <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in zoom-in-95 max-h-[95vh] overflow-y-auto custom-scrollbar">
                 
                 {/* Header */}
@@ -3329,7 +3330,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
     if (!gestionnaireProofModalTx) return null;
 
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
+      <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in overflow-y-auto">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar p-5 space-y-4 shadow-2xl text-slate-900 dark:text-white my-auto">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">

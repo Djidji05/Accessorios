@@ -52,6 +52,7 @@ export const Header: React.FC = () => {
     readNotificationIds,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    isTransactionDetailOpen,
   } = useApp();
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -156,9 +157,9 @@ export const Header: React.FC = () => {
   }
 
   // Sur mobile, l'agent RD sur sa page d'accueil guichet a déjà son propre en-tête d'accueil
-  // Sur TOUTES les autres pages convenues, le navbar reste visible et collé en haut !
+  // Et quand une fiche de détail ou de preuve est ouverte, on masque l'en-tête principal en dessous
   const isAgentOnGuichetHome = isAgentRD && activeTab === 'guichet';
-  const isHeaderVisibleOnMobile = !isAgentOnGuichetHome;
+  const isHeaderVisibleOnMobile = !isAgentOnGuichetHome && !isTransactionDetailOpen;
 
   return (
     <header className={`${isHeaderVisibleOnMobile ? 'flex' : 'hidden md:flex'} h-16 md:h-14 bg-slate-50/95 md:bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 items-center justify-between sticky top-0 z-40 transition-colors w-full min-w-0 shadow-2xs`}>
