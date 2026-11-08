@@ -125,6 +125,11 @@ export const WeeklySettlementsView: React.FC = () => {
     };
   };
 
+  const formatWeekLabel = (label: string) => {
+    if (!label) return '';
+    return label.replace(/^Semaine\b/i, t('Semaine'));
+  };
+
   // Merge recorded settlements with live transactions to ensure every week with activity is present
   const allSettlementsWithLiveTx = React.useMemo(() => {
     const list = [...settlements];
@@ -479,7 +484,7 @@ export const WeeklySettlementsView: React.FC = () => {
             <option value="all">📅 {t('all_weeks', 'Toutes les Semaines')} ({availableWeeks.length})</option>
             {availableWeeks.map((w) => (
               <option key={w.label} value={w.label}>
-                {w.label} ({w.startDate} - {w.endDate}) {w.hasRemaining ? '🟠' : '🟢'}
+                {formatWeekLabel(w.label)} ({w.startDate} - {w.endDate}) {w.hasRemaining ? '🟠' : '🟢'}
               </option>
             ))}
           </select>
@@ -497,7 +502,7 @@ export const WeeklySettlementsView: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                  {t('weekly_balance_guichet', 'Bilan Hebdomadaire Guichet & Versements')} ({selectedWeekLabel === 'all' ? t('all_weeks', 'Toutes les Semaines') : selectedWeekLabel})
+                  {t('weekly_balance_guichet', 'Bilan Hebdomadaire Guichet & Versements')} ({selectedWeekLabel === 'all' ? t('all_weeks', 'Toutes les Semaines') : formatWeekLabel(selectedWeekLabel)})
                 </span>
                 <h3 className="text-base font-black text-white">
                   {t('my_commissions_admin_status', "Mes Commissions & Situation avec l'Administration")}
@@ -630,7 +635,7 @@ export const WeeklySettlementsView: React.FC = () => {
                           <Calendar className="w-4 h-4 text-emerald-600" />
                         </div>
                         <div>
-                          <h4 className="font-black text-slate-900 dark:text-slate-100 text-xs">{s.weekLabel}</h4>
+                          <h4 className="font-black text-slate-900 dark:text-slate-100 text-xs">{formatWeekLabel(s.weekLabel)}</h4>
                           <p className="text-[10px] text-slate-400 font-mono">{s.startDate} {t('to_date', 'au')} {s.endDate}</p>
                         </div>
                       </div>
@@ -736,7 +741,7 @@ export const WeeklySettlementsView: React.FC = () => {
                           
                           {/* Semaine */}
                           <td className="py-4 px-5">
-                            <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{s.weekLabel}</div>
+                            <div className="font-black text-slate-900 dark:text-slate-100 text-xs">{formatWeekLabel(s.weekLabel)}</div>
                             <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                               {s.startDate} {t('to_date', 'au')} {s.endDate}
                             </div>
@@ -827,7 +832,7 @@ export const WeeklySettlementsView: React.FC = () => {
                             <Calendar className="w-4 h-4 text-emerald-600" />
                           </div>
                           <div>
-                            <h4 className="font-black text-slate-900 dark:text-slate-100 text-xs">{s.weekLabel}</h4>
+                            <h4 className="font-black text-slate-900 dark:text-slate-100 text-xs">{formatWeekLabel(s.weekLabel)}</h4>
                             <p className="text-[10px] text-slate-400 font-mono">{s.startDate} {t('to_date', 'au')} {s.endDate}</p>
                           </div>
                         </div>

@@ -570,7 +570,7 @@ export const MobileAgentHome: React.FC = () => {
           {/* Opérateur MonCash ou Natcash */}
           <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              1. Choix du Compte de Réception (Haïti)
+              {t('1. Choix du Compte de Réception (Haïti)')}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -636,7 +636,7 @@ export const MobileAgentHome: React.FC = () => {
           {/* Montant USD */}
           <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              2. Somme Écrite sur la Preuve (USD)
+              {t('2. Somme Écrite sur la Preuve (USD)')}
             </label>
             <div className="relative">
               <input
@@ -645,7 +645,7 @@ export const MobileAgentHome: React.FC = () => {
                 min="1"
                 value={inboundAmountUSD}
                 onChange={(e) => setInboundAmountUSD(e.target.value)}
-                placeholder="Ex : 500"
+                placeholder={t('Ex : 500')}
                 required
                 className="w-full pl-4 pr-16 py-3.5 text-2xl font-black font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20"
               />
@@ -657,7 +657,7 @@ export const MobileAgentHome: React.FC = () => {
             {numUSD > 0 && (
               <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-amber-800 dark:text-amber-200 font-bold block">Estimation Pesos (Brut) :</span>
+                  <span className="text-amber-800 dark:text-amber-200 font-bold block">{t('Estimation Pesos (Brut) :')}</span>
                   <span className="text-[10px] text-amber-600 dark:text-amber-400">1 USD = {usdToDop.toFixed(2)} DOP</span>
                 </div>
                 <span className="text-lg font-black font-mono text-amber-700 dark:text-amber-300">
@@ -670,7 +670,7 @@ export const MobileAgentHome: React.FC = () => {
           {/* Photo Preuve */}
           <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              3. Preuve (Capture d'écran / Photo)
+              {t("3. Preuve (Capture d'écran / Photo)")}
             </label>
             <input
               ref={inboundCameraInputRef}
@@ -692,7 +692,7 @@ export const MobileAgentHome: React.FC = () => {
               <div className="p-5 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 text-center space-y-3">
                 <Camera className="w-8 h-8 text-amber-600 mx-auto" />
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Ajoutez la capture d'écran reçue du client
+                  {t("Ajoutez la capture d'écran reçue du client")}
                 </p>
                 <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
                   <button
@@ -701,7 +701,7 @@ export const MobileAgentHome: React.FC = () => {
                     className="py-2.5 px-3 bg-amber-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>Photo</span>
+                    <span>{t('Photo')}</span>
                   </button>
                   <button
                     type="button"
@@ -709,7 +709,7 @@ export const MobileAgentHome: React.FC = () => {
                     className="py-2.5 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Upload className="w-4 h-4" />
-                    <span>Galerie</span>
+                    <span>{t('Galerie')}</span>
                   </button>
                 </div>
               </div>
@@ -724,7 +724,7 @@ export const MobileAgentHome: React.FC = () => {
                   className="w-full py-2 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 rounded-xl flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
-                  <span>Remplacer la photo</span>
+                  <span>{t('Remplacer la photo')}</span>
                 </button>
               </div>
             )}
@@ -736,7 +736,7 @@ export const MobileAgentHome: React.FC = () => {
             className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 cursor-pointer active:scale-98 transition-all"
           >
             <Send className="w-4 h-4" />
-            <span>Envoyer à l'Admin pour Vérification</span>
+            <span>{t("Envoyer à l'Admin pour Vérification")}</span>
           </button>
         </form>
 
@@ -812,7 +812,7 @@ export const MobileAgentHome: React.FC = () => {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                   <Camera className="w-4 h-4 text-purple-600" />
-                  <span>1. Photo Preuve de Zelle (Obligatoire) *</span>
+                  <span>{t('1. Photo Preuve de Zelle (Obligatoire) *')}</span>
                 </label>
                 {zelleProofImage && (
                   <button
@@ -821,7 +821,7 @@ export const MobileAgentHome: React.FC = () => {
                     className="text-xs font-bold text-rose-600 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Supprimer</span>
+                    <span>{t('Supprimer')}</span>
                   </button>
                 )}
               </div>
@@ -839,11 +839,11 @@ export const MobileAgentHome: React.FC = () => {
                     />
                     <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/70 text-white text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs">
                       <Eye className="w-3 h-3" />
-                      <span>Agrandir</span>
+                      <span>{t('Agrandir')}</span>
                     </div>
                   </div>
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold text-center">
-                    ✓ Photo de preuve attachée avec succès !
+                    {t('✓ Photo de preuve attachée avec succès !')}
                   </p>
                 </div>
               ) : (
@@ -853,10 +853,10 @@ export const MobileAgentHome: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <span className="text-xs font-black text-purple-900 dark:text-purple-200 block">
-                      Preuve de Virement Zelle
+                      {t('Preuve de Virement Zelle')}
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                      Prenez une photo de l'écran du client ou importez une capture
+                      {t("Prenez une photo de l'écran du client ou importez une capture")}
                     </span>
                   </div>
 
@@ -868,7 +868,7 @@ export const MobileAgentHome: React.FC = () => {
                       className="py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
                     >
                       <Camera className="w-4 h-4" />
-                      <span>Prendre Photo</span>
+                      <span>{t('Prendre Photo')}</span>
                     </button>
 
                     <button
@@ -877,7 +877,7 @@ export const MobileAgentHome: React.FC = () => {
                       className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border-2 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-200 hover:bg-purple-50 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer"
                     >
                       <Upload className="w-4 h-4 text-purple-600" />
-                      <span>Importer Image</span>
+                      <span>{t('Importer Image')}</span>
                     </button>
                   </div>
 
@@ -906,7 +906,7 @@ export const MobileAgentHome: React.FC = () => {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-emerald-600" />
-                  <span>2. Somme envoyée par Zelle ($ USD) *</span>
+                  <span>{t('2. Somme envoyée par Zelle ($ USD) *')}</span>
                 </label>
                 <span className="text-[11px] font-mono font-bold text-purple-600 dark:text-purple-400">
                   1 USD = {usdToDop.toFixed(2)} DOP
@@ -921,7 +921,7 @@ export const MobileAgentHome: React.FC = () => {
                   step="any"
                   min="1"
                   required
-                  placeholder="Ex: 500"
+                  placeholder={t('Ex : 500')}
                   value={zelleAmountUSD}
                   onChange={(e) => setZelleAmountUSD(e.target.value)}
                   className="w-full bg-transparent font-mono text-2xl font-black text-slate-900 dark:text-white px-3 py-2 focus:outline-none"
@@ -950,7 +950,7 @@ export const MobileAgentHome: React.FC = () => {
               {/* Devise de remise au client */}
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-                  Devise de retrait souhaitée par le client :
+                  {t('Devise de retrait souhaitée par le client :')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -983,26 +983,26 @@ export const MobileAgentHome: React.FC = () => {
             {/* 3. VÉRIFICATION SÉCURISÉE & MONTANT MASQUÉ EN ATTENTE DE VALIDATION ADMIN */}
             <div className="bg-purple-950 text-white p-5 rounded-3xl space-y-3 shadow-md border border-purple-900">
               <div className="flex items-center justify-between text-xs text-purple-300">
-                <span className="font-bold uppercase tracking-wider">Vérification Requise par l'Admin</span>
+                <span className="font-bold uppercase tracking-wider">{t("Vérification Requise par l'Admin")}</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-purple-900/60 border border-purple-700/60 space-y-1.5">
                 <div className="flex items-center gap-2 text-amber-300 font-extrabold text-xs">
                   <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Montant net à décaisser masqué</span>
+                  <span>{t('Montant net à décaisser masqué')}</span>
                 </div>
                 <p className="text-[11px] text-purple-200/90 leading-relaxed pl-6">
-                  Le montant exact en {zellePayoutCurrency} à verser au client sera calculé et débloqué sur votre fiche <strong>dès que l'Administrateur aura vérifié son compte bancaire et cliqué sur OUI</strong>.
+                  {t('Ne donnez aucun argent au client avant que l\'Admin ait validé !')}
                 </p>
                 <div className="mt-1 pl-6">
                   <span className="inline-block px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[10px]">
-                    ⛔ Ne remettez aucun argent au client avant validation
+                    ⛔ {t('Ne remettez aucun argent au client avant validation')}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs font-mono text-purple-300 pt-1 border-t border-purple-800/80">
-                <span>Virement Zelle déclaré :</span>
+                <span>{t('Virement Zelle déclaré :')}</span>
                 <span className="font-bold text-white font-mono">${numUSD.toFixed(2)} USD</span>
               </div>
             </div>
@@ -1013,7 +1013,7 @@ export const MobileAgentHome: React.FC = () => {
               className="w-full py-4 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-98 text-white font-black text-sm shadow-xl shadow-purple-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span>Valider & Envoyer pour Vérification Admin</span>
+              <span>{t('Valider & Envoyer pour Vérification Admin')}</span>
             </button>
           </form>
 
@@ -1043,7 +1043,7 @@ export const MobileAgentHome: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-center py-2">
             <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Transfert Effectué
+              {t('Transfert Effectué')}
             </h3>
           </div>
 
@@ -1250,7 +1250,7 @@ export const MobileAgentHome: React.FC = () => {
             </div>
 
             <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center">
-              Vérifiez attentivement les informations ci-dessus avant de valider.
+              {t('Vérifiez attentivement les informations ci-dessus avant de valider.')}
             </p>
           </div>
 
@@ -1321,7 +1321,7 @@ export const MobileAgentHome: React.FC = () => {
               {/* Phone Number Field (Numero de telephone - Pavé numérique activé) */}
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-slate-400 dark:text-slate-400">
-                  Numero de telephone
+                  {t('Numero de telephone')}
                 </label>
                 <div className="relative flex items-center bg-slate-100/80 dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200/60 dark:border-slate-800">
                   <input
@@ -1357,12 +1357,12 @@ export const MobileAgentHome: React.FC = () => {
             {!isNoBeneficiaryOperator && (
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-slate-400 dark:text-slate-400">
-                  Nom du Bénéficiaire *
+                  {t('Nom du Bénéficiaire *')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Nom complet du bénéficiaire"
+                  placeholder={t('Nom complet du bénéficiaire')}
                   value={receiverName}
                   onChange={(e) => setReceiverName(e.target.value)}
                   className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white px-3.5 py-2.5 rounded-2xl focus:outline-none"
@@ -1373,7 +1373,7 @@ export const MobileAgentHome: React.FC = () => {
             {/* Amount Field (Montant en DOP) */}
             <div className="space-y-1">
               <label className="block text-xs font-semibold text-slate-400 dark:text-slate-400">
-                Montant
+                {t('Montant')}
               </label>
               <div className="relative flex items-center bg-slate-100/80 dark:bg-slate-900 rounded-2xl p-1.5 border border-slate-200/60 dark:border-slate-800">
                 <input
@@ -1381,7 +1381,7 @@ export const MobileAgentHome: React.FC = () => {
                   required
                   min="1"
                   step="1"
-                  placeholder="Montant DOP"
+                  placeholder={t('Montant DOP')}
                   value={amountDOP}
                   onChange={(e) => setAmountDOP(e.target.value)}
                   className="w-full bg-transparent font-mono text-xl font-black text-slate-900 dark:text-white px-3 py-2 focus:outline-none"
@@ -1393,7 +1393,7 @@ export const MobileAgentHome: React.FC = () => {
             {/* Taux Section (Sans fond, sans somme de conversion) */}
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 px-1 py-0.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              <span className="font-semibold">Taux du jour :</span>
+              <span className="font-semibold">{t('Taux du jour :')}</span>
               <span className="font-mono font-bold text-slate-900 dark:text-white">
                 100 DOP = {Math.round(dopToHtgRate * 100)} HTG
               </span>
@@ -1423,14 +1423,14 @@ export const MobileAgentHome: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-sm">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-slate-900 dark:text-white tracking-tight">
-                Beneficiaire recent
+                {t('Beneficiaire recent')}
               </h4>
               <button
                 type="button"
                 onClick={() => setActiveTab('history')}
                 className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 hover:underline cursor-pointer"
               >
-                <span>Voir Tout</span>
+                <span>{t('Voir Tout')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -1463,12 +1463,12 @@ export const MobileAgentHome: React.FC = () => {
                     </div>
 
                     <span className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                      Sélectionner
+                      {t('Sélectionner')}
                     </span>
                   </button>
                 ))
               ) : (
-                <span className="text-xs text-slate-400 py-1">Aucun bénéficiaire récent</span>
+                <span className="text-xs text-slate-400 py-1">{t('Aucun bénéficiaire récent')}</span>
               )}
             </div>
           </div>
@@ -1485,7 +1485,7 @@ export const MobileAgentHome: React.FC = () => {
                     : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] shadow-blue-600/30'
                 }`}
               >
-                <span>Continuez</span>
+                <span>{t('Continuez')}</span>
               </button>
             </div>
           </div>
@@ -1820,7 +1820,7 @@ export const MobileAgentHome: React.FC = () => {
             <div className="flex items-center gap-2">
               <p className="font-black text-sm text-white">{t('Réception Haïti (MonCash / Natcash)', 'Réception Haïti (MonCash / Natcash)')}</p>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-white/25 text-white uppercase">
-                Dépôt
+                {t('Dépôt', 'Dépôt')}
               </span>
             </div>
             <p className="text-[11px] text-amber-100 font-medium">{t('Preuve photo & versement de Pesos au guichet', 'Preuve photo & versement de Pesos au guichet')}</p>
