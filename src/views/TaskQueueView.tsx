@@ -4355,8 +4355,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         </div>
       </div>
 
-      {/* KPI Stream Overview Bar (2 columns on mobile, 4 on desktop) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      {/* KPI Stream Overview Bar (Hidden on mobile for Admin, 4 columns on desktop) */}
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[11px] sm:text-xs font-semibold text-slate-500">{t("Tâches En Cours", "Tâches En Cours")}</p>
