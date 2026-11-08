@@ -161,31 +161,55 @@ export const Header: React.FC = () => {
   const isHeaderVisibleOnMobile = !isAgentOnGuichetHome;
 
   return (
-    <header className={`${isHeaderVisibleOnMobile ? 'flex' : 'hidden md:flex'} h-14 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-2.5 sm:px-6 items-center justify-between sticky top-0 z-40 transition-colors w-full min-w-0 shadow-2xs`}>
-      {/* Left Section: Mobile Brand Header & Desktop Breadcrumbs */}
+    <header className={`${isHeaderVisibleOnMobile ? 'flex' : 'hidden md:flex'} h-16 md:h-14 bg-slate-50/95 md:bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 items-center justify-between sticky top-0 z-40 transition-colors w-full min-w-0 shadow-2xs`}>
+      {/* Left Section: Mobile Agent Profile (like Agent RD) OR Burger Menu & Desktop Breadcrumbs */}
       <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 min-w-0 flex-shrink">
-        {/* Mobile Header: Burger Menu (Admin/Gestionnaire) OR Page Title (sans logo dans le navbar) */}
-        <div className="flex items-center gap-2 md:hidden">
-          {isDesktopNavRole ? (
-            <button
-              onClick={toggleMobileSidebar}
-              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0 cursor-pointer"
-              title={t('Menu Principal', 'Menu Principal')}
-            >
-              <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
-            </button>
-          ) : null}
-          <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
-          <span className="text-slate-300 dark:text-slate-700 font-bold">/</span>
-          <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[120px]">
-            {activeTab === 'overview' ? (isAgentHaiti ? t('nav_tasks', 'Tâches') : t('nav_dashboard', 'Dashboard')) : 
-             activeTab === 'guichet' ? t('nav_guichet', 'Guichet') : 
-             activeTab === 'history' ? t('nav_history', 'Historique') :
-             activeTab === 'settlements' ? t('nav_settlements', 'Versements') :
-             activeTab === 'settings' ? t('nav_settings', 'Paramètres') :
-             activeTab === 'tasks' ? t('nav_tasks', 'Tâches') :
-             activeTab.replace('_', ' ')}
-          </span>
+        {/* Mobile Header: Agent Avatar + Role + Name (for Agent RD & Agent Haïti) OR Burger Menu (Admin/Gestionnaire) */}
+        <div className="flex items-center gap-3 md:hidden">
+          {!isDesktopNavRole ? (
+            <>
+              {currentUser.avatar ? (
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser.name}
+                  className="w-10 h-10 rounded-full object-cover shadow-md ring-2 ring-white dark:ring-slate-800 shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-md ring-2 ring-white dark:ring-slate-800 shrink-0">
+                  {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}
+                </div>
+              )}
+              <div className="min-w-0">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block leading-none truncate">
+                  {isAgentRD ? t('Agent Comptoir R.D.', 'Agent Comptoir R.D.') : isAgentHaiti ? t('Agent Terrain Haïti', 'Agent Terrain Haïti') : currentUser.role}
+                </span>
+                <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-tight mt-0.5 truncate">
+                  {currentUser.name}
+                </h3>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={toggleMobileSidebar}
+                className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0 cursor-pointer"
+                title={t('Menu Principal', 'Menu Principal')}
+              >
+                <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
+              </button>
+              <span className="font-extrabold text-slate-900 dark:text-white text-xs tracking-tight">Alexis</span>
+              <span className="text-slate-300 dark:text-slate-700 font-bold">/</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[120px]">
+                {activeTab === 'overview' ? (isAgentHaiti ? t('nav_tasks', 'Tâches') : t('nav_dashboard', 'Dashboard')) : 
+                 activeTab === 'guichet' ? t('nav_guichet', 'Guichet') : 
+                 activeTab === 'history' ? t('nav_history', 'Historique') :
+                 activeTab === 'settlements' ? t('nav_settlements', 'Versements') :
+                 activeTab === 'settings' ? t('nav_settings', 'Paramètres') :
+                 activeTab === 'tasks' ? t('nav_tasks', 'Tâches') :
+                 activeTab.replace('_', ' ')}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Desktop Sidebar Toggle & Breadcrumbs (md:flex) */}
@@ -228,12 +252,12 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Right Tools: Mobile Search, Taux, Notification Bell, Language Globe Icon, Dark mode, Settings */}
-      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
         
-        {/* Mobile Search Icon Button */}
+        {/* Mobile Search Icon Button (Rounded pill style matching Agent RD) */}
         <button 
           onClick={openSearch}
-          className="md:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex-shrink-0"
+          className="md:hidden p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-2xs hover:bg-slate-50 transition-colors flex-shrink-0 cursor-pointer"
           title={t('search_placeholder')}
         >
           <Search className="w-4 h-4" />
@@ -291,7 +315,7 @@ export const Header: React.FC = () => {
         <div className="relative">
           <button 
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors relative"
+            className="p-2.5 md:p-2 rounded-full md:rounded-xl bg-white md:bg-transparent dark:bg-slate-800 md:dark:bg-transparent border border-slate-200/80 md:border-0 dark:border-slate-700 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100 hover:bg-slate-50 md:hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs md:shadow-none transition-colors relative cursor-pointer"
             title={t('Notifications')}
           >
             <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
@@ -395,15 +419,15 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Language Globe Icon Selector Button */}
-        <div className="relative">
+        <div className="relative order-first md:order-none">
           <button 
             onClick={() => setIsLangOpen(!isLangOpen)}
-            className="flex items-center gap-1.5 p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs font-semibold"
+            className="flex items-center gap-1 md:gap-1.5 p-2 md:p-1.5 rounded-full md:rounded-xl bg-white md:bg-transparent dark:bg-slate-800 md:dark:bg-transparent border border-slate-200/80 md:border-0 dark:border-slate-700 text-slate-700 md:text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 md:hover:bg-slate-100 dark:hover:bg-slate-800 shadow-2xs md:shadow-none transition-colors text-[11px] md:text-xs font-black md:font-semibold cursor-pointer"
             title={t('Changer de langue')}
           >
-            <Globe className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            <Globe className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-500 dark:text-slate-400" />
             <span className="font-bold text-slate-800 dark:text-slate-200">{currentLang}</span>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
+            <ChevronDown className="w-3 h-3 text-slate-400 hidden md:inline" />
           </button>
 
           {/* Language Dropdown Menu */}
@@ -442,7 +466,7 @@ export const Header: React.FC = () => {
         {/* Logout Button */}
         <button 
           onClick={logout}
-          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+          className="p-2.5 md:p-1.5 rounded-full md:rounded-xl bg-white md:bg-transparent dark:bg-slate-800 md:dark:bg-transparent border border-slate-200/80 md:border-0 dark:border-slate-700 text-slate-600 md:text-slate-400 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 shadow-2xs md:shadow-none hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
           title={t('Se déconnecter')}
         >
           <LogOut className="w-4 h-4" />

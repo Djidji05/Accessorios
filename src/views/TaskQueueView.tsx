@@ -601,16 +601,6 @@ export const TaskQueueView: React.FC = () => {
         {/* 1. MOBILE ONLY VIEW (block md:hidden)                                    */}
         {/* ========================================================================= */}
         <div className="block md:hidden space-y-4">
-          {/* Mobile Page Header (Titre de section épuré sans dupliquer la barre de navigation globale) */}
-          <div className="pt-1">
-            <span className="text-[10px] font-black uppercase text-orange-500 tracking-wider">
-              {t("Agent Haïti • Décaissements")}
-            </span>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              {t("Mes Tâches & Soldes")}
-            </h2>
-          </div>
-
           {/* MAIN LARGE BALANCE CARD (Solde en Caisse) */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-950 text-white p-5 shadow-xl border border-slate-800/80 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">

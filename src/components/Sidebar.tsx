@@ -256,28 +256,28 @@ export const Sidebar: React.FC = () => {
             {!isSidebarCollapsed && (
               <div className="px-2 mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                  {t('Espace Opérationnel Haïti')}
+                  {t('Espace Guichet Haïti', 'Espace Guichet Haïti')}
                 </span>
               </div>
             )}
 
-            {/* Décaissements Haïti */}
+            {/* 📋 Mes Transactions / Décaissements Haïti */}
             <button
               onClick={() => setActiveTab('tasks')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2.5'} rounded-xl text-xs transition-all relative ${
                 activeTab === 'tasks' 
-                  ? 'bg-slate-900 text-white font-bold shadow-xs' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
-              title={t('Décaissements Haïti')}
+              title={t('Mes Transactions', 'Mes Transactions')}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <ClipboardList className={`w-4 h-4 flex-shrink-0 ${activeTab === 'tasks' ? 'text-white' : 'text-slate-500'}`} />
                 {!isSidebarCollapsed && (
                   <div className="text-left">
-                    <span className="block font-bold leading-tight">{t('Décaissements Haïti')}</span>
+                    <span className="block font-bold leading-tight">{t('Mes Transactions', 'Mes Transactions')}</span>
                     <span className={`text-[10px] block font-medium ${activeTab === 'tasks' ? 'text-slate-300' : 'text-slate-400'}`}>
-                      {t('Retraits & Recharges')}
+                      {t('Décaissements & Reçus', 'Décaissements & Reçus')}
                     </span>
                   </div>
                 )}
@@ -287,9 +287,9 @@ export const Sidebar: React.FC = () => {
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white" />
                 ) : (
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-300'
+                    activeTab === 'tasks' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-900 border border-orange-200'
                   }`}>
-                    {unreadTasksCount}
+                    {unreadTasksCount} {t('En attente')}
                   </span>
                 )
               )}
@@ -300,17 +300,38 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveTab('history')}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-xl text-xs transition-all ${
                 activeTab === 'history' 
-                  ? 'bg-slate-900 text-white font-bold shadow-xs' 
+                  ? 'bg-slate-900 text-white font-bold shadow-md' 
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
               }`}
               title={t('Historique & Reçus')}
             >
-              <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-400'}`} />
+              <FolderArchive className={`w-4 h-4 flex-shrink-0 ${activeTab === 'history' ? 'text-white' : 'text-slate-500'}`} />
               {!isSidebarCollapsed && (
                 <div className="text-left">
                   <span className="block font-bold leading-tight">{t('Historique & Reçus')}</span>
                   <span className={`text-[10px] block font-medium ${activeTab === 'history' ? 'text-slate-300' : 'text-slate-400'}`}>
                     {t('Dossiers Clôturés')}
+                  </span>
+                </div>
+              )}
+            </button>
+
+            {/* 💵 Versements & Liquidations Hebdomadaires */}
+            <button
+              onClick={() => setActiveTab('settlements')}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2.5'} rounded-xl text-xs transition-all ${
+                activeTab === 'settlements' 
+                  ? 'bg-slate-900 text-white font-bold shadow-xs' 
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-semibold'
+              }`}
+              title={t('Versements & Liquidations')}
+            >
+              <Landmark className={`w-4 h-4 flex-shrink-0 ${activeTab === 'settlements' ? 'text-white' : 'text-slate-500'}`} />
+              {!isSidebarCollapsed && (
+                <div className="text-left">
+                  <span className="block font-bold leading-tight">{t('Versements & Liquidations')}</span>
+                  <span className={`text-[10px] block font-medium ${activeTab === 'settlements' ? 'text-slate-300' : 'text-slate-400'}`}>
+                    {t('Solde & Dépôts Admin')}
                   </span>
                 </div>
               )}

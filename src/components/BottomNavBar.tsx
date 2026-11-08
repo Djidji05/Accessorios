@@ -47,24 +47,31 @@ export const BottomNavBar: React.FC = () => {
   ).length;
 
   // =========================================================================
-  // 1. BARRE DE NAVIGATION MOBILE : AGENT HAÏTI
+  // 1. BARRE DE NAVIGATION MOBILE : AGENT HAÏTI (Identique à Agent R.D.)
   // =========================================================================
   if (isAgentHaiti) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 md:hidden px-3 py-2 shadow-xl">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {/* Tâches / Décaissements Haïti */}
+          {/* Accueil / Tâches Haïti */}
           <button
             type="button"
             onClick={() => setActiveTab('tasks')}
-            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
               activeTab === 'tasks' || activeTab === 'overview'
                 ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
                 : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
             }`}
           >
-            <Zap className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_tasks', 'Tâches')}</span>
+            <div className="relative">
+              <LayoutDashboard className="w-5 h-5" />
+              {unreadTasksCount > 0 && (
+                <span className="absolute -top-1 -right-2 px-1 min-w-3.5 h-3.5 rounded-full bg-orange-500 text-white font-black text-[9px] flex items-center justify-center shadow-xs">
+                  {unreadTasksCount > 99 ? '99+' : unreadTasksCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_home', 'Accueil')}</span>
           </button>
 
           {/* Historique Haïti */}
@@ -79,6 +86,20 @@ export const BottomNavBar: React.FC = () => {
           >
             <History className="w-5 h-5" />
             <span className="text-[10px] tracking-tight font-semibold">{t('bnav_history', 'Historique')}</span>
+          </button>
+
+          {/* Dépôts / Versements */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('settlements')}
+            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'settlements'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold scale-105'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium'
+            }`}
+          >
+            <Landmark className="w-5 h-5" />
+            <span className="text-[10px] tracking-tight font-semibold">{t('bnav_deposits', 'Dépôts')}</span>
           </button>
 
           {/* Paramètres */}
