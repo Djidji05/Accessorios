@@ -1153,7 +1153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           try {
             const rawTx = JSON.parse(e.data) as Transaction;
             const token = localStorage.getItem('dalexis_token');
-            const cleanRawProof = rawTx.proofUrl && !rawTx.proofUrl.includes('/transactions/') ? rawTx.proofUrl : undefined;
+            const cleanRawProof = rawTx.proofUrl || undefined;
             const finalProof = cleanRawProof && cleanRawProof.startsWith('/api/') && token && !cleanRawProof.includes('token=')
               ? `${cleanRawProof}?token=${encodeURIComponent(token)}`
               : cleanRawProof;

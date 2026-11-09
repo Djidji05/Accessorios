@@ -146,6 +146,8 @@ export const OperationsGuichetView: React.FC = () => {
     setSelectedReceiptTx,
     transactions,
     setActiveTab,
+    serviceFeeRates,
+    serviceCommissionRates,
     t
   } = useApp();
 
@@ -199,10 +201,12 @@ export const OperationsGuichetView: React.FC = () => {
   const isOperatorLocked = Boolean(ksStatus && !ksStatus.enabled);
 
   const numAmountDOP = parseFloat(amountDOP) || 0;
-  const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.005)) : 0; // 0.5% frais de service guichet
+  const activeFeeRate = operator ? (serviceFeeRates[operator] ?? 0.5) : 0.5;
+  const activeCommRate = operator ? (serviceCommissionRates[operator] ?? 1.0) : 1.0;
+  const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
   const netDOP = Math.max(0, numAmountDOP - feeDOP);
   const computedHTG = Math.round(netDOP * dopToHtgRate);
-  const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.01)) : 0; // 1% commission admin
+  const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
 
   // Filtrage des transactions récentes de l'opérateur au guichet
   const isAgentRD = currentUser.role === 'agent_rd';
@@ -342,6 +346,9 @@ export const OperationsGuichetView: React.FC = () => {
         : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const clientName = receiverName.trim() || senderName.trim() || 'Client Zelle';
 
+      const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
+      const zelleCommPct = serviceCommissionRates['zelle'] ?? 1.0;
+
       const result = createTransaction({
         senderName: clientName,
         senderPhone: '+1 USA Zelle',
@@ -351,8 +358,8 @@ export const OperationsGuichetView: React.FC = () => {
         serviceType: 'transfer',
         amountUSD: numUSD,
         amountDOP: Math.round(numUSD * usdToDop),
-        feeDOP: Math.round(numUSD * 0.005 * usdToDop), // 0.5% frais de service guichet
-        commissionDOP: Math.round(numUSD * 0.01 * usdToDop), // 1% commission admin
+        feeDOP: Math.round(numUSD * (zelleFeePct / 100) * usdToDop),
+        commissionDOP: Math.round(numUSD * (zelleCommPct / 100) * usdToDop),
         proofUrl: zelleProofImage,
         zelleProofUrl: zelleProofImage,
         payoutCurrency: zellePayoutCurrency,
@@ -1355,7 +1362,7 @@ export const OperationsGuichetView: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center text-amber-700 text-[11px]">
-                  <span className="whitespace-nowrap font-semibold">{t('fees', 'Frais de service (0.5%) déduits')} :</span>
+                  <span className="whitespace-nowrap font-semibold">{t('Frais de service')} ({activeFeeRate}%) :</span>
                   <span className="font-mono font-bold whitespace-nowrap">-{feeDOP.toLocaleString()} DOP (-{Math.round(feeDOP * dopToHtgRate).toLocaleString()} HTG)</span>
                 </div>
 
@@ -1370,7 +1377,7 @@ export const OperationsGuichetView: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center text-emerald-700 text-[11px]">
-                  <span className="whitespace-nowrap font-semibold">{t('admin_comm', 'Commission (1%)')} :</span>
+                  <span className="whitespace-nowrap font-semibold">{t('Commission Admin')} ({activeCommRate}%) :</span>
                   <span className="font-mono font-bold whitespace-nowrap">+{commissionDOP.toLocaleString()} DOP</span>
                 </div>
 

@@ -84,7 +84,7 @@ export const api = {
       const token = localStorage.getItem('dalexis_token');
       if (Array.isArray(txs)) {
         return txs.map(t => {
-          const rawProof = t.proofUrl && !t.proofUrl.includes('/transactions/') ? t.proofUrl : undefined;
+          const rawProof = t.proofUrl || t.zelleProofUrl || t.haitiInboundProofUrl;
           const finalProof = rawProof && rawProof.startsWith('/api/') && token && !rawProof.includes('token=')
             ? `${rawProof}?token=${encodeURIComponent(token)}`
             : rawProof;
@@ -97,12 +97,10 @@ export const api = {
           const rate = t.exchangeRate || 2.35;
           const computedFeeDOP = isHaitiInbound
             ? 0
-            : (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+            : (t.feeDOP !== undefined && t.feeDOP !== null ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
           const computedCommDOP = isHaitiInbound
             ? 0
-            : (isZelle
-              ? Math.max(1, Math.round((t.amountDOP || 0) * 0.01))
-              : (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01))));
+            : (t.commissionDOP !== undefined && t.commissionDOP !== null ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
           const netDOP = isHaitiInbound ? (t.amountDOP || 0) : Math.max(0, (t.amountDOP || 0) - computedFeeDOP);
           const computedHTG = isHaitiInbound
             ? (t.amountHTG && t.amountHTG > 0 ? t.amountHTG : Math.round((t.amountDOP || 0) * rate))
@@ -168,12 +166,10 @@ export const api = {
         const rate = res.transaction.exchangeRate || 2.35;
         const computedFeeDOP = isHaitiInbound
           ? 0
-          : (res.transaction.feeDOP && res.transaction.feeDOP > 0 ? res.transaction.feeDOP : Math.max(1, Math.round(res.transaction.amountDOP * 0.005)));
+          : (data.feeDOP !== undefined && data.feeDOP !== null ? data.feeDOP : (res.transaction.feeDOP && res.transaction.feeDOP > 0 ? res.transaction.feeDOP : Math.max(1, Math.round(res.transaction.amountDOP * 0.005))));
         const computedCommDOP = isHaitiInbound
           ? 0
-          : (isZelle
-            ? Math.max(1, Math.round(res.transaction.amountDOP * 0.01))
-            : (res.transaction.commissionDOP && res.transaction.commissionDOP > 0 ? res.transaction.commissionDOP : Math.max(1, Math.round(res.transaction.amountDOP * 0.01))));
+          : (data.commissionDOP !== undefined && data.commissionDOP !== null ? data.commissionDOP : (res.transaction.commissionDOP && res.transaction.commissionDOP > 0 ? res.transaction.commissionDOP : Math.max(1, Math.round(res.transaction.amountDOP * 0.01))));
         const netDOP = isHaitiInbound ? res.transaction.amountDOP : Math.max(0, res.transaction.amountDOP - computedFeeDOP);
         res.transaction = {
           ...res.transaction,
@@ -198,10 +194,7 @@ export const api = {
       return res;
     },
     complete: async (id: string, proofNotes: string, proofUrl?: string, actorName?: string) => {
-      const cleanProofUrl =
-        proofUrl && !proofUrl.includes('/transactions/') && !proofUrl.startsWith('/api/')
-          ? proofUrl
-          : undefined;
+      const cleanProofUrl = proofUrl || undefined;
       const res = await request<{ success: boolean; message: string; transaction: Transaction }>(`/transactions/${id}/complete`, {
         method: 'PATCH',
         body: JSON.stringify({ proofNotes, proofUrl: cleanProofUrl, actorName }),

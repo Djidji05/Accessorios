@@ -372,8 +372,10 @@ export const MobileAgentHome: React.FC = () => {
     if (!selectedService) return;
 
     const numAmountDOP = parseFloat(amountDOP) || 0;
-    const feeDOP = Math.max(1, Math.round(numAmountDOP * 0.005)); // 0.5% frais de service guichet
-    const commissionDOP = Math.max(1, Math.round(numAmountDOP * 0.01)); // 1% commission admin
+    const activeFeeRate = serviceFeeRates[selectedService] ?? 0.5;
+    const activeCommRate = serviceCommissionRates[selectedService] ?? 1.0;
+    const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
+    const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
 
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
     const defaultReceiver = isNoBeneficiaryOperator 
@@ -502,6 +504,9 @@ export const MobileAgentHome: React.FC = () => {
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
     const clientName = 'Client Zelle';
 
+    const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
+    const zelleCommPct = serviceCommissionRates['zelle'] ?? 1.0;
+
     const res = createTransaction({
       senderName: clientName,
       senderPhone: '+1 USA Zelle',
@@ -511,8 +516,8 @@ export const MobileAgentHome: React.FC = () => {
       serviceType: 'transfer',
       amountUSD: amountVal,
       amountDOP: Math.round(amountVal * usdToDop),
-      feeDOP: Math.round(amountVal * 0.005 * usdToDop), // 0.5% frais de service guichet
-      commissionDOP: Math.round(amountVal * 0.01 * usdToDop), // 1% commission admin
+      feeDOP: Math.round(amountVal * (zelleFeePct / 100) * usdToDop),
+      commissionDOP: Math.round(amountVal * (zelleCommPct / 100) * usdToDop),
       proofUrl: zelleProofImage,
       zelleProofUrl: zelleProofImage,
       payoutCurrency: zellePayoutCurrency,
@@ -1263,14 +1268,14 @@ export const MobileAgentHome: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                <span className="text-slate-500 font-medium">{t('Frais de Service (0.5%) déduits')}</span>
+                <span className="text-slate-500 font-medium">{t('Frais de Service')} ({activeFeeRate}%) {t('déduits')}</span>
                 <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
                   -{previewFeeDOP} DOP (Net converti: {previewNetDOP.toLocaleString()} DOP)
                 </span>
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                <span className="text-slate-500 font-medium">{t('Commission (1%)')}</span>
+                <span className="text-slate-500 font-medium">{t('Commission')} ({activeCommRate}%)</span>
                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                   +{previewCommDOP} DOP
                 </span>

@@ -39,6 +39,8 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
     setSelectedReceiptTx, 
     usdToHtgRate, 
     dopToHtgRate,
+    serviceFeeRates,
+    serviceCommissionRates,
     t 
   } = useApp();
 
@@ -61,10 +63,12 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
   const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
-  const feeUSD = Math.round(amountUSD * 0.005 * 100) / 100; // 0.5% frais de service guichet
-  const feeDOP = Math.max(1, Math.round(feeUSD * appliedRate));
-  const commUSD = Math.round(amountUSD * 0.01 * 100) / 100; // 1% commission admin
-  const commDOP = Math.max(1, Math.round(commUSD * appliedRate));
+  const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
+  const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
+  const feeUSD = Math.round(amountUSD * (zFeePct / 100) * 100) / 100;
+  const feeDOP = (tx.feeDOP && tx.feeDOP > 0) ? tx.feeDOP : Math.max(1, Math.round(feeUSD * appliedRate));
+  const commUSD = Math.round(amountUSD * (zCommPct / 100) * 100) / 100;
+  const commDOP = (tx.commissionDOP && tx.commissionDOP > 0) ? tx.commissionDOP : Math.max(1, Math.round(commUSD * appliedRate));
   const netUSD = Math.round((amountUSD - feeUSD) * 100) / 100;
   const netPayout = payoutCurrency === 'DOP' ? Math.max(0, Math.round(amountUSD * appliedRate) - feeDOP) : netUSD;
 
@@ -331,14 +335,14 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               {isAdmin && (
                 <>
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Frais de Service (0.5%)', 'Frais de Service (0.5%)')}</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Frais de Service')} ({zFeePct}%)</span>
                     <p className="text-sm font-black font-mono text-amber-600 dark:text-amber-400 mt-0.5">
                       -${feeUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(-{feeDOP.toLocaleString()} DOP)</span>
                     </p>
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Commission Plateforme', 'Commission Plateforme')}</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Commission Admin')} ({zCommPct}%)</span>
                     <p className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
                       +${commUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(+{commDOP.toLocaleString()} DOP)</span>
                     </p>

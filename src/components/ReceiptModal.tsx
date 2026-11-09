@@ -6,7 +6,7 @@ import { downloadReceiptPDF, shareReceiptPDF } from '../utils/receiptGenerator';
 import { ImageViewerModal } from './ImageViewerModal';
 
 export const ReceiptModal: React.FC = () => {
-  const { selectedReceiptTx, setSelectedReceiptTx, showToast, transactions, currentLang, t } = useApp();
+  const { selectedReceiptTx, setSelectedReceiptTx, showToast, transactions, currentLang, serviceFeeRates, serviceCommissionRates, t } = useApp();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -213,10 +213,12 @@ export const ReceiptModal: React.FC = () => {
             if (isZelle) {
               const zRate = (tx.zelleExchangeRate && tx.zelleExchangeRate > 10) ? tx.zelleExchangeRate : (tx.exchangeRate && tx.exchangeRate > 10 ? tx.exchangeRate : 58);
               const zUSD = tx.amountUSD || Math.round((tx.amountDOP / zRate) * 100) / 100;
-              const zFeeUSD = Math.round(zUSD * 0.005 * 100) / 100;
-              const zFeeDOP = Math.max(1, Math.round(zFeeUSD * zRate));
-              const zCommUSD = Math.round(zUSD * 0.01 * 100) / 100;
-              const zCommDOP = Math.max(1, Math.round(zCommUSD * zRate));
+              const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
+              const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
+              const zFeeUSD = Math.round(zUSD * (zFeePct / 100) * 100) / 100;
+              const zFeeDOP = (tx.feeDOP && tx.feeDOP > 0) ? tx.feeDOP : Math.max(1, Math.round(zFeeUSD * zRate));
+              const zCommUSD = Math.round(zUSD * (zCommPct / 100) * 100) / 100;
+              const zCommDOP = (tx.commissionDOP && tx.commissionDOP > 0) ? tx.commissionDOP : Math.max(1, Math.round(zCommUSD * zRate));
               const zNetDOP = tx.netPayoutAmount || Math.max(0, tx.amountDOP - zFeeDOP);
               return (
                 <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
@@ -225,7 +227,7 @@ export const ReceiptModal: React.FC = () => {
                     <span className="font-bold font-mono text-slate-900">${zUSD.toFixed(2)} USD ({tx.amountDOP.toLocaleString()} DOP)</span>
                   </div>
                   <div className="flex justify-between text-amber-700">
-                    <span>{t("Frais de Service (0.5%) déduits:")}</span>
+                    <span>{t("Frais de Service")} ({zFeePct}%) {t("déduits")}:</span>
                     <span className="font-bold font-mono">-${zFeeUSD.toFixed(2)} USD (-{zFeeDOP} DOP)</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
@@ -233,7 +235,7 @@ export const ReceiptModal: React.FC = () => {
                     <span className="font-semibold font-mono text-slate-700">1 USD = {zRate.toFixed(2)} DOP</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>{t("Commission (1%):")}</span>
+                    <span>{t("Commission")} ({zCommPct}%):</span>
                     <span className="font-bold font-mono text-blue-600">+${zCommUSD.toFixed(2)} USD (+{zCommDOP} DOP)</span>
                   </div>
                   <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
@@ -245,8 +247,10 @@ export const ReceiptModal: React.FC = () => {
             }
 
             const appliedRate = tx.exchangeRate || 2.35;
-            const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005));
-            const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01));
+            const opFeePct = serviceFeeRates[tx.operator] ?? 0.5;
+            const opCommPct = serviceCommissionRates[tx.operator] ?? 1.0;
+            const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * (opFeePct / 100)));
+            const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (opCommPct / 100)));
             const calcNetDOP = Math.max(0, tx.amountDOP - calcFeeDOP);
             const calcFeeHTG = Math.round(calcFeeDOP * appliedRate);
             const calcNetHTG = Math.round(calcNetDOP * appliedRate);
@@ -258,7 +262,7 @@ export const ReceiptModal: React.FC = () => {
                   <span className="font-bold font-mono text-slate-900">{tx.amountDOP.toLocaleString()} {t("Pesos")}</span>
                 </div>
                 <div className="flex justify-between text-amber-700">
-                  <span>{t("Frais de Service (0.5%) déduits:")}</span>
+                  <span>{t("Frais de Service")} ({opFeePct}%) {t("déduits")}:</span>
                   <span className="font-bold font-mono">-{calcFeeDOP.toLocaleString()} DOP (-{calcFeeHTG.toLocaleString()} HTG)</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
@@ -270,7 +274,7 @@ export const ReceiptModal: React.FC = () => {
                   <span className="font-semibold font-mono text-slate-700">100 {t("Pesos")} = {Math.round(appliedRate * 100)} HTG</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>{t("Commission (1%):")}</span>
+                  <span>{t("Commission")} ({opCommPct}%):</span>
                   <span className="font-bold font-mono text-blue-600">+{calcCommDOP.toLocaleString()} {t("Pesos")}</span>
                 </div>
                 <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">

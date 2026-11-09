@@ -82,6 +82,8 @@ export const TaskQueueView: React.FC = () => {
     markAllNotificationsAsRead,
     currentLang,
     setLanguage,
+    serviceFeeRates,
+    serviceCommissionRates,
     t
   } = useApp();
 
@@ -2675,8 +2677,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                         {(() => {
                           const appliedHtgRate = tx.exchangeRate || dopToHtgRate || 2.35;
-                          const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round((tx.amountDOP || 0) * 0.005));
-                          const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * 0.01));
+                          const opFeePct = serviceFeeRates[tx.operator] ?? 0.5;
+                          const opCommPct = serviceCommissionRates[tx.operator] ?? 1.0;
+                          const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round((tx.amountDOP || 0) * (opFeePct / 100)));
+                          const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * (opCommPct / 100)));
                           const calcNetDOP = Math.max(0, (tx.amountDOP || 0) - calcFeeDOP);
                           const calcFeeHTG = Math.round(calcFeeDOP * appliedHtgRate);
                           const calcNetHTG = Math.round(calcNetDOP * appliedHtgRate);
@@ -2693,7 +2697,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                 </p>
                                 <div className="space-y-1 text-[11px] text-slate-600 pt-1 border-t border-slate-200/70">
                                   <div className="flex items-center justify-between">
-                                    <span>{t('Frais de service (0.5%) déduits :', 'Frais de service (0.5%) déduits :')}</span>
+                                    <span>{t('Frais de service')} ({opFeePct}%) {t('déduits')} :</span>
                                     <strong className="font-mono text-amber-700">-{calcFeeDOP.toLocaleString(dateLocale)} DOP (-{calcFeeHTG.toLocaleString(dateLocale)} HTG)</strong>
                                   </div>
                                   <div className="flex items-center justify-between">
@@ -2702,7 +2706,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                   </div>
                                   {currentUser.role === 'admin' && (
                                     <div className="flex items-center justify-between text-emerald-700 font-bold">
-                                      <span>{t('Comm. (1%) :', 'Comm. (1%) :')}</span>
+                                      <span>{t('Comm.')} ({opCommPct}%) :</span>
                                       <span className="font-mono">+{calcCommDOP.toLocaleString(dateLocale)} DOP</span>
                                     </div>
                                   )}
@@ -2887,10 +2891,12 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           tx.amountUSD ||
                           (tx.amountDOP ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : 0);
                         const grossDOP = isHaitiInboundTx ? inboundDOP : (tx.amountDOP || Math.round(numUSD * appliedRate));
-                        const zFeeUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * 0.005 * 100) / 100;
-                        const zFeeDOP = isHaitiInboundTx ? 0 : Math.max(1, Math.round(zFeeUSD * appliedRate));
-                        const zCommUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * 0.01 * 100) / 100;
-                        const zCommDOP = isHaitiInboundTx ? 0 : Math.max(1, Math.round(zCommUSD * appliedRate));
+                        const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
+                        const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
+                        const zFeeUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * (zFeePct / 100) * 100) / 100;
+                        const zFeeDOP = isHaitiInboundTx ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(zFeeUSD * appliedRate)));
+                        const zCommUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * (zCommPct / 100) * 100) / 100;
+                        const zCommDOP = isHaitiInboundTx ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(zCommUSD * appliedRate)));
                         const zPayoutCurrency = isHaitiInboundTx ? 'DOP' : (tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP');
                         const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
                         const zNetPayout = isHaitiInboundTx
@@ -2983,14 +2989,14 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                 </div>
 
                                 <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                  <span>{t('Frais de Service Guichet (0.5%) :')}</span>
+                                  <span>{t('Frais de Service Guichet')} ({zFeePct}%) :</span>
                                   <span className="font-mono font-bold text-amber-700">
                                     -${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
                                   </span>
                                 </div>
 
                                 <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                  <span>{t('Commission Admin (1%) :')}</span>
+                                  <span>{t('Commission Admin')} ({zCommPct}%) :</span>
                                   <span className="font-mono font-bold text-emerald-700">
                                     +${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
                                   </span>

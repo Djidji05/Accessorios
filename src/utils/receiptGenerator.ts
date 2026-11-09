@@ -54,12 +54,14 @@ export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): strin
   const calcCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
   const calcNetDOP = isHaitiInbound ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOP);
   const calcNetHTG = isHaitiInbound ? tx.amountHTG : Math.round(calcNetDOP * appliedRate);
+  const feePct = isHaitiInbound ? 0 : (tx.amountDOP > 0 && calcFeeDOP > 0 ? (Math.round((calcFeeDOP / tx.amountDOP) * 1000) / 10) : 0.5);
+  const commPct = isHaitiInbound ? 0 : (tx.amountDOP > 0 && calcCommDOP > 0 ? (Math.round((calcCommDOP / tx.amountDOP) * 1000) / 10) : 1.0);
 
   const financialLines = isHaitiInbound
     ? `💰 *Somme Reçue (Dépôt) :* ${tx.amountHTG.toLocaleString()} HTG\n🎁 *Frais sur Dépôt :* 0 DOP (Aucun frais)\n📊 *Taux :* 100 DOP = ${Math.round(appliedRate * 100)} HTG\n💵 *Montant Converti (RD) :* ${tx.amountDOP.toLocaleString()} DOP`
     : isZelle
-    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📉 *Frais (0.5%) :* -${calcFeeDOP} DOP\n💼 *Commission (1%) :* +${calcCommDOP} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
-    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n📉 *Frais (0.5%) :* -${calcFeeDOP} DOP (-${Math.round(calcFeeDOP * appliedRate)} HTG)\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n💼 *Commission (1%) :* +${calcCommDOP} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
+    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP\n💼 *Commission (${commPct}%) :* +${calcCommDOP} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
+    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP (-${Math.round(calcFeeDOP * appliedRate)} HTG)\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n💼 *Commission (${commPct}%) :* +${calcCommDOP} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
 
   return `${headerTitle}
 ${subTitle}
@@ -302,13 +304,16 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   );
 
   finY += 28;
+  const canvasFeePct = isHaitiInboundCanvas ? 0 : (tx.amountDOP > 0 && calcFeeDOPCanvas > 0 ? (Math.round((calcFeeDOPCanvas / tx.amountDOP) * 1000) / 10) : 0.5);
+  const canvasCommPct = isHaitiInboundCanvas ? 0 : (tx.amountDOP > 0 && calcCommDOPCanvas > 0 ? (Math.round((calcCommDOPCanvas / tx.amountDOP) * 1000) / 10) : 1.0);
+
   ctx.textAlign = 'left';
   ctx.fillStyle = isHaitiInboundCanvas ? '#15803D' : '#B45309';
   ctx.font = '600 14px sans-serif';
   ctx.fillText(
     isHaitiInboundCanvas
       ? 'Frais & Commission sur Dépôt :'
-      : (isES ? 'Cargo de Servicio (0.5%) deducido :' : isHT ? 'Frè Sèvis (0.5%) dedwi :' : 'Frais de Service (0.5%) déduits :'),
+      : (isES ? `Cargo de Servicio (${canvasFeePct}%) deducido :` : isHT ? `Frè Sèvis (${canvasFeePct}%) dedwi :` : `Frais de Service (${canvasFeePct}%) déduits :`),
     65,
     finY
   );
@@ -344,7 +349,7 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   ctx.textAlign = 'left';
   ctx.fillStyle = '#475569';
   ctx.font = '600 14px sans-serif';
-  ctx.fillText(isES ? 'Tasa / Comisión (1%) :' : isHT ? 'To / Komisyon (1%) :' : 'Taux Appliqué / Commission (1%) :', 65, finY);
+  ctx.fillText(isES ? `Tasa / Comisión (${canvasCommPct}%) :` : isHT ? `To / Komisyon (${canvasCommPct}%) :` : `Taux Appliqué / Commission (${canvasCommPct}%) :`, 65, finY);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#1D4ED8';
   ctx.font = 'bold 14px sans-serif';

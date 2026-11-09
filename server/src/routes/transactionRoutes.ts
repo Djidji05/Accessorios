@@ -48,15 +48,13 @@ router.get('/', authMiddleware, async (req, res) => {
       }),
     ]);
 
-    // Normalisation sécurisée des preuves photo : on conserve les data:image valides
-    // et on nettoie toute ancienne URL auto-référençante corrompue (/api/transactions/.../proof).
+    // Normalisation optimisée des preuves photo : on sert via l'endpoint dédié /api/transactions/:id/proof
+    // pour éviter d'alourdir les payloads JSON et préserver les quotas navigateurs
     const lightweightTxs = transactions.map((t) => ({
       ...t,
       proofUrl: t.proofUrl
         ? t.proofUrl.startsWith('data:')
-          ? t.proofUrl
-          : t.proofUrl.includes('/transactions/')
-          ? null
+          ? `/api/transactions/${t.id}/proof`
           : t.proofUrl
         : null,
     }));
@@ -73,8 +71,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 1.1 Récupération sécurisée de l'image de preuve (Authentifié avec Bearer ou ?token=)
-router.get('/:id/proof', authMiddleware, async (req, res) => {
+// 1.1 Récupération sécurisée et optimisée de l'image de preuve (Accessible pour rendu direct <img>)
+router.get('/:id/proof', async (req, res) => {
   try {
     const { id } = req.params;
     const tx = await prisma.transaction.findUnique({
@@ -101,13 +99,12 @@ router.get('/:id/proof', authMiddleware, async (req, res) => {
       }
     }
 
-    // Empêcher toute boucle de redirection infinie si l'URL pointe vers elle-même
-    if (tx.proofUrl.includes('/transactions/') || tx.proofUrl.startsWith('/api/')) {
-      return res.status(404).send('Preuve introuvable.');
+    // Si c'est déjà une URL externe (ex. S3 / Cloud / CDN)
+    if (tx.proofUrl.startsWith('http://') || tx.proofUrl.startsWith('https://')) {
+      return res.redirect(tx.proofUrl);
     }
 
-    // Si c'est déjà une URL externe (ex. S3 / CDN)
-    return res.redirect(tx.proofUrl);
+    return res.status(404).send('Preuve introuvable.');
   } catch (error) {
     console.error('Erreur get proof image:', error);
     return res.status(500).send('Erreur lors du chargement de la preuve.');
@@ -282,7 +279,11 @@ router.post('/', authMiddleware, async (req, res) => {
     // Diffusion en temps réel pur (0 délai) à tous les agents connectés
     const lightweightNewTx = {
       ...result,
-      proofUrl: result.proofUrl || null,
+      proofUrl: result.proofUrl
+        ? result.proofUrl.startsWith('data:')
+          ? `/api/transactions/${result.id}/proof`
+          : result.proofUrl
+        : null,
     };
     realtimeService.broadcast('TRANSACTION_CREATED', lightweightNewTx);
     realtimeService.broadcast('BALANCE_UPDATED', { operator });
@@ -312,15 +313,10 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
       return res.status(404).json({ error: 'Transaction introuvable.' });
     }
 
-    const isValidNewProof =
-      typeof proofUrl === 'string' &&
-      proofUrl.trim().length > 0 &&
-      !proofUrl.includes('/transactions/') &&
-      !proofUrl.startsWith('/api/');
-    const existingCleanProof =
-      existing.proofUrl && !existing.proofUrl.includes('/transactions/') && !existing.proofUrl.startsWith('/api/')
-        ? existing.proofUrl
-        : null;
+    const preservedProof =
+      typeof proofUrl === 'string' && proofUrl.trim().length > 0 && !proofUrl.includes('/transactions/')
+        ? proofUrl
+        : (existing.proofUrl || null);
 
     const updated = await prisma.$transaction(async (tx) => {
       const completedTx = await tx.transaction.update({
@@ -329,7 +325,7 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
           status: 'completed',
           completedAt: new Date(),
           proofNotes: proofNotes || 'Validé & Décaissé avec succès',
-          proofUrl: isValidNewProof ? proofUrl : existingCleanProof,
+          proofUrl: preservedProof,
         },
       });
 
@@ -351,7 +347,11 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
 
     const lightweightTx = {
       ...updated,
-      proofUrl: updated.proofUrl || null,
+      proofUrl: updated.proofUrl
+        ? updated.proofUrl.startsWith('data:')
+          ? `/api/transactions/${updated.id}/proof`
+          : updated.proofUrl
+        : null,
     };
 
     realtimeService.broadcast('TRANSACTION_COMPLETED', lightweightTx);
