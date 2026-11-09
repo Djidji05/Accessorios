@@ -148,6 +148,8 @@ export const MobileAgentHome: React.FC = () => {
     markAllNotificationsAsRead,
     currentLang,
     setLanguage,
+    serviceCommissionRates,
+    serviceFeeRates,
     t,
   } = useApp();
 
@@ -755,9 +757,11 @@ export const MobileAgentHome: React.FC = () => {
     const ksStatus = killSwitchList.find(k => k.operator === selectedService);
     const isOperatorLocked = ksStatus && !ksStatus.enabled;
     const numAmountDOP = parseFloat(amountDOP) || 0;
-    const previewFeeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.005)) : 0;
+    const activeFeeRate = serviceFeeRates[selectedService] ?? 0.5;
+    const activeCommRate = serviceCommissionRates[selectedService] ?? 1.0;
+    const previewFeeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
     const previewNetDOP = Math.max(0, numAmountDOP - previewFeeDOP);
-    const previewCommDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.01)) : 0;
+    const previewCommDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
     const computedHTG = Math.round(previewNetDOP * dopToHtgRate);
     const serviceInfo = SERVICES_LIST.find(s => s.id === selectedService);
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
@@ -768,7 +772,8 @@ export const MobileAgentHome: React.FC = () => {
       ? usdToHtgRate
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const numUSD = parseFloat(zelleAmountUSD) || 0;
-      const feeUSD = Math.round(numUSD * 0.005 * 100) / 100;
+      const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
+      const feeUSD = Math.round(numUSD * (zelleFeePct / 100) * 100) / 100;
       const netUSD = Math.max(0, numUSD - feeUSD);
       const netPayoutDOP = Math.round(netUSD * usdToDop);
       const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netUSD.toFixed(2)} USD`;
@@ -1118,16 +1123,16 @@ export const MobileAgentHome: React.FC = () => {
                   <span className="font-mono font-bold text-slate-900 dark:text-white">{lastCreatedTx.amountDOP.toLocaleString()} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{t('Frais de Service (0.5%) déduits')}</span>
-                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">-{lastCreatedTx.feeDOP || Math.max(1, Math.round(lastCreatedTx.amountDOP * 0.005))} DOP</span>
+                  <span className="text-slate-500 font-medium">{t('Frais de Service déduits')}</span>
+                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">-{lastCreatedTx.feeDOP || 0} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">{t('Montant Net Converti')}</span>
-                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{Math.max(0, lastCreatedTx.amountDOP - (lastCreatedTx.feeDOP || Math.max(1, Math.round(lastCreatedTx.amountDOP * 0.005)))).toLocaleString()} DOP</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{Math.max(0, lastCreatedTx.amountDOP - (lastCreatedTx.feeDOP || 0)).toLocaleString()} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{t('Commission (1%)')}</span>
-                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || Math.max(1, Math.round(lastCreatedTx.amountDOP * 0.01))} DOP</span>
+                  <span className="text-slate-500 font-medium">{t('Commission Admin')}</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || 0} DOP</span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
                   <span className="text-slate-500 font-medium">{t('Montant Net Reçu (Haïti)')}</span>

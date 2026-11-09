@@ -41,6 +41,16 @@ export const DEFAULT_SERVICE_COMMISSION_RATES: Record<string, number> = {
   altice: 1.0,
 };
 
+export const DEFAULT_SERVICE_FEE_RATES: Record<string, number> = {
+  moncash: 0.5,
+  natcash: 0.5,
+  zelle: 0.5,
+  digicel: 0.5,
+  natcom: 0.5,
+  claro: 0.5,
+  altice: 0.5,
+};
+
 interface AppContextType {
   // Active User / Node Persona
   currentUser: User;
@@ -65,6 +75,8 @@ interface AppContextType {
   setAdminCommissionRate: (rate: number) => void;
   serviceCommissionRates: Record<string, number>;
   updateServiceCommissionRate: (serviceKey: string, rate: number) => void;
+  serviceFeeRates: Record<string, number>;
+  updateServiceFeeRate: (serviceKey: string, rate: number) => void;
   
   // Core Business State
   transactions: Transaction[];
@@ -451,7 +463,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const [serviceCommissionRates, setServiceCommissionRates] = useState<Record<string, number>>(() => {
-    localStorage.setItem('service_commission_rates', JSON.stringify(DEFAULT_SERVICE_COMMISSION_RATES));
+    const saved = localStorage.getItem('service_commission_rates');
+    if (saved) {
+      try {
+        return { ...DEFAULT_SERVICE_COMMISSION_RATES, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error('Failed to parse service_commission_rates', e);
+      }
+    }
     return DEFAULT_SERVICE_COMMISSION_RATES;
   });
 
@@ -459,6 +478,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setServiceCommissionRates((prev) => {
       const updated = { ...prev, [serviceKey]: rate };
       localStorage.setItem('service_commission_rates', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const [serviceFeeRates, setServiceFeeRates] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('service_fee_rates');
+    if (saved) {
+      try {
+        return { ...DEFAULT_SERVICE_FEE_RATES, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error('Failed to parse service_fee_rates', e);
+      }
+    }
+    return DEFAULT_SERVICE_FEE_RATES;
+  });
+
+  const updateServiceFeeRate = (serviceKey: string, rate: number) => {
+    setServiceFeeRates((prev) => {
+      const updated = { ...prev, [serviceKey]: rate };
+      localStorage.setItem('service_fee_rates', JSON.stringify(updated));
       return updated;
     });
   };
@@ -1382,8 +1421,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? (data.amountDOP && data.amountDOP > 0 ? Math.round(data.amountDOP) : Math.max(1, Math.round(inboundHTG / currentHtgRate)))
       : (isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP);
 
-    const zelleFeeRate = 0.5; // 0.5% Frais de service guichet
-    const zelleCommRate = 1.0; // 1.0% Commission standard sur tous les services (hors dépôt)
+    const serviceFeePct = isHaitiInbound ? 0 : (serviceFeeRates[data.operator] ?? 0.5);
+    const serviceCommPct = isHaitiInbound ? 0 : (serviceCommissionRates[data.operator] ?? 1.0);
+
+    const zelleFeeRate = isZelle ? serviceFeePct : 0.5;
+    const zelleCommRate = isZelle ? serviceCommPct : 1.0;
     const zelleFeeUSD = isZelle ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
     const zelleCommissionUSD = isZelle ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
 
@@ -1391,13 +1433,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? 0
       : isZelle
       ? Math.max(1, Math.round(zelleFeeUSD * usdToDop))
-      : (data.feeDOP && data.feeDOP > 0 ? data.feeDOP : Math.max(1, Math.round(finalAmountDOP * 0.005)));
+      : (data.feeDOP && data.feeDOP > 0 ? data.feeDOP : Math.max(1, Math.round(finalAmountDOP * (serviceFeePct / 100))));
 
     const finalCommDOP = isHaitiInbound
       ? 0
       : isZelle
       ? Math.max(1, Math.round(zelleCommissionUSD * usdToDop))
-      : (data.commissionDOP && data.commissionDOP > 0 ? data.commissionDOP : Math.max(1, Math.round(finalAmountDOP * 0.01)));
+      : (data.commissionDOP && data.commissionDOP > 0 ? data.commissionDOP : Math.max(1, Math.round(finalAmountDOP * (serviceCommPct / 100))));
 
     const netDOP = isHaitiInbound ? finalAmountDOP : Math.max(0, finalAmountDOP - finalFeeDOP);
     const finalAmountHTG = isHaitiInbound
@@ -2258,6 +2300,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAdminCommissionRate,
         serviceCommissionRates,
         updateServiceCommissionRate,
+        serviceFeeRates,
+        updateServiceFeeRate,
         transactions,
         accountBalances,
         killSwitchList,

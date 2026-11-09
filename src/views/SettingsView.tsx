@@ -48,6 +48,8 @@ export const SettingsView: React.FC = () => {
     setAdminCommissionRate,
     serviceCommissionRates,
     updateServiceCommissionRate,
+    serviceFeeRates,
+    updateServiceFeeRate,
     currentLang,
     setLanguage,
     t
@@ -57,13 +59,22 @@ export const SettingsView: React.FC = () => {
   
   // State pour le Taux de Commission Admin par Service
   const [svcRatesState, setSvcRatesState] = useState<Record<string, number>>(serviceCommissionRates);
+  const [svcFeeRatesState, setSvcFeeRatesState] = useState<Record<string, number>>(serviceFeeRates);
 
   useEffect(() => {
     setSvcRatesState(serviceCommissionRates);
   }, [serviceCommissionRates]);
 
+  useEffect(() => {
+    setSvcFeeRatesState(serviceFeeRates);
+  }, [serviceFeeRates]);
+
   const handleSvcRateChange = (key: string, val: number) => {
     setSvcRatesState((prev) => ({ ...prev, [key]: val }));
+  };
+
+  const handleSvcFeeRateChange = (key: string, val: number) => {
+    setSvcFeeRatesState((prev) => ({ ...prev, [key]: val }));
   };
   
   // State pour le Taux de Commission Admin Global
@@ -300,12 +311,16 @@ export const SettingsView: React.FC = () => {
       setUsdToHtgRate(newUsdRate);
     }
 
-    // Enregistrer les taux de commission par service configurés par l'Admin
+    // Enregistrer les taux de commission et frais de service par service configurés par l'Admin
     Object.entries(svcRatesState).forEach(([serviceKey, val]) => {
       updateServiceCommissionRate(serviceKey, val);
     });
 
-    setFeedbackMessage('Taux de change (DOP & USD) et commissions Admin enregistrés avec succès !');
+    Object.entries(svcFeeRatesState).forEach(([serviceKey, val]) => {
+      updateServiceFeeRate(serviceKey, val);
+    });
+
+    setFeedbackMessage('Taux de change (DOP & USD), frais de service et commissions Admin enregistrés avec succès !');
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -791,18 +806,18 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Taux de Commission Admin par Service Offert */}
+        {/* Taux de Frais de Service et Commissions Admin par Service Offert */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-5 space-y-4">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
             <h3 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider flex items-center gap-2">
               <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>{t('Taux de Commission Admin par Service Offert')}</span>
+              <span>{t('Frais de Service Guichet & Commissions Admin par Service')}</span>
             </h3>
-            <span className="text-[11px] text-slate-400 font-mono">{t('Prélèvement Réseau par Service')}</span>
+            <span className="text-[11px] text-slate-400 font-mono">{t('Paramétrage Réseau')}</span>
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            {t('Définissez le pourcentage de commission calculé pour l\'Administrateur sur chaque type de service réseau.')}
+            {t('Définissez pour chaque service le pourcentage des frais de service guichet (déduits avant conversion) et la commission administrative (bénéfice net).')}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
@@ -815,8 +830,10 @@ export const SettingsView: React.FC = () => {
               { key: 'claro', desc: 'Recharge téléphonique Claro République Dominicaine' },
               { key: 'altice', desc: 'Recharge téléphonique Altice République Dominicaine' },
             ].map((svc) => {
-              const currentRate = svcRatesState[svc.key] ?? 1.0;
-              const exampleEarned = Math.round(1000 * (currentRate / 100));
+              const currentCommRate = svcRatesState[svc.key] ?? 1.0;
+              const currentFeeRate = svcFeeRatesState[svc.key] ?? 0.5;
+              const exampleFee = Math.max(1, Math.round(1000 * (currentFeeRate / 100)));
+              const exampleComm = Math.max(1, Math.round(1000 * (currentCommRate / 100)));
 
               return (
                 <div 
@@ -829,31 +846,61 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      {t('Commission Admin (%) pour ce Service')}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="100"
-                        disabled={currentUser.role !== 'admin'}
-                        value={currentRate}
-                        onChange={(e) => handleSvcRateChange(svc.key, parseFloat(e.target.value) || 0)}
-                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">%</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Frais de Service Guichet */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        {t('Frais Guichet (%)')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          disabled={currentUser.role !== 'admin'}
+                          value={currentFeeRate}
+                          onChange={(e) => handleSvcFeeRateChange(svc.key, parseFloat(e.target.value) || 0)}
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-amber-600 dark:text-amber-400 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">%</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{t('Déduit du montant brut')}</p>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1">{svc.desc}</p>
+
+                    {/* Commission Admin */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        {t('Commission Admin (%)')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          disabled={currentUser.role !== 'admin'}
+                          value={currentCommRate}
+                          onChange={(e) => handleSvcRateChange(svc.key, parseFloat(e.target.value) || 0)}
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-blue-600 dark:text-blue-400 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">%</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{t('Gains de la plateforme')}</p>
+                    </div>
                   </div>
 
-                  <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-[10px] flex items-center justify-between text-emerald-900 dark:text-emerald-200 font-medium">
-                    <span>{t('Ex. 1,000 DOP transférés :')}</span>
-                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                      Comm. Admin = <strong className="font-black">{exampleEarned} DOP</strong>
-                    </span>
+                  <p className="text-[10px] text-slate-400">{svc.desc}</p>
+
+                  <div className="p-2.5 bg-slate-100/80 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] flex flex-col gap-1 text-slate-700 dark:text-slate-300 font-medium">
+                    <div className="flex items-center justify-between">
+                      <span>{t('Sur 1,000 DOP : Frais Guichet')}</span>
+                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400">-{exampleFee} DOP ({currentFeeRate}%)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>{t('Sur 1,000 DOP : Commission Admin')}</span>
+                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{exampleComm} DOP ({currentCommRate}%)</span>
+                    </div>
                   </div>
                 </div>
               );
