@@ -471,21 +471,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('dalexis_transactions');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('dalexis_transactions');
+      if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (err) {
-        console.error('Erreur lecture dalexis_transactions:', err);
       }
+    } catch (err) {
+      console.error('Erreur lecture dalexis_transactions:', err);
+      try {
+        localStorage.removeItem('dalexis_transactions');
+      } catch {}
     }
     return INITIAL_TRANSACTIONS;
   });
 
   useEffect(() => {
     if (transactions && transactions.length > 0) {
-      localStorage.setItem('dalexis_transactions', JSON.stringify(transactions));
+      try {
+        const stripBase64 = (url?: string) => (url && url.startsWith('data:') ? undefined : url);
+        const lightweightForStorage = transactions.slice(0, 80).map((t) => ({
+          ...t,
+          proofUrl: stripBase64(t.proofUrl),
+          zelleProofUrl: stripBase64(t.zelleProofUrl),
+          haitiInboundProofUrl: stripBase64(t.haitiInboundProofUrl),
+        }));
+        localStorage.setItem('dalexis_transactions', JSON.stringify(lightweightForStorage));
+      } catch (err) {
+        console.warn('Quota localStorage atteint pour dalexis_transactions, purge du cache local:', err);
+        try {
+          localStorage.removeItem('dalexis_transactions');
+        } catch {}
+      }
     }
   }, [transactions]);
 
@@ -516,7 +533,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     if (accountBalances && accountBalances.length > 0) {
-      localStorage.setItem('dalexis_balances', JSON.stringify(accountBalances));
+      try {
+        localStorage.setItem('dalexis_balances', JSON.stringify(accountBalances));
+      } catch {}
     }
   }, [accountBalances]);
 
@@ -545,7 +564,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     if (permissions && permissions.length > 0) {
-      localStorage.setItem('dalexis_permissions', JSON.stringify(permissions));
+      try {
+        localStorage.setItem('dalexis_permissions', JSON.stringify(permissions));
+      } catch {}
     }
   }, [permissions]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);

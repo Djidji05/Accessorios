@@ -1,13 +1,13 @@
-const CACHE_NAME = 'accessorio-pwa-v16';
+const CACHE_NAME = 'accessorio-pwa-v17';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/favicon.png',
-  '/apple-touch-icon.png',
+  '/manifest.json?v=17',
+  '/favicon.png?v=17',
+  '/apple-touch-icon.png?v=17',
   '/images/logo1.png',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/icon-192.png?v=17',
+  '/icon-512.png?v=17'
 ];
 
 // 1. Install Event: Cache Core Static Shell Assets
@@ -78,18 +78,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets Statiques (CSS, JS, images) : Cache First avec Network Fallback
+  // Assets Statiques (CSS, JS, images) : Cache First avec Network Fallback (en vérifiant que la réponse n'est pas du HTML par erreur)
+  const isImageRequest = /\.(png|jpg|jpeg|svg|webp|ico|gif)$/i.test(requestUrl.pathname);
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        return cachedResponse;
+        const ct = cachedResponse.headers.get('content-type') || '';
+        if (!isImageRequest || ct.startsWith('image/')) {
+          return cachedResponse;
+        }
       }
       return fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          const ct = networkResponse.headers.get('content-type') || '';
+          if (!isImageRequest || ct.startsWith('image/')) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
         }
         return networkResponse;
       }).catch(() => {
