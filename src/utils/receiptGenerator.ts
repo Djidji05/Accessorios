@@ -47,6 +47,20 @@ export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): strin
     ? (isES ? 'Transacción cancelada y revocada' : isHT ? 'Tranzaksyon anile epi revoke' : 'Transaction annulée et révoquée')
     : (isES ? "Transacción oficial certificada D'Alexis" : isHT ? "Tranzaksyon ofisyèl sètifye D'Alexis" : "Transaction officielle certifiée D'Alexis");
 
+  const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
+  const isZelle = tx.operator === 'zelle';
+  const appliedRate = tx.exchangeRate || 2.35;
+  const calcFeeDOP = isHaitiInbound ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005)));
+  const calcCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
+  const calcNetDOP = isHaitiInbound ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOP);
+  const calcNetHTG = isHaitiInbound ? tx.amountHTG : Math.round(calcNetDOP * appliedRate);
+
+  const financialLines = isHaitiInbound
+    ? `💰 *Somme Reçue (Dépôt) :* ${tx.amountHTG.toLocaleString()} HTG\n🎁 *Frais sur Dépôt :* 0 DOP (Aucun frais)\n📊 *Taux :* 100 DOP = ${Math.round(appliedRate * 100)} HTG\n💵 *Montant Converti (RD) :* ${tx.amountDOP.toLocaleString()} DOP`
+    : isZelle
+    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📉 *Frais (0.5%) :* -${calcFeeDOP} DOP\n💼 *Commission (1%) :* +${calcCommDOP} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
+    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n📉 *Frais (0.5%) :* -${calcFeeDOP} DOP (-${Math.round(calcFeeDOP * appliedRate)} HTG)\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n💼 *Commission (1%) :* +${calcCommDOP} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
+
   return `${headerTitle}
 ${subTitle}
 --------------------------------
@@ -56,9 +70,7 @@ ${serviceLabel} ${tx.operator.toUpperCase()}
 ${statusKey} ${statusLabel}
 ${isCancelled && tx.cancellationReason ? `${cancelReasonLabel} ${tx.cancellationReason}\n` : ''}--------------------------------
 ${showReceiverName ? `${beneficiaryLabel} ${tx.receiverName}\n` : ''}${phoneLabel} ${tx.receiverPhone}
-${amountRcvLabel} ${tx.amountHTG.toLocaleString()} HTG
-${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP
-${rateLabel} 100 DOP = ${Math.round(tx.exchangeRate * 100)} HTG
+${financialLines}
 --------------------------------
 ${agentLabel} ${tx.createdByName || (isES ? 'Agencia Santo Domingo' : 'Agence Santo Domingo')}
 🔒 _${footerSec}_`;
@@ -69,13 +81,14 @@ ${agentLabel} ${tx.createdByName || (isES ? 'Agencia Santo Domingo' : 'Agence Sa
  */
 export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
-  const hasProof = !!tx.proofUrl;
+  const bestProofUrl = tx.proofUrl || tx.zelleProofUrl || tx.haitiInboundProofUrl;
+  const hasProof = !!bestProofUrl;
   const isCancelled = tx.status === 'cancelled';
   const isCompleted = tx.status === 'completed';
   const isES = lang === 'ES';
   const isHT = lang === 'HT';
   canvas.width = 650;
-  canvas.height = (hasProof ? 1160 : 920) + (isCancelled ? 90 : 0);
+  canvas.height = (hasProof ? 1240 : 1000) + (isCancelled ? 90 : 0);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Impossible d\'initialiser le contexte canvas 2D');
 
@@ -243,33 +256,107 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Détails Financiers (Boîte verte)
+  // Détails Financiers (Boîte verte avec détail complet des frais)
+  const isHaitiInboundCanvas = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
+  const isZelleCanvas = tx.operator === 'zelle';
+  const appliedRateCanvas = tx.exchangeRate || 2.35;
+  const calcFeeDOPCanvas = isHaitiInboundCanvas ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005)));
+  const calcCommDOPCanvas = isHaitiInboundCanvas ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
+  const calcNetDOPCanvas = isHaitiInboundCanvas ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOPCanvas);
+  const calcFeeHTGCanvas = Math.round(calcFeeDOPCanvas * appliedRateCanvas);
+  const calcNetHTGCanvas = isHaitiInboundCanvas ? tx.amountHTG : Math.round(calcNetDOPCanvas * appliedRateCanvas);
+
   currentY += 25;
   ctx.fillStyle = '#F0FDF4';
   ctx.beginPath();
-  ctx.roundRect(40, currentY, 570, 160, 20);
+  ctx.roundRect(40, currentY, 570, 240, 20);
   ctx.fill();
   ctx.strokeStyle = '#BBF7D0';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  let finY = currentY + 35;
-  ctx.fillStyle = '#475569';
-  ctx.font = '600 15px sans-serif';
-  ctx.fillText(isES ? 'Monto Recibido (RD) :' : isHT ? 'Montan Kolekte (RD) :' : 'Montant Encaissé (RD) :', 65, finY);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#0F172A';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.fillText(`${tx.amountDOP.toLocaleString()} DOP`, 585, finY);
-
-  finY += 32;
+  let finY = currentY + 32;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#475569';
-  ctx.fillText(isES ? 'Tasa Aplicada :' : isHT ? 'To Apliké :' : 'Taux Appliqué :', 65, finY);
+  ctx.font = '600 14px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? 'Somme Reçue (Dépôt Gourdes) :'
+      : isZelleCanvas
+      ? 'Montant Brut Zelle :'
+      : (isES ? 'Monto Bruto Recibido (RD) :' : isHT ? 'Montan Brut Kolekte (RD) :' : 'Montant Brut Encaissé (RD) :'),
+    65,
+    finY
+  );
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#334155';
-  ctx.font = '600 15px sans-serif';
-  ctx.fillText(`100 DOP = ${Math.round(tx.exchangeRate * 100)} HTG`, 585, finY);
+  ctx.fillStyle = '#0F172A';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? `${tx.amountHTG.toLocaleString()} HTG`
+      : isZelleCanvas
+      ? `$${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)`
+      : `${tx.amountDOP.toLocaleString()} DOP`,
+    585,
+    finY
+  );
+
+  finY += 28;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = isHaitiInboundCanvas ? '#15803D' : '#B45309';
+  ctx.font = '600 14px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? 'Frais & Commission sur Dépôt :'
+      : (isES ? 'Cargo de Servicio (0.5%) deducido :' : isHT ? 'Frè Sèvis (0.5%) dedwi :' : 'Frais de Service (0.5%) déduits :'),
+    65,
+    finY
+  );
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? '0 DOP (Aucun frais)'
+      : isZelleCanvas
+      ? `-${calcFeeDOPCanvas.toLocaleString()} DOP`
+      : `-${calcFeeDOPCanvas.toLocaleString()} DOP (-${calcFeeHTGCanvas.toLocaleString()} HTG)`,
+    585,
+    finY
+  );
+
+  finY += 28;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#475569';
+  ctx.font = '600 14px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? 'Montant Converti (Pesos RD) :'
+      : (isES ? 'Monto Neto Convertido :' : isHT ? 'Montan Nèt Konvèti :' : 'Montant Net Converti :'),
+    65,
+    finY
+  );
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#0F172A';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText(`${calcNetDOPCanvas.toLocaleString()} DOP`, 585, finY);
+
+  finY += 28;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#475569';
+  ctx.font = '600 14px sans-serif';
+  ctx.fillText(isES ? 'Tasa / Comisión (1%) :' : isHT ? 'To / Komisyon (1%) :' : 'Taux Appliqué / Commission (1%) :', 65, finY);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#1D4ED8';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG (Comm: 0 DOP)`
+      : isZelleCanvas
+      ? `1 USD = ${(tx.zelleExchangeRate || appliedRateCanvas).toFixed(2)} DOP | Comm: +${calcCommDOPCanvas} DOP`
+      : `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG | Comm: +${calcCommDOPCanvas} DOP`,
+    585,
+    finY
+  );
 
   finY += 20;
   ctx.strokeStyle = '#DCFCE7';
@@ -280,19 +367,27 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   ctx.stroke();
   ctx.setLineDash([]);
 
-  finY += 40;
+  finY += 42;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#166534';
   ctx.font = 'bold 17px sans-serif';
-  ctx.fillText(isES ? 'MONTO A DESEMBOLSAR :' : isHT ? 'MONTAN POU PEYE :' : 'MONTANT LIVRÉ :', 65, finY);
+  ctx.fillText(isES ? 'MONTO NETO A ENTREGAR :' : isHT ? 'MONTAN NÈT POU PEYE :' : 'MONTANT NET LIVRÉ :', 65, finY);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#15803D';
-  ctx.font = '900 28px sans-serif';
-  ctx.fillText(`${tx.amountHTG.toLocaleString()} HTG`, 585, finY);
+  ctx.font = '900 26px sans-serif';
+  ctx.fillText(
+    isHaitiInboundCanvas
+      ? `${tx.amountDOP.toLocaleString()} DOP`
+      : isZelleCanvas
+      ? `${(tx.netPayoutAmount || calcNetDOPCanvas).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
+      : `${calcNetHTGCanvas.toLocaleString()} HTG`,
+    585,
+    finY
+  );
 
   // Bas de page : Agent & Signature
-  currentY += 185;
+  currentY += 265;
 
   if (isCancelled) {
     ctx.fillStyle = '#FEF2F2';
@@ -322,7 +417,7 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
       await new Promise<void>((resolve) => {
         img.onload = () => resolve();
         img.onerror = () => resolve();
-        img.src = tx.proofUrl!;
+        img.src = bestProofUrl!;
       });
       if (img.width > 0 && img.height > 0) {
         ctx.fillStyle = '#EFF6FF';

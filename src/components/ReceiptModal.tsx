@@ -19,11 +19,14 @@ export const ReceiptModal: React.FC = () => {
   const isCompleted = tx.status === 'completed';
   const isCancelled = tx.status === 'cancelled';
   const isTelecom = ['natcom', 'claro', 'digicel', 'altice'].includes(tx.operator);
+  const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
+  const isZelle = tx.operator === 'zelle';
+  const bestProofUrl = tx.proofUrl || tx.zelleProofUrl || tx.haitiInboundProofUrl;
   const localeCode = currentLang === 'ES' ? 'es-DO' : currentLang === 'HT' ? 'fr-HT' : 'fr-FR';
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
-      <div className={`bg-white rounded-3xl ${tx.proofUrl ? 'max-w-md' : 'max-w-sm'} w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 my-auto`}>
+      <div className={`bg-white rounded-3xl ${bestProofUrl ? 'max-w-md' : 'max-w-sm'} w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 my-auto`}>
         
         {/* Close Button */}
         <button
@@ -133,17 +136,17 @@ export const ReceiptModal: React.FC = () => {
           </div>
 
           {/* Preuve de Paiement / Clôture Section */}
-          {(tx.proofNotes || tx.proofUrl) && (
+          {(tx.proofNotes || bestProofUrl) && (
             <div className="bg-blue-50/90 p-3.5 rounded-2xl border border-blue-200 text-left space-y-2">
               <div className="flex items-center justify-between text-[11px] font-black text-blue-950 uppercase tracking-wider">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>{t("Preuve Photo & Validation :")}</span>
                 </div>
-                {tx.proofUrl && (
+                {bestProofUrl && (
                   <button
                     type="button"
-                    onClick={() => setLightboxUrl(tx.proofUrl || null)}
+                    onClick={() => setLightboxUrl(bestProofUrl || null)}
                     className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -152,13 +155,13 @@ export const ReceiptModal: React.FC = () => {
                 )}
               </div>
 
-              {tx.proofUrl ? (
+              {bestProofUrl ? (
                 <div 
-                  onClick={() => setLightboxUrl(tx.proofUrl || null)}
+                  onClick={() => setLightboxUrl(bestProofUrl || null)}
                   className="rounded-2xl overflow-hidden border border-blue-300/80 bg-slate-950 flex flex-col items-center justify-center p-2 space-y-1.5 shadow-inner cursor-pointer group relative"
                 >
                   <img 
-                    src={tx.proofUrl} 
+                    src={bestProofUrl} 
                     alt={t("Photo Preuve Officielle")} 
                     className="max-h-[360px] w-full object-contain rounded-xl group-hover:opacity-90 transition-opacity"
                   />
@@ -180,28 +183,103 @@ export const ReceiptModal: React.FC = () => {
           )}
 
           {/* Financial Breakdown */}
-          <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-            <div className="flex justify-between text-slate-600">
-              <span>{t("Montant Encaissé:")}</span>
-              <span className="font-bold text-slate-900">{tx.amountDOP.toLocaleString()} {t("Pesos")}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>{t("Taux Appliqué:")}</span>
-              <span className="font-semibold text-slate-700">100 {t("Pesos")} = {Math.round(tx.exchangeRate * 100)} HTG</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>{t("Frais de Service:")}</span>
-              <span className="font-semibold text-slate-700">{tx.feeDOP} {t("Pesos")}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>{t("Commission Admin:")}</span>
-              <span className="font-bold text-blue-600">+{tx.commissionDOP || Math.round(tx.amountDOP * 0.01)} {t("Pesos")}</span>
-            </div>
-            <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
-              <span className="font-bold text-slate-900">{t("Montant à Décaissement:")}</span>
-              <span className="text-lg font-extrabold text-blue-600">{tx.amountHTG.toLocaleString()} HTG</span>
-            </div>
-          </div>
+          {(() => {
+            if (isHaitiInbound) {
+              const inboundRate = (tx.exchangeRate && tx.exchangeRate < 20) ? tx.exchangeRate : 2.35;
+              const inboundHTG = tx.amountHTG > 0 ? tx.amountHTG : Math.round((tx.amountDOP || 0) * inboundRate);
+              const inboundDOP = tx.amountDOP > 0 ? tx.amountDOP : Math.round(inboundHTG / inboundRate);
+              return (
+                <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <div className="flex justify-between text-slate-600">
+                    <span>{t("Somme Reçue (Dépôt Gourdes):")}</span>
+                    <span className="font-bold font-mono text-slate-900">{inboundHTG.toLocaleString()} HTG</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>{t("Taux Appliqué:")}</span>
+                    <span className="font-semibold font-mono text-slate-700">100 {t("Pesos")} = {Math.round(inboundRate * 100)} HTG</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-700 font-bold">
+                    <span>{t("Frais & Commission sur Dépôt:")}</span>
+                    <span className="font-mono">0 DOP (Aucun frais)</span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                    <span className="font-bold text-slate-900">{t("Montant Converti à Remettre (RD):")}</span>
+                    <span className="text-lg font-extrabold font-mono text-emerald-600">{inboundDOP.toLocaleString()} DOP</span>
+                  </div>
+                </div>
+              );
+            }
+
+            if (isZelle) {
+              const zRate = (tx.zelleExchangeRate && tx.zelleExchangeRate > 10) ? tx.zelleExchangeRate : (tx.exchangeRate && tx.exchangeRate > 10 ? tx.exchangeRate : 58);
+              const zUSD = tx.amountUSD || Math.round((tx.amountDOP / zRate) * 100) / 100;
+              const zFeeUSD = Math.round(zUSD * 0.005 * 100) / 100;
+              const zFeeDOP = Math.max(1, Math.round(zFeeUSD * zRate));
+              const zCommUSD = Math.round(zUSD * 0.01 * 100) / 100;
+              const zCommDOP = Math.max(1, Math.round(zCommUSD * zRate));
+              const zNetDOP = tx.netPayoutAmount || Math.max(0, tx.amountDOP - zFeeDOP);
+              return (
+                <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <div className="flex justify-between text-slate-600">
+                    <span>{t("Montant Brut Zelle:")}</span>
+                    <span className="font-bold font-mono text-slate-900">${zUSD.toFixed(2)} USD ({tx.amountDOP.toLocaleString()} DOP)</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700">
+                    <span>{t("Frais de Service (0.5%) déduits:")}</span>
+                    <span className="font-bold font-mono">-${zFeeUSD.toFixed(2)} USD (-{zFeeDOP} DOP)</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>{t("Taux Appliqué:")}</span>
+                    <span className="font-semibold font-mono text-slate-700">1 USD = {zRate.toFixed(2)} DOP</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>{t("Commission (1%):")}</span>
+                    <span className="font-bold font-mono text-blue-600">+${zCommUSD.toFixed(2)} USD (+{zCommDOP} DOP)</span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                    <span className="font-bold text-slate-900">{t("Montant Net à Décaissement:")}</span>
+                    <span className="text-lg font-extrabold font-mono text-emerald-600">{zNetDOP.toLocaleString()} {tx.netPayoutCurrency || 'DOP'}</span>
+                  </div>
+                </div>
+              );
+            }
+
+            const appliedRate = tx.exchangeRate || 2.35;
+            const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005));
+            const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01));
+            const calcNetDOP = Math.max(0, tx.amountDOP - calcFeeDOP);
+            const calcFeeHTG = Math.round(calcFeeDOP * appliedRate);
+            const calcNetHTG = Math.round(calcNetDOP * appliedRate);
+
+            return (
+              <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                <div className="flex justify-between text-slate-600">
+                  <span>{t("Montant Brut Encaissé (RD):")}</span>
+                  <span className="font-bold font-mono text-slate-900">{tx.amountDOP.toLocaleString()} {t("Pesos")}</span>
+                </div>
+                <div className="flex justify-between text-amber-700">
+                  <span>{t("Frais de Service (0.5%) déduits:")}</span>
+                  <span className="font-bold font-mono">-{calcFeeDOP.toLocaleString()} DOP (-{calcFeeHTG.toLocaleString()} HTG)</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>{t("Montant Net Converti:")}</span>
+                  <span className="font-bold font-mono text-slate-800">{calcNetDOP.toLocaleString()} {t("Pesos")}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>{t("Taux Appliqué:")}</span>
+                  <span className="font-semibold font-mono text-slate-700">100 {t("Pesos")} = {Math.round(appliedRate * 100)} HTG</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>{t("Commission (1%):")}</span>
+                  <span className="font-bold font-mono text-blue-600">+{calcCommDOP.toLocaleString()} {t("Pesos")}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                  <span className="font-bold text-slate-900">{t("Montant Net à Décaissement:")}</span>
+                  <span className="text-lg font-extrabold font-mono text-blue-600">{calcNetHTG.toLocaleString()} HTG</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Signature & Certificate Section */}
           <div className="pt-2 flex items-center justify-between bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">

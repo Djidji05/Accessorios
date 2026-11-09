@@ -52,15 +52,12 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
   const isRejected = tx.haitiInboundStatus === 'rejected' || tx.status === 'cancelled';
   const isCompleted = tx.status === 'completed';
 
-  const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
-    ? usdToHtgRate
-    : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-  const appliedRate = tx.exchangeRate || usdToDop || 58.0;
-  const numUSD = tx.amountUSD || (tx.amountDOP > 0 ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : (tx.amountHTG > 0 ? Math.round((tx.amountHTG / (dopToHtgRate || 2.35) / appliedRate) * 100) / 100 : 0));
-  const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : (numUSD > 0 ? Math.round(numUSD * appliedRate) : Math.round(tx.amountHTG / (dopToHtgRate || 2.35)));
-  const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.005); // 0.5% frais de service guichet
-  const commDOP = tx.commissionDOP > 0 ? tx.commissionDOP : Math.round(grossDOP * 0.01); // 1% commission admin
-  const netPayout = tx.netPayoutAmount && tx.netPayoutAmount > 0 ? tx.netPayoutAmount : (grossDOP - feeDOP);
+  const appliedHtgRate = (tx.exchangeRate && tx.exchangeRate < 20) ? tx.exchangeRate : (dopToHtgRate || 2.35);
+  const numHTG = tx.amountHTG > 0 ? tx.amountHTG : Math.round((tx.amountDOP || 0) * appliedHtgRate);
+  const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : Math.round(numHTG / appliedHtgRate);
+  const feeDOP = 0; // Sur Dépôt on ne prend aucun frais
+  const commDOP = 0; // Sur Dépôt on ne prend aucune commission
+  const netPayout = grossDOP;
 
   const proofImg = tx.haitiInboundProofUrl || tx.proofUrl;
   const operatorName = tx.operator === 'natcash' ? 'Natcash (Haïti 🇭🇹)' : 'MonCash (Haïti 🇭🇹)';
@@ -234,50 +231,61 @@ export const HaitiInboundPayoutModal: React.FC<HaitiInboundPayoutModalProps> = (
             {/* Financial Details Card */}
             <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {/* Montant Reçu USD */}
+                {/* Montant Reçu Gourdes (HTG) */}
                 <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
                   <p className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400">
-                    {t('Somme sur la Preuve (USD)', 'Somme sur la Preuve (USD)')}
+                    {t('Somme sur la Preuve (HTG)', 'Somme sur la Preuve (HTG)')}
                   </p>
                   <p className="text-2xl font-black font-mono text-slate-900 dark:text-white mt-1">
-                    ${numUSD.toLocaleString()} <span className="text-sm font-bold text-slate-500">USD</span>
+                    {numHTG.toLocaleString()} <span className="text-sm font-bold text-slate-500">HTG</span>
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    {tx.operator.toUpperCase()}
+                  <p className="text-[10px] text-emerald-600 font-bold mt-0.5">
+                    {tx.operator.toUpperCase()} • 0 Frais (Aucun frais)
                   </p>
                 </div>
 
-                {/* Montant Net à Verser DOP */}
+                {/* Montant Net à Verser DOP (Converti après validation Admin) */}
                 <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60">
                   <p className="text-[11px] font-black uppercase text-emerald-700 dark:text-emerald-400">
-                    {t('Montant Net à Verser (RD)', 'Montant Net à Verser (RD)')}
+                    {t('Montant à Verser (RD)', 'Montant à Verser (RD)')}
                   </p>
-                  <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-                    {netPayout.toLocaleString()} <span className="text-sm font-bold text-emerald-700">DOP</span>
-                  </p>
-                  <p className="text-[10px] font-bold text-emerald-600/80 mt-0.5">
-                    {t('Taux :', 'Taux :')} 1 USD = {appliedRate.toFixed(2)} DOP
-                  </p>
+                  {isApproved || isCompleted || isAdmin ? (
+                    <>
+                      <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                        {netPayout.toLocaleString()} <span className="text-sm font-bold text-emerald-700">DOP</span>
+                      </p>
+                      <p className="text-[10px] font-bold text-emerald-600/80 mt-0.5">
+                        {t('Taux :', 'Taux :')} 100 DOP = {Math.round(appliedHtgRate * 100)} HTG (0 Frais)
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-black text-amber-700 dark:text-amber-300 mt-2">
+                        ⏳ Conversion après validation
+                      </p>
+                      <p className="text-[10px] text-amber-600/90 mt-1">
+                        Sera converti en Pesos ({netPayout.toLocaleString()} DOP) dès validation Admin
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Admin Confidential Breakdown (Hidden from Agents) */}
-              {isAdmin && (
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-700 text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">{t('Équivalent Brut (DOP) :', 'Équivalent Brut (DOP) :')}</span>
-                    <span className="font-mono font-bold text-slate-900 dark:text-white">{grossDOP.toLocaleString()} DOP</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">{t('Frais de service (0.5%) :', 'Frais de service (0.5%) :')}</span>
-                    <span className="font-mono font-bold text-amber-600">-{feeDOP.toLocaleString()} DOP</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">{t('Commission Admin (1%) :', 'Commission Admin (1%) :')}</span>
-                    <span className="font-mono font-bold text-emerald-600">+{commDOP.toLocaleString()} DOP</span>
-                  </div>
+              {/* Breakdown (0 Frais sur Dépôt) */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-700 text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('Somme reçue en Gourdes (HTG) :', 'Somme reçue en Gourdes (HTG) :')}</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{numHTG.toLocaleString()} HTG</span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('Frais de service & Commission :', 'Frais de service & Commission :')}</span>
+                  <span className="font-mono font-bold text-emerald-600">0 DOP (Aucun frais sur Dépôt)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('Montant converti en Pesos (RD) :', 'Montant converti en Pesos (RD) :')}</span>
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{netPayout.toLocaleString()} DOP</span>
+                </div>
+              </div>
             </div>
 
             {/* Reject Note Input (if opened) */}

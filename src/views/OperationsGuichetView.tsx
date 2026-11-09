@@ -199,9 +199,10 @@ export const OperationsGuichetView: React.FC = () => {
   const isOperatorLocked = Boolean(ksStatus && !ksStatus.enabled);
 
   const numAmountDOP = parseFloat(amountDOP) || 0;
-  const computedHTG = Math.round(numAmountDOP * dopToHtgRate);
-  const feeDOP = Math.round(numAmountDOP * 0.005); // 0.5% frais de service guichet
-  const commissionDOP = Math.round(numAmountDOP * 0.01); // 1% commission admin
+  const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.005)) : 0; // 0.5% frais de service guichet
+  const netDOP = Math.max(0, numAmountDOP - feeDOP);
+  const computedHTG = Math.round(netDOP * dopToHtgRate);
+  const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.01)) : 0; // 1% commission admin
 
   // Filtrage des transactions récentes de l'opérateur au guichet
   const isAgentRD = currentUser.role === 'agent_rd';
@@ -267,19 +268,16 @@ export const OperationsGuichetView: React.FC = () => {
       setFeedback({ type: 'error', message: "⚠️ La photo de preuve MonCash / Natcash est obligatoire pour envoyer à l'Admin." });
       return;
     }
-    const numUSD = parseFloat(inboundAmountUSD) || 0;
-    if (numUSD <= 0) {
-      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Dollars (USD).' });
+    const numHTG = parseFloat(inboundAmountUSD) || 0;
+    if (numHTG <= 0) {
+      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Gourdes (HTG).' });
       return;
     }
 
-    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
-      ? usdToHtgRate
-      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-
-    const grossDOP = Math.round(numUSD * usdToDop);
-    const feeDOP = Math.round(grossDOP * 0.005); // 0.5% frais de service guichet
-    const commDOP = Math.round(grossDOP * 0.01); // 1% commission admin
+    const currentHtgRate = dopToHtgRate || 2.35;
+    const grossDOP = Math.max(1, Math.round(numHTG / currentHtgRate));
+    const feeDOP = 0; // Sur Dépôt on ne prend aucun frais
+    const commDOP = 0; // Sur Dépôt on ne prend aucune commission
 
     const result = createTransaction({
       senderName: 'Client Haïti',
@@ -288,7 +286,7 @@ export const OperationsGuichetView: React.FC = () => {
       receiverPhone: '+1 809 Comptoir RD',
       operator: inboundOperator,
       serviceType: 'haiti_inbound_cash',
-      amountUSD: numUSD,
+      amountHTG: Math.round(numHTG),
       amountDOP: grossDOP,
       feeDOP,
       commissionDOP: commDOP,
@@ -655,7 +653,7 @@ export const OperationsGuichetView: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-black text-slate-900 text-sm">MonCash (Digicel)</p>
-                      <p className="text-xs text-slate-500 font-medium">Réception Dollars (USD)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG) • 0 Frais</p>
                     </div>
                   </div>
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'moncash' ? 'border-rose-600 bg-rose-600' : 'border-slate-300'}`}>
@@ -692,7 +690,7 @@ export const OperationsGuichetView: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-black text-slate-900 text-sm">Natcash (Natcom)</p>
-                      <p className="text-xs text-slate-500 font-medium">Réception Dollars (USD)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG) • 0 Frais</p>
                     </div>
                   </div>
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'natcash' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
@@ -702,10 +700,10 @@ export const OperationsGuichetView: React.FC = () => {
               </div>
             </div>
 
-            {/* Étape 2: Somme Reçue en Dollars (USD) */}
+            {/* Étape 2: Somme Reçue en Gourdes (HTG) */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
               <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
-                {t('2. Somme Écrite sur la Preuve (USD)', '2. Somme Écrite sur la Preuve (USD)')}
+                {t('2. Somme Écrite sur la Preuve (Gourdes HTG)', '2. Somme Écrite sur la Preuve (Gourdes HTG)')}
               </label>
 
               <div className="relative">
@@ -715,35 +713,33 @@ export const OperationsGuichetView: React.FC = () => {
                   min="1"
                   value={inboundAmountUSD}
                   onChange={(e) => setInboundAmountUSD(e.target.value)}
-                  placeholder="Ex : 500"
+                  placeholder="Ex : 5000"
                   required
-                  className="w-full pl-5 pr-20 py-4 text-2xl font-black font-mono text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-500/20"
+                  className="w-full pl-5 pr-28 py-4 text-2xl font-black font-mono text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-500/20"
                 />
-                <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                  USD ($)
+                <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-amber-600 text-xs">
+                  HTG (Gourdes)
                 </span>
               </div>
 
-              {/* Conversion Indicative */}
+              {/* Conversion Indicative HTG -> DOP (0 Frais) */}
               {(() => {
-                const numUSD = parseFloat(inboundAmountUSD) || 0;
-                const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
-                  ? usdToHtgRate
-                  : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-                const estDOP = Math.round(numUSD * usdToDop);
-                if (numUSD <= 0) return null;
+                const numHTG = parseFloat(inboundAmountUSD) || 0;
+                const currentHtgRate = dopToHtgRate || 2.35;
+                const estDOP = numHTG > 0 ? Math.max(1, Math.round(numHTG / currentHtgRate)) : 0;
+                if (numHTG <= 0) return null;
 
                 return (
                   <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between text-xs">
                     <div>
-                      <span className="text-amber-800 font-semibold block">{t('Conversion brute indicative en Pesos :', 'Conversion brute indicative en Pesos :')}</span>
-                      <span className="text-[11px] text-amber-700 font-bold">1 USD = {usdToDop.toFixed(2)} DOP</span>
+                      <span className="text-amber-800 font-semibold block">{t('Montant converti en Pesos après validation :', 'Montant converti en Pesos après validation :')}</span>
+                      <span className="text-[11px] text-amber-700 font-bold">100 DOP = {Math.round(currentHtgRate * 100)} HTG</span>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-black font-mono text-amber-800">
-                        ~ {estDOP.toLocaleString()} DOP
+                        {estDOP.toLocaleString()} DOP
                       </span>
-                      <span className="text-[10px] text-amber-600 block">{t('Frais de service (0.5%) déduits au versement', 'Frais de service (0.5%) déduits au versement')}</span>
+                      <span className="text-[10px] text-emerald-700 font-extrabold block">{t('0 Frais sur Dépôt (Aucun frais déduit)', '0 Frais sur Dépôt (Aucun frais déduit)')}</span>
                     </div>
                   </div>
                 );
@@ -1352,10 +1348,30 @@ export const OperationsGuichetView: React.FC = () => {
               </div>
 
               {/* Calculations Breakdown */}
-              <div className="p-4 bg-slate-50/90 rounded-2xl space-y-3 text-xs border border-slate-200/70 font-sans">
+              <div className="p-4 bg-slate-50/90 rounded-2xl space-y-2.5 text-xs border border-slate-200/70 font-sans">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span className="whitespace-nowrap font-medium">{t('Montant Brut Encaissé', 'Montant Brut Encaissé')} :</span>
+                  <span className="font-mono font-bold text-slate-900 whitespace-nowrap">{numAmountDOP.toLocaleString()} DOP</span>
+                </div>
+
+                <div className="flex justify-between items-center text-amber-700 text-[11px]">
+                  <span className="whitespace-nowrap font-semibold">{t('fees', 'Frais de service (0.5%) déduits')} :</span>
+                  <span className="font-mono font-bold whitespace-nowrap">-{feeDOP.toLocaleString()} DOP (-{Math.round(feeDOP * dopToHtgRate).toLocaleString()} HTG)</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                  <span className="whitespace-nowrap font-medium">{t('Montant Net Converti', 'Montant Net Converti')} :</span>
+                  <span className="font-mono font-bold text-slate-800 whitespace-nowrap">{netDOP.toLocaleString()} DOP</span>
+                </div>
+
                 <div className="flex justify-between items-center text-slate-600">
                   <span className="whitespace-nowrap font-medium">{t('rate_label', 'Taux appliqué')} :</span>
                   <span className="font-mono font-bold text-slate-900 whitespace-nowrap">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
+                </div>
+
+                <div className="flex justify-between items-center text-emerald-700 text-[11px]">
+                  <span className="whitespace-nowrap font-semibold">{t('admin_comm', 'Commission (1%)')} :</span>
+                  <span className="font-mono font-bold whitespace-nowrap">+{commissionDOP.toLocaleString()} DOP</span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-slate-200/70 text-slate-900">
@@ -1363,16 +1379,6 @@ export const OperationsGuichetView: React.FC = () => {
                   <span className="font-mono font-black text-blue-600 text-lg whitespace-nowrap">
                     {computedHTG.toLocaleString()} HTG
                   </span>
-                </div>
-
-                <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
-                  <span className="whitespace-nowrap">{t('fees', 'Frais de service (0.5%)')} :</span>
-                  <span className="font-mono font-bold whitespace-nowrap">{feeDOP.toLocaleString()} DOP</span>
-                </div>
-
-                <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                  <span className="whitespace-nowrap">{t('admin_comm', 'Commission agence')} :</span>
-                  <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{commissionDOP.toLocaleString()} DOP</span>
                 </div>
               </div>
 
@@ -1484,14 +1490,14 @@ export const OperationsGuichetView: React.FC = () => {
                     <td className="py-3 px-3 text-right font-mono font-bold text-slate-700">
                       {tx.serviceType === 'haiti_inbound_cash'
                         ? (tx.haitiInboundStatus === 'approved' || isCompleted
-                            ? `${(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP`
-                            : `~ ${tx.amountDOP.toLocaleString()} DOP`)
+                            ? `${(tx.amountDOP || tx.netPayoutAmount || 0).toLocaleString()} DOP (0 Frais)`
+                            : `En attente validation`)
                         : `${tx.amountDOP.toLocaleString()} DOP`}
                     </td>
 
                     <td className="py-3 px-3 text-right font-mono font-black text-blue-600 text-sm">
                       {tx.serviceType === 'haiti_inbound_cash'
-                        ? `$${(tx.amountUSD || 0).toLocaleString()} USD`
+                        ? `${(tx.amountHTG || 0).toLocaleString()} HTG`
                         : `${tx.amountHTG.toLocaleString()} HTG`}
                     </td>
 

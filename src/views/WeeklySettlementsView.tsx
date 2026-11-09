@@ -156,7 +156,8 @@ export const WeeklySettlementsView: React.FC = () => {
       if (!wInfo) return;
       const key = `${tx.createdByName || 'agent'}_${wInfo.weekLabel}`;
       const existing = weekGroups.get(key);
-      const comm = tx.commissionDOP || Math.round((tx.amountDOP || 0) * 0.01);
+      const isInbound = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
+      const comm = isInbound ? 0 : (tx.commissionDOP || Math.max(1, Math.round((tx.amountDOP || 0) * 0.01)));
       if (!existing) {
         weekGroups.set(key, {
           agentId: tx.createdByNode || 'agent_node',

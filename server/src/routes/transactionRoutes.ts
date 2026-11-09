@@ -48,14 +48,15 @@ router.get('/', authMiddleware, async (req, res) => {
       }),
     ]);
 
-    // Allègement drastique du payload JSON : les chaînes base64 massives sont transformées
-    // en URLs dédiées /api/transactions/:id/proof pour préserver la mémoire et éliminer
-    // définitivement les erreurs HTTP/2 PROTOCOL_ERROR et CONNECTION_RESET.
+    // Normalisation sécurisée des preuves photo : on conserve les data:image valides
+    // et on nettoie toute ancienne URL auto-référençante corrompue (/api/transactions/.../proof).
     const lightweightTxs = transactions.map((t) => ({
       ...t,
       proofUrl: t.proofUrl
         ? t.proofUrl.startsWith('data:')
-          ? `/api/transactions/${t.id}/proof`
+          ? t.proofUrl
+          : t.proofUrl.includes('/transactions/')
+          ? null
           : t.proofUrl
         : null,
     }));
@@ -100,6 +101,11 @@ router.get('/:id/proof', authMiddleware, async (req, res) => {
       }
     }
 
+    // Empêcher toute boucle de redirection infinie si l'URL pointe vers elle-même
+    if (tx.proofUrl.includes('/transactions/') || tx.proofUrl.startsWith('/api/')) {
+      return res.status(404).send('Preuve introuvable.');
+    }
+
     // Si c'est déjà une URL externe (ex. S3 / CDN)
     return res.redirect(tx.proofUrl);
   } catch (error) {
@@ -118,6 +124,7 @@ const createTransactionSchema = z.object({
   operator: z.string().min(1, 'Opérateur requis'),
   serviceType: z.string().optional().default('transfer'),
   amountDOP: z.number().gt(0, 'Le montant en DOP doit être supérieur à 0'),
+  amountHTG: z.number().optional().default(0),
   amountUSD: z.number().optional().default(0),
   feeDOP: z.number().optional().default(0),
   commissionDOP: z.number().optional().default(0),
@@ -144,6 +151,7 @@ router.post('/', authMiddleware, async (req, res) => {
       operator,
       serviceType,
       amountDOP,
+      amountHTG: rawAmountHTG,
       amountUSD,
       feeDOP,
       commissionDOP,
@@ -163,7 +171,6 @@ router.post('/', authMiddleware, async (req, res) => {
     // 2.2 Récupération du taux officiel
     const officialRateObj = await prisma.exchangeRate.findUnique({ where: { id: 'rate_official' } });
     const exchangeRate = officialRateObj?.rate || 2.35;
-    const amountHTG = Math.round(amountDOP * exchangeRate);
 
     // 2.3 Récupération de l'agent émetteur authentifié
     const userId = req.user?.id || currentUserId;
@@ -177,6 +184,18 @@ router.post('/', authMiddleware, async (req, res) => {
     const isHaitiCash = operator === 'moncash' || operator === 'natcash' || operator === 'natcom';
     const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
     const targetRole = (isZelle || isHaitiInbound) ? 'admin' : (isHaitiCash ? 'agent_haiti' : 'gestionnaire');
+
+    // Calcul systématique des frais (0.5%) et commissions (1%) sur tous les services SAUF Dépôt (haiti_inbound_cash = 0 frais)
+    const finalFeeDOP = isHaitiInbound
+      ? 0
+      : (feeDOP && feeDOP > 0 ? feeDOP : Math.max(1, Math.round(amountDOP * 0.005)));
+    const finalCommDOP = isHaitiInbound
+      ? 0
+      : (commissionDOP && commissionDOP > 0 ? commissionDOP : Math.max(1, Math.round(amountDOP * 0.01)));
+    const netDOP = isHaitiInbound ? amountDOP : Math.max(0, amountDOP - finalFeeDOP);
+    const amountHTG = isHaitiInbound
+      ? (rawAmountHTG && rawAmountHTG > 0 ? Math.round(rawAmountHTG) : Math.round(amountDOP * exchangeRate))
+      : Math.round(netDOP * exchangeRate);
 
     let assignedAgent = await prisma.user.findFirst({
       where: { role: targetRole }
@@ -211,10 +230,10 @@ router.post('/', authMiddleware, async (req, res) => {
           amountHTG,
           amountUSD: amountUSD || 0,
           exchangeRate,
-          feeDOP: feeDOP || 0,
-          commissionDOP: commissionDOP || 0,
+          feeDOP: finalFeeDOP,
+          commissionDOP: finalCommDOP,
           proofUrl: proofUrl || null,
-          proofNotes: proofNotes || (isZelle ? `Preuve Zelle ($${amountUSD || 0} USD) soumise pour validation bancaire Admin.` : isHaitiInbound ? `Preuve réception ${operator.toUpperCase()} ($${amountUSD || 0} USD) soumise pour validation Admin.` : null),
+          proofNotes: proofNotes || (isZelle ? `Preuve Zelle ($${amountUSD || 0} USD) soumise pour validation bancaire Admin.` : isHaitiInbound ? `Preuve réception ${operator.toUpperCase()} (${amountHTG.toLocaleString()} HTG) soumise pour validation Admin.` : null),
           createdByNode: actor?.nodeId || 'node-agent-rd-01',
           createdByName: actor?.name || 'Agent Guichet',
           createdByRole: actor?.role || 'agent_rd',
@@ -263,9 +282,7 @@ router.post('/', authMiddleware, async (req, res) => {
     // Diffusion en temps réel pur (0 délai) à tous les agents connectés
     const lightweightNewTx = {
       ...result,
-      proofUrl: result.proofUrl && result.proofUrl.startsWith('data:')
-        ? `/api/transactions/${result.id}/proof`
-        : result.proofUrl,
+      proofUrl: result.proofUrl || null,
     };
     realtimeService.broadcast('TRANSACTION_CREATED', lightweightNewTx);
     realtimeService.broadcast('BALANCE_UPDATED', { operator });
@@ -295,6 +312,16 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
       return res.status(404).json({ error: 'Transaction introuvable.' });
     }
 
+    const isValidNewProof =
+      typeof proofUrl === 'string' &&
+      proofUrl.trim().length > 0 &&
+      !proofUrl.includes('/transactions/') &&
+      !proofUrl.startsWith('/api/');
+    const existingCleanProof =
+      existing.proofUrl && !existing.proofUrl.includes('/transactions/') && !existing.proofUrl.startsWith('/api/')
+        ? existing.proofUrl
+        : null;
+
     const updated = await prisma.$transaction(async (tx) => {
       const completedTx = await tx.transaction.update({
         where: { id },
@@ -302,7 +329,7 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
           status: 'completed',
           completedAt: new Date(),
           proofNotes: proofNotes || 'Validé & Décaissé avec succès',
-          proofUrl: proofUrl || existing.proofUrl || null,
+          proofUrl: isValidNewProof ? proofUrl : existingCleanProof,
         },
       });
 
@@ -324,11 +351,7 @@ router.patch('/:id/complete', authMiddleware, requireRole('agent_haiti', 'gestio
 
     const lightweightTx = {
       ...updated,
-      proofUrl: updated.proofUrl
-        ? updated.proofUrl.startsWith('data:')
-          ? `/api/transactions/${updated.id}/proof`
-          : updated.proofUrl
-        : null,
+      proofUrl: updated.proofUrl || null,
     };
 
     realtimeService.broadcast('TRANSACTION_COMPLETED', lightweightTx);

@@ -370,8 +370,8 @@ export const MobileAgentHome: React.FC = () => {
     if (!selectedService) return;
 
     const numAmountDOP = parseFloat(amountDOP) || 0;
-    const feeDOP = Math.round(numAmountDOP * 0.005); // 0.5% frais de service guichet
-    const commissionDOP = Math.round(numAmountDOP * 0.01); // 1% commission admin
+    const feeDOP = Math.max(1, Math.round(numAmountDOP * 0.005)); // 0.5% frais de service guichet
+    const commissionDOP = Math.max(1, Math.round(numAmountDOP * 0.01)); // 1% commission admin
 
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
     const defaultReceiver = isNoBeneficiaryOperator 
@@ -431,19 +431,16 @@ export const MobileAgentHome: React.FC = () => {
       setFeedback({ type: 'error', message: "⚠️ La photo de preuve MonCash / Natcash est obligatoire pour que l'Admin puisse vérifier." });
       return;
     }
-    const numUSD = parseFloat(inboundAmountUSD) || 0;
-    if (numUSD <= 0) {
-      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte reçue en Dollars (USD).' });
+    const numHTG = parseFloat(inboundAmountUSD) || 0;
+    if (numHTG <= 0) {
+      setFeedback({ type: 'error', message: '⚠️ Veuillez saisir la somme exacte en Gourdes (HTG) écrite sur la preuve.' });
       return;
     }
 
-    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
-      ? usdToHtgRate
-      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-
-    const grossDOP = Math.round(numUSD * usdToDop);
-    const feeDOP = Math.round(grossDOP * 0.005); // 0.5% frais de service guichet
-    const commDOP = Math.round(grossDOP * 0.01); // 1% commission admin
+    const currentHtgRate = dopToHtgRate || 2.35;
+    const grossDOP = Math.max(1, Math.round(numHTG / currentHtgRate));
+    const feeDOP = 0; // Sur Dépôt on ne prend aucun frais
+    const commDOP = 0; // Sur Dépôt on ne prend aucune commission
 
     const res = createTransaction({
       senderName: 'Client Haïti',
@@ -452,7 +449,7 @@ export const MobileAgentHome: React.FC = () => {
       receiverPhone: '+1 809 Comptoir RD',
       operator: inboundOperator,
       serviceType: 'haiti_inbound_cash',
-      amountUSD: numUSD,
+      amountHTG: Math.round(numHTG),
       amountDOP: grossDOP,
       feeDOP,
       commissionDOP: commDOP,
@@ -529,13 +526,11 @@ export const MobileAgentHome: React.FC = () => {
     }
   };
 
-  // DEDICATED STREAMLINED HAÏTI INBOUND SCREEN
+  // DEDICATED STREAMLINED HAÏTI INBOUND SCREEN (DÉPÔT EN GOURDES HTG -> PESOS DOP APRÈS VALIDATION, 0 FRAIS)
   if (isHaitiInboundActive) {
-    const numUSD = parseFloat(inboundAmountUSD) || 0;
-    const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
-      ? usdToHtgRate
-      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-    const estDOP = Math.round(numUSD * usdToDop);
+    const numHTG = parseFloat(inboundAmountUSD) || 0;
+    const currentHtgRate = dopToHtgRate || 2.35;
+    const estDOP = numHTG > 0 ? Math.max(1, Math.round(numHTG / currentHtgRate)) : 0;
 
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-28 space-y-4 animate-in fade-in">
@@ -633,10 +628,10 @@ export const MobileAgentHome: React.FC = () => {
             </div>
           </div>
 
-          {/* Montant USD */}
+          {/* Montant en Gourdes (HTG) */}
           <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              {t('2. Somme Écrite sur la Preuve (USD)')}
+              {t('2. Somme Écrite sur la Preuve (Gourdes HTG)')}
             </label>
             <div className="relative">
               <input
@@ -645,24 +640,34 @@ export const MobileAgentHome: React.FC = () => {
                 min="1"
                 value={inboundAmountUSD}
                 onChange={(e) => setInboundAmountUSD(e.target.value)}
-                placeholder={t('Ex : 500')}
+                placeholder={t('Ex : 5000')}
                 required
-                className="w-full pl-4 pr-16 py-3.5 text-2xl font-black font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20"
+                className="w-full pl-4 pr-24 py-3.5 text-2xl font-black font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                USD ($)
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-amber-600 dark:text-amber-400 text-xs">
+                HTG (Gourdes)
               </span>
             </div>
 
-            {numUSD > 0 && (
-              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-amber-800 dark:text-amber-200 font-bold block">{t('Estimation Pesos (Brut) :')}</span>
-                  <span className="text-[10px] text-amber-600 dark:text-amber-400">1 USD = {usdToDop.toFixed(2)} DOP</span>
+            {numHTG > 0 && (
+              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-900/60 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-800 dark:text-amber-200 font-bold">{t('Somme reçue (Gourdes) :')}</span>
+                  <span className="font-mono font-black text-slate-900 dark:text-white">{Math.round(numHTG).toLocaleString()} HTG</span>
                 </div>
-                <span className="text-lg font-black font-mono text-amber-700 dark:text-amber-300">
-                  ~ {estDOP.toLocaleString()} DOP
-                </span>
+                <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 font-bold">
+                  <span>{t('Frais sur Dépôt :')}</span>
+                  <span className="font-mono">0 DOP (Aucun frais)</span>
+                </div>
+                <div className="pt-1.5 border-t border-amber-200/60 dark:border-amber-800/60 flex items-center justify-between">
+                  <div>
+                    <span className="text-amber-900 dark:text-amber-200 font-extrabold block">{t('Après validation Admin (Pesos) :')}</span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400">100 DOP = {Math.round(currentHtgRate * 100)} HTG</span>
+                  </div>
+                  <span className="text-lg font-black font-mono text-amber-700 dark:text-amber-300">
+                    {estDOP.toLocaleString()} DOP
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -750,7 +755,10 @@ export const MobileAgentHome: React.FC = () => {
     const ksStatus = killSwitchList.find(k => k.operator === selectedService);
     const isOperatorLocked = ksStatus && !ksStatus.enabled;
     const numAmountDOP = parseFloat(amountDOP) || 0;
-    const computedHTG = Math.round(numAmountDOP * dopToHtgRate);
+    const previewFeeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.005)) : 0;
+    const previewNetDOP = Math.max(0, numAmountDOP - previewFeeDOP);
+    const previewCommDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * 0.01)) : 0;
+    const computedHTG = Math.round(previewNetDOP * dopToHtgRate);
     const serviceInfo = SERVICES_LIST.find(s => s.id === selectedService);
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
 
@@ -1106,15 +1114,23 @@ export const MobileAgentHome: React.FC = () => {
                   <span className="font-bold text-slate-900 dark:text-white uppercase">{lastCreatedTx.operator}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{t('Montant Envoyé')}</span>
+                  <span className="text-slate-500 font-medium">{t('Montant Brut Encaissé')}</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white">{lastCreatedTx.amountDOP.toLocaleString()} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{t('Commission Admin')}</span>
-                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || Math.round(lastCreatedTx.amountDOP * 0.01)} DOP</span>
+                  <span className="text-slate-500 font-medium">{t('Frais de Service (0.5%) déduits')}</span>
+                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">-{lastCreatedTx.feeDOP || Math.max(1, Math.round(lastCreatedTx.amountDOP * 0.005))} DOP</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">{t('Montant Net Converti')}</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{Math.max(0, lastCreatedTx.amountDOP - (lastCreatedTx.feeDOP || Math.max(1, Math.round(lastCreatedTx.amountDOP * 0.005)))).toLocaleString()} DOP</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">{t('Commission (1%)')}</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || Math.max(1, Math.round(lastCreatedTx.amountDOP * 0.01))} DOP</span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-500 font-medium">{t('Montant Reçu')}</span>
+                  <span className="text-slate-500 font-medium">{t('Montant Net Reçu (Haïti)')}</span>
                   <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">{lastCreatedTx.amountHTG.toLocaleString()} HTG</span>
                 </div>
               </div>
@@ -1239,6 +1255,20 @@ export const MobileAgentHome: React.FC = () => {
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
                 <span className="text-slate-500 font-medium">{isNoBeneficiaryOperator ? t('Numéro de téléphone') : t('Téléphone')}</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-white">{receiverPhone}</span>
+              </div>
+
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
+                <span className="text-slate-500 font-medium">{t('Frais de Service (0.5%) déduits')}</span>
+                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                  -{previewFeeDOP} DOP (Net converti: {previewNetDOP.toLocaleString()} DOP)
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
+                <span className="text-slate-500 font-medium">{t('Commission (1%)')}</span>
+                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                  +{previewCommDOP} DOP
+                </span>
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
@@ -1955,7 +1985,7 @@ export const MobileAgentHome: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
                           {isHaitiInboundTx
-                            ? `Dépôt Haïti ($${(tx.amountUSD || 0).toLocaleString()} USD)`
+                            ? `Dépôt Haïti (${(tx.amountHTG || 0).toLocaleString()} HTG)`
                             : isZelleTx
                             ? `Virement Zelle ($${tx.amountUSD || 0} USD)`
                             : tx.receiverName}
@@ -1963,7 +1993,7 @@ export const MobileAgentHome: React.FC = () => {
                       </div>
 
                       <span className="text-[10px] text-slate-400 font-mono block">
-                        {tx.referenceNumber} • {isHaitiInboundTx ? (tx.operator === 'natcash' ? 'Natcash' : 'MonCash') : isZelleTx ? (tx.senderName || 'Client Zelle') : tx.receiverPhone}
+                        {tx.referenceNumber} • {isHaitiInboundTx ? (tx.operator === 'natcash' ? 'Natcash (0 Frais)' : 'MonCash (0 Frais)') : isZelleTx ? (tx.senderName || 'Client Zelle') : tx.receiverPhone}
                       </span>
                     </div>
                   </div>
@@ -1973,8 +2003,8 @@ export const MobileAgentHome: React.FC = () => {
                     <span className="font-mono font-black text-slate-900 dark:text-white text-xs block">
                       {isHaitiInboundTx
                         ? (tx.haitiInboundStatus === 'approved' || isCompleted
-                            ? `${(tx.netPayoutAmount || tx.amountDOP || 0).toLocaleString()} DOP`
-                            : `$${(tx.amountUSD || 0).toLocaleString()} USD`)
+                            ? `${(tx.amountDOP || tx.netPayoutAmount || 0).toLocaleString()} DOP`
+                            : `${(tx.amountHTG || 0).toLocaleString()} HTG`)
                         : isZelleTx 
                         ? (tx.zelleStatus === 'approved' || isCompleted 
                             ? `${(tx.netPayoutAmount || 0).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}` 

@@ -890,13 +890,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!isMounted) return;
 
-        // Mise à jour silencieuse des transactions sans perturber l'interface
+        // Mise à jour silencieuse des transactions sans perturber l'interface et en préservant les preuves photo en mémoire
         if (Array.isArray(txs)) {
           setTransactions((prev) => {
-            if (prev.length === txs.length) {
+            const merged = txs.map((a) => {
+              const existing = prev.find((p) => p.id === a.id || p.referenceNumber === a.referenceNumber);
+              const bestProof = a.proofUrl || existing?.proofUrl || existing?.zelleProofUrl || existing?.haitiInboundProofUrl;
+              return {
+                ...existing,
+                ...a,
+                proofUrl: bestProof,
+                zelleProofUrl: a.operator === 'zelle' ? (bestProof || a.zelleProofUrl || existing?.zelleProofUrl) : (a.zelleProofUrl || existing?.zelleProofUrl),
+                haitiInboundProofUrl: a.serviceType === 'haiti_inbound_cash' ? (bestProof || a.haitiInboundProofUrl || existing?.haitiInboundProofUrl) : (a.haitiInboundProofUrl || existing?.haitiInboundProofUrl),
+              };
+            });
+            if (prev.length === merged.length) {
               let hasChanged = false;
-              for (let i = 0; i < txs.length; i++) {
-                const a = txs[i];
+              for (let i = 0; i < merged.length; i++) {
+                const a = merged[i];
                 const b = prev[i];
                 if (
                   !b ||
@@ -906,15 +917,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   a.cancelledAt !== b.cancelledAt ||
                   a.cancellationReason !== b.cancellationReason ||
                   a.proofUrl !== b.proofUrl ||
+                  a.amountDOP !== b.amountDOP ||
+                  a.amountHTG !== b.amountHTG ||
                   a.assignedToName !== b.assignedToName
                 ) {
                   hasChanged = true;
                   break;
                 }
               }
-              if (!hasChanged) return prev; // Ne déclenche aucun re-render React si identique
+              if (!hasChanged) return prev;
             }
-            return txs as Transaction[];
+            return merged as Transaction[];
           });
         }
 
@@ -1087,19 +1100,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           try {
             const rawTx = JSON.parse(e.data) as Transaction;
             const token = localStorage.getItem('dalexis_token');
-            const finalProof = rawTx.proofUrl && rawTx.proofUrl.startsWith('/api/') && token && !rawTx.proofUrl.includes('token=')
-              ? `${rawTx.proofUrl}?token=${encodeURIComponent(token)}`
-              : rawTx.proofUrl;
-            const completedTx: Transaction = {
-              ...rawTx,
-              proofUrl: finalProof,
-              zelleProofUrl: rawTx.operator === 'zelle' ? (finalProof || rawTx.zelleProofUrl) : rawTx.zelleProofUrl,
-              zelleStatus: rawTx.operator === 'zelle' ? 'approved' : rawTx.zelleStatus,
-            };
+            const cleanRawProof = rawTx.proofUrl && !rawTx.proofUrl.includes('/transactions/') ? rawTx.proofUrl : undefined;
+            const finalProof = cleanRawProof && cleanRawProof.startsWith('/api/') && token && !cleanRawProof.includes('token=')
+              ? `${cleanRawProof}?token=${encodeURIComponent(token)}`
+              : cleanRawProof;
+            const isHaitiInboundSse =
+              rawTx.serviceType === 'haiti_inbound_cash' ||
+              rawTx.senderName === 'Client Haïti' ||
+              Boolean(rawTx.referenceNumber?.startsWith('#INB-'));
             setTransactions((prev) =>
-              prev.map(t => (t.id === completedTx.id || t.referenceNumber === completedTx.referenceNumber ? { ...t, ...completedTx } : t))
+              prev.map(t => {
+                if (t.id === rawTx.id || t.referenceNumber === rawTx.referenceNumber) {
+                  const preservedProof = finalProof || t.proofUrl || t.zelleProofUrl || t.haitiInboundProofUrl;
+                  return {
+                    ...t,
+                    ...rawTx,
+                    serviceType: isHaitiInboundSse ? 'haiti_inbound_cash' : (rawTx.serviceType || t.serviceType),
+                    proofUrl: preservedProof,
+                    zelleProofUrl: rawTx.operator === 'zelle' ? (preservedProof || t.zelleProofUrl) : t.zelleProofUrl,
+                    zelleStatus: rawTx.operator === 'zelle' ? 'approved' : t.zelleStatus,
+                    haitiInboundProofUrl: isHaitiInboundSse ? (preservedProof || t.haitiInboundProofUrl) : t.haitiInboundProofUrl,
+                    haitiInboundStatus: isHaitiInboundSse ? 'approved' : t.haitiInboundStatus,
+                  };
+                }
+                return t;
+              })
             );
-            showToast(`✅ Transfert #${completedTx.referenceNumber} clôturé avec succès par ${completedTx.assignedToName || 'l\'agent'}.`, 'success');
+            showToast(`✅ Transfert #${rawTx.referenceNumber} clôturé avec succès par ${rawTx.assignedToName || 'l\'agent'}.`, 'success');
           } catch (err) {
             console.error('Erreur parsing TRANSACTION_COMPLETED SSE:', err);
           }
@@ -1319,42 +1346,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    // Calculs spécifiques Zelle & Réception Haïti si applicable
+    // Calculs spécifiques :
+    // 1. Dépôt (Réception Haïti -> Retrait RD / haiti_inbound_cash) : Saisi en Gourdes (HTG), 0 Frais (0%), 0 Commission (0%), converti en Pesos (DOP) après validation
+    // 2. Zelle : Frais 0.5% déduits, Commission 1%
+    // 3. Tous les autres services (MonCash, Natcash, Digicel, Natcom, Claro, Altice) : Frais 0.5% déduits avant conversion en HTG, Commission 1%
     const isHaitiInbound = data.serviceType === 'haiti_inbound_cash';
+    const currentHtgRate = dopToHtgRate || 2.35;
     const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
       ? usdToHtgRate
-      : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-    const finalAmountUSD = (isZelle || isHaitiInbound)
+      : ((usdToHtgRate && currentHtgRate > 0) ? (usdToHtgRate / currentHtgRate) : 58.0);
+
+    const finalAmountUSD = isZelle
       ? (data.amountUSD || (data.amountDOP > 0 ? Math.round((data.amountDOP / usdToDop) * 100) / 100 : 0))
       : (data.amountUSD || 0);
-    const finalAmountDOP = isHaitiInbound
-      ? (data.amountDOP > 0 ? data.amountDOP : Math.round(finalAmountUSD * usdToDop))
-      : (isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP);
-    const finalAmountHTG = isHaitiInbound 
-      ? Math.round(finalAmountDOP * (dopToHtgRate || 2.35))
-      : (isZelle ? Math.round(finalAmountUSD * (usdToDop * (dopToHtgRate || 2.35))) : Math.round(data.amountDOP * dopToHtgRate));
 
-    const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.0;
+    const inboundHTG = isHaitiInbound
+      ? (data.amountHTG && data.amountHTG > 0 ? Math.round(data.amountHTG) : Math.round((data.amountDOP || 0) * currentHtgRate))
+      : 0;
+
+    const finalAmountDOP = isHaitiInbound
+      ? (data.amountDOP && data.amountDOP > 0 ? Math.round(data.amountDOP) : Math.max(1, Math.round(inboundHTG / currentHtgRate)))
+      : (isZelle ? Math.round(finalAmountUSD * usdToDop) : data.amountDOP);
+
     const zelleFeeRate = 0.5; // 0.5% Frais de service guichet
+    const zelleCommRate = 1.0; // 1.0% Commission standard sur tous les services (hors dépôt)
     const zelleFeeUSD = isZelle ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
     const zelleCommissionUSD = isZelle ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
+
+    const finalFeeDOP = isHaitiInbound
+      ? 0
+      : isZelle
+      ? Math.max(1, Math.round(zelleFeeUSD * usdToDop))
+      : (data.feeDOP && data.feeDOP > 0 ? data.feeDOP : Math.max(1, Math.round(finalAmountDOP * 0.005)));
+
+    const finalCommDOP = isHaitiInbound
+      ? 0
+      : isZelle
+      ? Math.max(1, Math.round(zelleCommissionUSD * usdToDop))
+      : (data.commissionDOP && data.commissionDOP > 0 ? data.commissionDOP : Math.max(1, Math.round(finalAmountDOP * 0.01)));
+
+    const netDOP = isHaitiInbound ? finalAmountDOP : Math.max(0, finalAmountDOP - finalFeeDOP);
+    const finalAmountHTG = isHaitiInbound
+      ? inboundHTG
+      : Math.round(netDOP * currentHtgRate);
 
     const payoutCurrency = data.payoutCurrency || 'DOP';
     const netUSD = finalAmountUSD - zelleFeeUSD;
     const netPayoutAmount = isHaitiInbound
-      ? (finalAmountDOP - Math.round(finalAmountDOP * 0.005))
+      ? finalAmountDOP
       : (payoutCurrency === 'DOP'
-        ? Math.round(netUSD * usdToDop)
+        ? Math.max(0, finalAmountDOP - finalFeeDOP)
         : payoutCurrency === 'HTG'
-        ? Math.round(netUSD * (usdToDop * (dopToHtgRate || 2.35)))
+        ? Math.round(netUSD * (usdToDop * currentHtgRate))
         : Math.round(netUSD * 100) / 100);
-
-    const finalFeeDOP = isHaitiInbound
-      ? Math.round(finalAmountDOP * 0.005)
-      : (isZelle ? Math.round(zelleFeeUSD * usdToDop) : data.feeDOP);
-    const finalCommDOP = isHaitiInbound
-      ? Math.round(finalAmountDOP * 0.01)
-      : (isZelle ? Math.round(zelleCommissionUSD * usdToDop) : data.commissionDOP);
 
     // 3. Determine Channel & Intelligent Task Routing :
     // - Zelle Direct & Réception Haïti Inbound -> Admin pour vérification bancaire / compte
@@ -1386,8 +1430,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       channel,
       amountDOP: finalAmountDOP,
       amountHTG: finalAmountHTG,
-      amountUSD: (isZelle || isHaitiInbound) ? finalAmountUSD : data.amountUSD,
-      exchangeRate: (isZelle || isHaitiInbound) ? usdToDop : dopToHtgRate,
+      amountUSD: isZelle ? finalAmountUSD : data.amountUSD,
+      exchangeRate: isZelle ? usdToDop : currentHtgRate,
       feeDOP: finalFeeDOP,
       commissionDOP: finalCommDOP,
       
@@ -1406,7 +1450,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       proofUrl: proofImg,
       proofNotes: isHaitiInbound
-        ? `Preuve réception ${data.operator.toUpperCase()} ($${finalAmountUSD} USD ~ ${finalAmountDOP.toLocaleString()} DOP) soumise par ${currentUser.name}. En attente de confirmation par l'Administrateur.`
+        ? `Preuve Dépôt ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG -> ${finalAmountDOP.toLocaleString()} DOP • 0 Frais) soumise par ${currentUser.name}. En attente de confirmation par l'Administrateur.`
         : (isZelle ? `Preuve Zelle ($${finalAmountUSD} USD) soumise par ${currentUser.name}. En attente de vérification bancaire par l'Administrateur.` : undefined),
 
       createdByNode: currentUser.nodeId,
@@ -1456,7 +1500,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       operator: data.operator,
       serviceType: data.serviceType,
       amountDOP: finalAmountDOP,
-      amountUSD: (isZelle || isHaitiInbound) ? finalAmountUSD : data.amountUSD,
+      amountHTG: finalAmountHTG,
+      amountUSD: isZelle ? finalAmountUSD : data.amountUSD,
       feeDOP: finalFeeDOP,
       commissionDOP: finalCommDOP,
       proofUrl: proofImg,
@@ -1464,15 +1509,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentUserId: currentUser.id,
     }).then((res) => {
       if (res.transaction) {
-        const finalProof = res.transaction.proofUrl || proofImg;
+        const finalProof = proofImg || res.transaction.proofUrl;
         setTransactions((prev) => [
           {
             ...newTx,
             ...res.transaction,
             serviceType: isHaitiInbound ? 'haiti_inbound_cash' : res.transaction.serviceType,
+            feeDOP: finalFeeDOP,
+            commissionDOP: finalCommDOP,
+            amountHTG: finalAmountHTG,
+            amountDOP: finalAmountDOP,
+            netPayoutAmount: (isZelle || isHaitiInbound) ? netPayoutAmount : res.transaction.netPayoutAmount,
             proofUrl: finalProof,
-            zelleProofUrl: isZelle ? (finalProof || proofImg) : undefined,
-            haitiInboundProofUrl: isHaitiInbound ? (finalProof || proofImg) : undefined,
+            zelleProofUrl: isZelle ? finalProof : undefined,
+            haitiInboundProofUrl: isHaitiInbound ? finalProof : undefined,
             haitiInboundStatus: isHaitiInbound ? 'pending_admin_check' : undefined,
             id: res.transaction.id,
           },
@@ -1486,10 +1536,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const toastMsg = isZelle
       ? `Preuve Zelle ($${finalAmountUSD} USD) enregistrée ! Transmise à l'Admin pour vérification de compte. Ne donnez pas l'argent avant validation.`
       : isHaitiInbound
-        ? `Preuve ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG) enregistrée ! Transmise à l'Admin pour vérification de compte. Ne donnez pas les Pesos avant validation.`
+        ? `Preuve Dépôt ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG) enregistrée ! Transmise à l'Admin. Après validation, elle passera en Pesos (${finalAmountDOP.toLocaleString()} DOP, 0 Frais).`
         : isHaitiCashChannel
-        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP (${Math.round(data.amountDOP * dopToHtgRate).toLocaleString()} HTG).`
-        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée avec succès ! Montant: ${data.amountDOP.toLocaleString()} DOP.`;
+        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée ! Brut: ${finalAmountDOP.toLocaleString()} DOP | Frais (0.5%): -${finalFeeDOP} DOP | Net à verser: ${finalAmountHTG.toLocaleString()} HTG.`
+        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée ! Brut: ${finalAmountDOP.toLocaleString()} DOP | Frais (0.5%): -${finalFeeDOP} DOP | Net: ${finalAmountHTG.toLocaleString()} HTG.`;
     showToast(toastMsg, (isZelle || isHaitiInbound) ? 'info' : 'success');
 
     return {
@@ -1513,6 +1563,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (approved) {
+      const preservedProof = tx.zelleProofUrl || tx.proofUrl;
       const payoutText = `${tx.netPayoutAmount ? tx.netPayoutAmount.toLocaleString() : tx.amountDOP.toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`;
       const proofNotes = `[ZELLE CONFIRMÉ PAR L'ADMIN ${currentUser.name}] Virement de $${tx.amountUSD || 0} USD vérifié et validé sur le compte bancaire. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
 
@@ -1525,6 +1576,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               zelleStatus: 'approved',
               completedAt: new Date().toISOString(),
               proofNotes,
+              proofUrl: preservedProof || t.proofUrl,
+              zelleProofUrl: preservedProof || t.zelleProofUrl,
             };
           }
           return t;
@@ -1540,7 +1593,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
 
       // Synchronisation backend
-      api.transactions.complete(tx.id, proofNotes, tx.proofUrl, currentUser.name).catch(() => null);
+      api.transactions.complete(tx.id, proofNotes, preservedProof, currentUser.name).catch(() => null);
 
       showToast(`✅ Zelle ${tx.referenceNumber} validé ! L'agent peut remettre ${payoutText} au client.`, 'success');
 
@@ -1585,7 +1638,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Validate Haïti Inbound Transaction by Admin (MonCash / Natcash)
+  // Validate Haïti Inbound Transaction by Admin (MonCash / Natcash — Dépôt en Gourdes converti en Pesos avec 0 Frais)
   const validateHaitiInboundTransaction = (transactionId: string, approved: boolean, note?: string) => {
     const tx = transactions.find((t) => t.id === transactionId);
     if (!tx) {
@@ -1593,18 +1646,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (approved) {
-      const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
-        ? usdToHtgRate
-        : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-      const appliedRate = tx.exchangeRate || usdToDop || 58.0;
-      const numUSD = tx.amountUSD || (tx.amountDOP > 0 ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : (tx.amountHTG > 0 ? Math.round((tx.amountHTG / (dopToHtgRate || 2.35) / appliedRate) * 100) / 100 : 0));
-      const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : (numUSD > 0 ? Math.round(numUSD * appliedRate) : Math.round(tx.amountHTG / (dopToHtgRate || 2.35)));
-      const feeDOP = tx.feeDOP > 0 ? tx.feeDOP : Math.round(grossDOP * 0.005);
-      const commDOP = tx.commissionDOP > 0 ? tx.commissionDOP : Math.round(grossDOP * 0.01);
-      const netPayout = tx.netPayoutAmount && tx.netPayoutAmount > 0 ? tx.netPayoutAmount : (grossDOP - feeDOP);
+      const preservedProof = tx.haitiInboundProofUrl || tx.proofUrl;
+      const appliedHtgRate = (tx.exchangeRate && tx.exchangeRate < 20) ? tx.exchangeRate : (dopToHtgRate || 2.35);
+      const grossHTG = tx.amountHTG > 0 ? tx.amountHTG : Math.round((tx.amountDOP || 0) * appliedHtgRate);
+      const grossDOP = tx.amountDOP > 0 ? tx.amountDOP : Math.round(grossHTG / appliedHtgRate);
+      const feeDOP = 0; // Sur Dépôt on ne prend aucun frais
+      const commDOP = 0; // Sur Dépôt on ne prend aucune commission
+      const netPayout = grossDOP;
       const payoutText = `${netPayout.toLocaleString()} DOP`;
 
-      const proofNotes = `[RÉCEPTION ${tx.operator.toUpperCase()} CONFIRMÉE PAR L'ADMIN ${currentUser.name}] Somme de $${numUSD} USD (~ ${grossDOP.toLocaleString()} DOP) vérifiée sur le compte. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
+      const proofNotes = `[DÉPÔT ${tx.operator.toUpperCase()} VALIDÉ PAR L'ADMIN ${currentUser.name}] Somme de ${grossHTG.toLocaleString()} HTG vérifiée sur le compte (0 Frais). CONVERTI EN PESOS — PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
 
       setTransactions((prev) =>
         prev.map((t) => {
@@ -1614,12 +1665,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               status: 'completed',
               completedAt: new Date().toISOString(),
               haitiInboundStatus: 'approved',
+              amountHTG: grossHTG,
               amountDOP: grossDOP,
               feeDOP,
               commissionDOP: commDOP,
               netPayoutAmount: netPayout,
               netPayoutCurrency: 'DOP',
               proofNotes,
+              proofUrl: preservedProof || t.proofUrl,
+              haitiInboundProofUrl: preservedProof || t.haitiInboundProofUrl,
             };
           }
           return t;
@@ -1631,17 +1685,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'TRANSACTION_UPDATED',
         currentUser.nodeId,
         currentUser.role,
-        `[RÉCEPTION HAÏTI VALIDÉE PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} approuvée. Montant net à verser au client: ${payoutText}`
+        `[DÉPÔT HAÏTI VALIDÉ PAR ADMIN ${currentUser.name}] Transaction ${tx.referenceNumber} (${grossHTG.toLocaleString()} HTG) approuvée et convertie en Pesos (0 frais). Montant à verser au client: ${payoutText}`
       );
 
       // Synchronisation backend
-      api.transactions.complete(tx.id, proofNotes, tx.proofUrl, currentUser.name).catch(() => null);
+      api.transactions.complete(tx.id, proofNotes, preservedProof, currentUser.name).catch(() => null);
 
-      showToast(`✅ Réception ${tx.operator.toUpperCase()} validée ! L'agent peut remettre ${payoutText} au client.`, 'success');
+      showToast(`✅ Dépôt ${tx.operator.toUpperCase()} (${grossHTG.toLocaleString()} HTG) validé ! Montant converti en Pesos : remettez ${payoutText} (0 frais) au client.`, 'success');
 
       return {
         success: true,
-        message: `Réception confirmée avec succès ! L'agent a été notifié qu'il peut remettre ${payoutText} au client.`
+        message: `Dépôt confirmé avec succès ! La somme de ${grossHTG.toLocaleString()} HTG est convertie en ${payoutText} (0 frais) pour l'agent.`
       };
     } else {
       const cancellationReason = note || `Transfert ${tx.operator.toUpperCase()} non reçu / non visible sur le compte de l'Administrateur.`;
@@ -1709,7 +1763,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     api.transactions.complete(transactionId, proofNotes, proofUrl, currentUser.name).then((res) => {
       if (res && res.transaction) {
         setTransactions((prev) =>
-          prev.map((t) => (t.id === transactionId ? { ...t, ...res.transaction, proofUrl: res.transaction.proofUrl || proofUrl || t.proofUrl } : t))
+          prev.map((t) => {
+            if (t.id === transactionId) {
+              const preservedProof = proofUrl || res.transaction.proofUrl || t.proofUrl || t.zelleProofUrl || t.haitiInboundProofUrl;
+              return {
+                ...t,
+                ...res.transaction,
+                proofUrl: preservedProof,
+                zelleProofUrl: t.operator === 'zelle' ? (preservedProof || t.zelleProofUrl) : t.zelleProofUrl,
+                haitiInboundProofUrl: t.serviceType === 'haiti_inbound_cash' ? (preservedProof || t.haitiInboundProofUrl) : t.haitiInboundProofUrl,
+              };
+            }
+            return t;
+          })
         );
       }
     }).catch(() => null);

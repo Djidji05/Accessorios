@@ -229,8 +229,8 @@ export const TaskQueueView: React.FC = () => {
       return;
     }
 
-    const feeDOP = Math.round(amountNum * 0.03);
-    const commissionDOP = Math.round(amountNum * 0.01);
+    const feeDOP = Math.max(1, Math.round(amountNum * 0.005)); // 0.5% frais de service
+    const commissionDOP = Math.max(1, Math.round(amountNum * 0.01)); // 1% commission
 
     const finalReceiverName = isNoBeneficiaryOperator
       ? (newTxReceiverName.trim() || `Recharge ${newTxOperator.toUpperCase()}`)
@@ -2673,36 +2673,62 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           <OperatorBadge operator={tx.operator} />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* Montant Encaissé (RD) */}
-                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                              {t('Montant Encaissé (RD)', 'Montant Encaissé (RD)')}
-                            </span>
-                            <p className="text-2xl font-black text-slate-900 font-mono">
-                              {(tx.amountDOP || 0).toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}
-                            </p>
-                            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                              <span>{t('Frais de service (0.5%) :', 'Frais de service (0.5%) :')} <strong>{(tx.feeDOP ?? Math.round((tx.amountDOP || 0) * 0.005)).toLocaleString(dateLocale)} DOP</strong></span>
-                              {currentUser.role === 'admin' && (
-                                <span className="text-emerald-700 font-bold">Comm. (1%) : {(tx.commissionDOP ?? Math.round((tx.amountDOP || 0) * 0.01)).toLocaleString(dateLocale)} DOP</span>
-                              )}
-                            </div>
-                          </div>
+                        {(() => {
+                          const appliedHtgRate = tx.exchangeRate || dopToHtgRate || 2.35;
+                          const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round((tx.amountDOP || 0) * 0.005));
+                          const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * 0.01));
+                          const calcNetDOP = Math.max(0, (tx.amountDOP || 0) - calcFeeDOP);
+                          const calcFeeHTG = Math.round(calcFeeDOP * appliedHtgRate);
+                          const calcNetHTG = Math.round(calcNetDOP * appliedHtgRate);
 
-                          {/* Montant à Verser (Haïti) */}
-                          <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1">
-                            <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block">
-                              {t('Montant à Verser (Haïti)', 'Montant à Verser (Haïti)')}
-                            </span>
-                            <p className="text-2xl font-black text-blue-600 font-mono">
-                              {(tx.amountHTG || 0).toLocaleString(dateLocale)} HTG
-                            </p>
-                            <p className="text-[11px] font-bold text-blue-600 pt-1">
-                              {t('Taux :', 'Taux :')} 100 {t('Pesos', 'Pesos')} = {Math.round((tx.exchangeRate || dopToHtgRate || 2) * 100)} HTG
-                            </p>
-                          </div>
-                        </div>
+                          return (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* Montant Encaissé (RD) */}
+                              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  {t('Montant Encaissé (RD)', 'Montant Encaissé (RD)')}
+                                </span>
+                                <p className="text-2xl font-black text-slate-900 font-mono">
+                                  {(tx.amountDOP || 0).toLocaleString(dateLocale)} {t('Pesos', 'Pesos')}
+                                </p>
+                                <div className="space-y-1 text-[11px] text-slate-600 pt-1 border-t border-slate-200/70">
+                                  <div className="flex items-center justify-between">
+                                    <span>{t('Frais de service (0.5%) déduits :', 'Frais de service (0.5%) déduits :')}</span>
+                                    <strong className="font-mono text-amber-700">-{calcFeeDOP.toLocaleString(dateLocale)} DOP (-{calcFeeHTG.toLocaleString(dateLocale)} HTG)</strong>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>{t('Montant Net Converti :', 'Montant Net Converti :')}</span>
+                                    <strong className="font-mono text-slate-900">{calcNetDOP.toLocaleString(dateLocale)} DOP</strong>
+                                  </div>
+                                  {currentUser.role === 'admin' && (
+                                    <div className="flex items-center justify-between text-emerald-700 font-bold">
+                                      <span>{t('Comm. (1%) :', 'Comm. (1%) :')}</span>
+                                      <span className="font-mono">+{calcCommDOP.toLocaleString(dateLocale)} DOP</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Montant à Verser (Haïti) */}
+                              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1.5">
+                                <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block">
+                                  {t('Montant à Verser (Haïti)', 'Montant à Verser (Haïti)')}
+                                </span>
+                                <p className="text-2xl font-black text-blue-600 font-mono">
+                                  {calcNetHTG.toLocaleString(dateLocale)} HTG
+                                </p>
+                                <div className="space-y-0.5 pt-1 border-t border-blue-200/60">
+                                  <p className="text-[11px] font-bold text-blue-700">
+                                    {t('Taux :', 'Taux :')} 100 {t('Pesos', 'Pesos')} = {Math.round(appliedHtgRate * 100)} HTG
+                                  </p>
+                                  <p className="text-[10px] font-semibold text-blue-600/80">
+                                    {calcNetDOP.toLocaleString(dateLocale)} DOP nets × {appliedHtgRate} = {calcNetHTG.toLocaleString(dateLocale)} HTG
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* 2. Informations Bénéficiaire & Numéro de Compte */}
@@ -2849,19 +2875,27 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             : tx.exchangeRate && tx.exchangeRate > 10
                             ? tx.exchangeRate
                             : baseUsdRate;
+                        const inboundHtgRate = (tx.exchangeRate && tx.exchangeRate < 20) ? tx.exchangeRate : (dopToHtgRate || 2.35);
+                        const inboundHTG = isHaitiInboundTx
+                          ? (tx.amountHTG && tx.amountHTG > 0 ? tx.amountHTG : Math.round((tx.amountDOP || 0) * inboundHtgRate))
+                          : 0;
+                        const inboundDOP = isHaitiInboundTx
+                          ? (tx.amountDOP && tx.amountDOP > 0 ? tx.amountDOP : Math.round(inboundHTG / inboundHtgRate))
+                          : 0;
+
                         const numUSD =
                           tx.amountUSD ||
                           (tx.amountDOP ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : 0);
-                        const grossDOP = tx.amountDOP || Math.round(numUSD * appliedRate);
-                        const zFeeUSD = tx.zelleFeeUSD || Math.round(numUSD * 0.005 * 100) / 100;
-                        const zFeeDOP = tx.feeDOP || Math.round(grossDOP * 0.005);
-                        const zCommUSD = tx.zelleCommissionUSD || Math.round(numUSD * 0.01 * 100) / 100;
-                        const zCommDOP = tx.commissionDOP || Math.round(grossDOP * 0.01);
-                        const zPayoutCurrency = tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP';
+                        const grossDOP = isHaitiInboundTx ? inboundDOP : (tx.amountDOP || Math.round(numUSD * appliedRate));
+                        const zFeeUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * 0.005 * 100) / 100;
+                        const zFeeDOP = isHaitiInboundTx ? 0 : Math.max(1, Math.round(zFeeUSD * appliedRate));
+                        const zCommUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * 0.01 * 100) / 100;
+                        const zCommDOP = isHaitiInboundTx ? 0 : Math.max(1, Math.round(zCommUSD * appliedRate));
+                        const zPayoutCurrency = isHaitiInboundTx ? 'DOP' : (tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP');
                         const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
-                        const zNetPayout =
-                          tx.netPayoutAmount ||
-                          (zPayoutCurrency === 'DOP' ? grossDOP - zFeeDOP : zNetUSD);
+                        const zNetPayout = isHaitiInboundTx
+                          ? inboundDOP
+                          : (zPayoutCurrency === 'DOP' ? Math.max(0, grossDOP - zFeeDOP) : zNetUSD);
 
                         const isPendingAdminDecision =
                           !isCompleted &&
@@ -2896,48 +2930,82 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             </div>
 
                             {/* Grille financière complète */}
-                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
-                              <div className="flex justify-between items-center text-slate-700">
-                                <span className="font-bold">
-                                  {isHaitiInboundTx
-                                    ? `Somme reçue sur la preuve (${tx.operator.toUpperCase()}) :`
-                                    : t('Somme reçue par Zelle :')}
-                                </span>
-                                <span className="font-mono font-black text-purple-700 text-sm">
-                                  ${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
-                                </span>
-                              </div>
+                            {isHaitiInboundTx ? (
+                              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
+                                <div className="flex justify-between items-center text-slate-700">
+                                  <span className="font-bold">
+                                    {`Somme reçue sur la preuve (${tx.operator.toUpperCase()} - Gourdes) :`}
+                                  </span>
+                                  <span className="font-mono font-black text-amber-700 text-sm">
+                                    {inboundHTG.toLocaleString()} HTG
+                                  </span>
+                                </div>
 
-                              <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                <span>{t('Taux appliqué :')}</span>
-                                <span className="font-mono font-bold text-slate-800">
-                                  1 USD = {appliedRate.toFixed(2)} DOP
-                                </span>
-                              </div>
+                                <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                  <span>{t('Taux appliqué :')}</span>
+                                  <span className="font-mono font-bold text-slate-800">
+                                    100 DOP = {Math.round(inboundHtgRate * 100)} HTG
+                                  </span>
+                                </div>
 
-                              <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                <span>{t('Frais de Service Guichet (0.5%) :')}</span>
-                                <span className="font-mono font-bold text-amber-700">
-                                  -${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
-                                </span>
-                              </div>
+                                <div className="flex justify-between items-center text-emerald-700 text-[11px] font-bold">
+                                  <span>{t('Frais de Service & Commission sur Dépôt :')}</span>
+                                  <span className="font-mono">
+                                    0 DOP (Aucun frais)
+                                  </span>
+                                </div>
 
-                              <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                <span>{t('Commission Admin (1%) :')}</span>
-                                <span className="font-mono font-bold text-emerald-700">
-                                  +${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
-                                </span>
+                                <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                  <span className="font-black text-xs uppercase tracking-tight text-slate-900">
+                                    {t('Montant converti en Pesos à remettre au client (RD) :')}
+                                  </span>
+                                  <span className="font-mono font-black text-emerald-600 text-xl">
+                                    {inboundDOP.toLocaleString()} DOP
+                                  </span>
+                                </div>
                               </div>
+                            ) : (
+                              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
+                                <div className="flex justify-between items-center text-slate-700">
+                                  <span className="font-bold">
+                                    {t('Somme reçue par Zelle :')}
+                                  </span>
+                                  <span className="font-mono font-black text-purple-700 text-sm">
+                                    ${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+                                  </span>
+                                </div>
 
-                              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                <span className="font-black text-xs uppercase tracking-tight text-slate-900">
-                                  {t('Montant net à remettre au client (RD) :')}
-                                </span>
-                                <span className="font-mono font-black text-emerald-600 text-xl">
-                                  {zPayoutCurrency === 'USD' ? `$${zNetPayout.toLocaleString()} USD` : `${zNetPayout.toLocaleString()} DOP`}
-                                </span>
+                                <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                  <span>{t('Taux appliqué :')}</span>
+                                  <span className="font-mono font-bold text-slate-800">
+                                    1 USD = {appliedRate.toFixed(2)} DOP
+                                  </span>
+                                </div>
+
+                                <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                  <span>{t('Frais de Service Guichet (0.5%) :')}</span>
+                                  <span className="font-mono font-bold text-amber-700">
+                                    -${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
+                                  </span>
+                                </div>
+
+                                <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                                  <span>{t('Commission Admin (1%) :')}</span>
+                                  <span className="font-mono font-bold text-emerald-700">
+                                    +${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
+                                  </span>
+                                </div>
+
+                                <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                  <span className="font-black text-xs uppercase tracking-tight text-slate-900">
+                                    {t('Montant net à remettre au client (RD) :')}
+                                  </span>
+                                  <span className="font-mono font-black text-emerald-600 text-xl">
+                                    {zPayoutCurrency === 'USD' ? `$${zNetPayout.toLocaleString()} USD` : `${zNetPayout.toLocaleString()} DOP`}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* Admin OUI / NON Action Box */}
                             {(currentUser.role === 'admin' || currentUser.role === 'gestionnaire') && isPendingAdminDecision ? (
@@ -2946,14 +3014,23 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                   <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                                   <span>
                                     {isHaitiInboundTx
-                                      ? `Avez-vous bien reçu ce transfert ${tx.operator.toUpperCase()} sur votre compte Haïti ?`
+                                      ? `Avez-vous bien reçu ce dépôt ${tx.operator.toUpperCase()} de ${inboundHTG.toLocaleString()} HTG sur votre compte ?`
                                       : 'Avez-vous bien vu le virement Zelle sur votre compte bancaire ?'}
                                   </span>
                                 </div>
                                 <p className="text-xs text-amber-900 leading-relaxed">
-                                  Vérifiez votre compte {isHaitiInboundTx ? tx.operator.toUpperCase() : 'bancaire Zelle'} pour la somme de{' '}
-                                  <strong>${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</strong> (~{grossDOP.toLocaleString()} DOP).
-                                  Cliquez sur <strong>OUI</strong> pour valider et autoriser le paiement de <strong>{zNetPayout.toLocaleString()} {zPayoutCurrency}</strong> au client, ou sur <strong>NON</strong> pour annuler.
+                                  {isHaitiInboundTx ? (
+                                    <>
+                                      Vérifiez votre compte <strong>{tx.operator.toUpperCase()}</strong> pour la somme de <strong>{inboundHTG.toLocaleString()} HTG</strong>.
+                                      Cliquez sur <strong>OUI, Valider</strong> pour convertir automatiquement la somme en Pesos (<strong>{inboundDOP.toLocaleString()} DOP • 0 Frais</strong>) pour l'agent, ou sur <strong>NON</strong> pour annuler.
+                                    </>
+                                  ) : (
+                                    <>
+                                      Vérifiez votre compte bancaire Zelle pour la somme de{' '}
+                                      <strong>${numUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</strong> (~{grossDOP.toLocaleString()} DOP).
+                                      Cliquez sur <strong>OUI, Valider</strong> pour autoriser le paiement de <strong>{zNetPayout.toLocaleString()} {zPayoutCurrency}</strong> au client, ou sur <strong>NON</strong> pour annuler.
+                                    </>
+                                  )}
                                 </p>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -2969,7 +3046,14 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                           status: 'completed',
                                           zelleStatus: 'approved',
                                           haitiInboundStatus: 'approved',
+                                          amountDOP: isHaitiInboundTx ? inboundDOP : tx.amountDOP,
+                                          amountHTG: isHaitiInboundTx ? inboundHTG : tx.amountHTG,
+                                          feeDOP: isHaitiInboundTx ? 0 : zFeeDOP,
+                                          commissionDOP: isHaitiInboundTx ? 0 : zCommDOP,
                                           netPayoutAmount: zNetPayout,
+                                          proofUrl: proofImageToDisplay || tx.proofUrl,
+                                          zelleProofUrl: tx.operator === 'zelle' ? (proofImageToDisplay || tx.zelleProofUrl) : tx.zelleProofUrl,
+                                          haitiInboundProofUrl: isHaitiInboundTx ? (proofImageToDisplay || tx.haitiInboundProofUrl) : tx.haitiInboundProofUrl,
                                         });
                                       }
                                     }}
@@ -4557,9 +4641,13 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         ) : (tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || tx.receiverName === 'Client Guichet RD' || Boolean(tx.haitiInboundStatus)) ? (
                           <>
                             <span className="font-black text-amber-600 text-sm">
-                              ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / 58) * 100) / 100).toLocaleString()} USD
+                              {tx.haitiInboundStatus === 'approved' || isCompleted
+                                ? `${(tx.amountDOP || tx.netPayoutAmount || 0).toLocaleString()} DOP`
+                                : `${(tx.amountHTG || 0).toLocaleString()} HTG`}
                             </span>
-                            <span className="text-[10px] font-bold text-slate-400">({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP)</span>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              ({(tx.amountHTG || 0).toLocaleString()} HTG • 0 Frais)
+                            </span>
                           </>
                         ) : (
                           <>
@@ -4741,10 +4829,12 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                       ) : (tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || tx.receiverName === 'Client Guichet RD' || Boolean(tx.haitiInboundStatus)) ? (
                         <>
                           <span className="font-black text-amber-600 text-sm block leading-tight">
-                            ${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / 58) * 100) / 100).toLocaleString()} USD
+                            {tx.haitiInboundStatus === 'approved' || isCompleted
+                              ? `${(tx.amountDOP || tx.netPayoutAmount || 0).toLocaleString()} DOP`
+                              : `${(tx.amountHTG || 0).toLocaleString()} HTG`}
                           </span>
                           <span className="text-[10px] text-slate-400 font-semibold">
-                            ({(tx.netPayoutAmount || tx.amountDOP).toLocaleString()} DOP)
+                            ({(tx.amountHTG || 0).toLocaleString()} HTG • 0 Frais)
                           </span>
                         </>
                       ) : (
