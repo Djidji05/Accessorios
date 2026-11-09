@@ -109,6 +109,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
           amountDOP: true,
           amountHTG: true,
           feeDOP: true,
+          commissionDOP: true,
         },
       }),
       prisma.transaction.count({ where }),
@@ -119,6 +120,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
       totalVolumeDOP: aggregates._sum.amountDOP || 0,
       totalVolumeHTG: aggregates._sum.amountHTG || 0,
       totalFeesDOP: aggregates._sum.feeDOP || 0,
+      totalCommissionsDOP: aggregates._sum.commissionDOP || 0,
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors du calcul des statistiques.' });

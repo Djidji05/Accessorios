@@ -16,17 +16,18 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     ? usdToHtgRate
     : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
 
-  // Helper pour calculer la commission d'une transaction en DOP (1% sur tous les services, 0 sur Dépôt)
+  // Helper pour calculer la commission d'une transaction en DOP (taux dynamique par service, 0 sur Dépôt)
   const getTxCommissionDOP = (tx: typeof transactions[0]) => {
     if (tx.status === 'cancelled' || tx.serviceType === 'haiti_inbound_cash') {
       return 0;
     }
+    const commRate = (serviceCommissionRates[tx.operator] ?? 1.0) / 100;
     if (tx.operator === 'zelle' || tx.amountUSD) {
       const amtUSD = tx.amountUSD || (tx.amountDOP ? tx.amountDOP / usdToDopRate : 0);
-      const commUSD = amtUSD * 0.01;
+      const commUSD = amtUSD * commRate;
       return tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(commUSD * usdToDopRate));
     }
-    return tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01));
+    return tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * commRate));
   };
 
   // Filtrer les transactions selon la plage de dates sélectionnée dans le calendrier du Dashboard

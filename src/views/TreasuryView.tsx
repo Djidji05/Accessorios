@@ -52,6 +52,7 @@ export const TreasuryView: React.FC = () => {
     transactions,
     dopToHtgRate,
     usdToHtgRate,
+    serviceFeeRates,
     serviceCommissionRates,
     adminCommissionRate,
     t,
@@ -139,25 +140,27 @@ export const TreasuryView: React.FC = () => {
   // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME SUR LA PÉRIODE SÉLECTIONNÉE ---
   const liveFeesDOP = validPeriodTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum; // Dépôt : 0 frais
+    const opFeeRate = (serviceFeeRates[t.operator] ?? 0.5) / 100;
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
-      const feeUSD = amtUSD * 0.005; // 0.5% frais de service guichet
+      const feeUSD = amtUSD * opFeeRate;
       return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(feeUSD * usdToDopRate)));
     }
-    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(t.amountDOP * 0.005)));
+    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(t.amountDOP * opFeeRate)));
   }, 0);
-  const totalFeesDOP = (liveFeesDOP > 0 || hasSystemHistory) ? liveFeesDOP : 48500;
+  const totalFeesDOP = liveFeesDOP;
 
   const liveAdminCommissionsDOP = validPeriodTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum; // Dépôt : 0 commission
+    const opCommRate = (serviceCommissionRates[t.operator] ?? 1.0) / 100;
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
-      const commUSD = amtUSD * 0.01; // 1.0% commission admin
+      const commUSD = amtUSD * opCommRate;
       return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(commUSD * usdToDopRate)));
     }
-    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(t.amountDOP * 0.01)));
+    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(t.amountDOP * opCommRate)));
   }, 0);
-  const totalAdminCommissionsDOP = (liveAdminCommissionsDOP > 0 || hasSystemHistory) ? liveAdminCommissionsDOP : 24800;
+  const totalAdminCommissionsDOP = liveAdminCommissionsDOP;
 
   const totalPlatformRevenueDOP = totalFeesDOP + totalAdminCommissionsDOP;
   const totalPlatformRevenueHTG = Math.round(totalPlatformRevenueDOP * dopToHtgRate);

@@ -30,7 +30,7 @@ import { WeeklySettlement } from '../types';
 import { Pagination } from '../components/Pagination';
 
 export const WeeklySettlementsView: React.FC = () => {
-  const { settlements, transactions, currentUser, recordAgentDeposit, t, currentLang } = useApp();
+  const { settlements, transactions, currentUser, recordAgentDeposit, serviceCommissionRates, t, currentLang } = useApp();
 
   const isAdmin = currentUser.role === 'admin';
   const isGestionnaire = currentUser.role === 'gestionnaire';
@@ -157,7 +157,8 @@ export const WeeklySettlementsView: React.FC = () => {
       const key = `${tx.createdByName || 'agent'}_${wInfo.weekLabel}`;
       const existing = weekGroups.get(key);
       const isInbound = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
-      const comm = isInbound ? 0 : (tx.commissionDOP || Math.max(1, Math.round((tx.amountDOP || 0) * 0.01)));
+      const commRate = (serviceCommissionRates[tx.operator] ?? 1.0) / 100;
+      const comm = isInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * commRate)));
       if (!existing) {
         weekGroups.set(key, {
           agentId: tx.createdByNode || 'agent_node',
