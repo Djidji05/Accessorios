@@ -162,12 +162,12 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-300 dark:border-amber-700 space-y-1.5 animate-pulse">
               <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-extrabold text-sm">
                 <Clock className="w-5 h-5 shrink-0" />
-                <span>⏳ EN ATTENTE DE VÉRIFICATION BANCAIRE PAR L'ADMINISTRATEUR</span>
+                <span>{t("⏳ EN ATTENTE DE VÉRIFICATION BANCAIRE PAR L'ADMINISTRATEUR")}</span>
               </div>
               <p className="text-xs text-amber-700 dark:text-amber-400 pl-7 font-medium">
-                Un message a été envoyé à l'Administrateur pour vérifier s'il a bien reçu le Zelle sur son compte bancaire.
+                {t("Un message a été envoyé à l'Administrateur pour vérifier s'il a bien reçu le Zelle sur son compte bancaire.")}
                 <strong className="block text-amber-900 dark:text-amber-200 mt-1 font-bold">
-                  ⛔ RÈGLE DE SÉCURITÉ : Ne donnez aucun argent au client avant que l'Admin ait validé !
+                  {t("⛔ RÈGLE DE SÉCURITÉ : Ne donnez aucun argent au client avant que l'Admin ait validé !")}
                 </strong>
               </p>
             </div>
@@ -178,14 +178,14 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-black text-sm">
                   <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                  <span>✅ VÉRIFICATION CONFIRMÉE PAR L'ADMINISTRATEUR</span>
+                  <span>{t("✅ VÉRIFICATION CONFIRMÉE PAR L'ADMINISTRATEUR")}</span>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100">
-                  Paiement Autorisé
+                  {t('Paiement Autorisé')}
                 </span>
               </div>
               <p className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pl-7">
-                L'Administrateur a confirmé avoir bien vu le virement Zelle de <strong>${amountUSD} USD</strong> sur le compte bancaire. Vous pouvez remettre les fonds au client.
+                {t("L'Administrateur a confirmé avoir bien vu le virement Zelle de")} <strong>${amountUSD} USD</strong> {t("sur le compte bancaire. Vous pouvez remettre les fonds au client.")}
               </p>
             </div>
           )}
@@ -194,17 +194,17 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border-2 border-rose-500 space-y-2">
               <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300 font-black text-sm">
                 <XCircle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400" />
-                <span>❌ VIREMENT ZELLE NON REÇU / REFUSÉ PAR L'ADMINISTRATEUR</span>
+                <span>{t("❌ VIREMENT ZELLE NON REÇU / REFUSÉ PAR L'ADMINISTRATEUR")}</span>
               </div>
               <p className="text-xs text-rose-700 dark:text-rose-300 pl-7 font-semibold">
-                L'Administrateur n'a pas vu ce virement Zelle sur le compte bancaire.
+                {t("L'Administrateur n'a pas vu ce virement Zelle sur le compte bancaire.")}
                 <strong className="block text-rose-900 dark:text-rose-200 mt-1 font-black underline">
-                  ⛔ INTERDICTION STRICTE : NE DONNEZ AUCUN ARGENT AU CLIENT !
+                  {t("⛔ INTERDICTION STRICTE : NE DONNEZ AUCUN ARGENT AU CLIENT !")}
                 </strong>
               </p>
               {tx.cancellationReason && (
                 <div className="ml-7 p-2 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900 text-xs font-mono text-rose-800 dark:text-rose-300">
-                  Motif : {tx.cancellationReason}
+                  {t('Motif :')} {tx.cancellationReason}
                 </div>
               )}
             </div>
@@ -216,10 +216,10 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <DollarSign className="w-4 h-4 text-emerald-600" />
-                  <span>Montant Net Débloqué à Remettre au Client</span>
+                  <span>{t('Montant Net Débloqué à Remettre au Client')}</span>
                 </span>
                 <span className="font-mono text-[11px] font-semibold">
-                  Devise : {payoutCurrency}
+                  {t('Devise :')} {payoutCurrency}
                 </span>
               </div>
 
@@ -229,7 +229,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     {netPayout.toLocaleString()} <span className="text-lg font-bold text-slate-500 dark:text-slate-400">{payoutCurrency}</span>
                   </p>
                   <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-semibold">
-                    ✓ Virement vérifié par l'Admin. Vous pouvez verser ce montant au client en toute sécurité.
+                    {t("✓ Virement vérifié par l'Admin. Vous pouvez verser ce montant au client en toute sécurité.")}
                   </p>
                 </div>
 
@@ -237,10 +237,10 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                   type="button"
                   onClick={handleCopyAmount}
                   className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                  title="Copier le montant exact"
+                  title={t("Copier le montant exact")}
                 >
                   {copiedAmount ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedAmount ? 'Copié !' : 'Copier'}</span>
+                  <span>{copiedAmount ? t('Copié !') : t('Copier')}</span>
                 </button>
               </div>
             </div>
@@ -250,14 +250,14 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                 <span className="p-1 rounded-lg bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
                   🔒
                 </span>
-                <span>Montant à Remettre Masqué (Validation Requise)</span>
+                <span>{t('Montant à Remettre Masqué (Validation Requise)')}</span>
               </div>
               <p className="text-xs text-amber-800 dark:text-amber-300 font-medium">
-                ⛔ <strong>Sécurité Zelle :</strong> Ne versez aucun argent au client pour le moment. Le montant exact à décaisser sera débloqué et affiché ici dès que l'Administrateur aura confirmé la réception du virement sur le compte bancaire.
+                ⛔ <strong>{t('Sécurité Zelle :')}</strong> {t("Ne versez aucun argent au client pour le moment. Le montant exact à décaisser sera débloqué et affiché ici dès que l'Administrateur aura confirmé la réception du virement sur le compte bancaire.")}
               </p>
               {isAdmin && (
                 <p className="text-[11px] font-mono text-purple-700 dark:text-purple-300 pt-1 border-t border-amber-200 dark:border-amber-800/60 font-semibold">
-                  (Aperçu Admin pour contrôle : {netPayout.toLocaleString()} {payoutCurrency})
+                  ({t('Aperçu Admin pour contrôle :')} {netPayout.toLocaleString()} {payoutCurrency})
                 </p>
               )}
             </div>
@@ -268,7 +268,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span>Photo Preuve du Virement Zelle</span>
+                <span>{t('Photo Preuve du Virement Zelle')}</span>
               </span>
 
               {proofImg && (
@@ -278,7 +278,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                   className="px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Agrandir en Plein Écran ↗</span>
+                  <span>{t('Agrandir en Plein Écran ↗')}</span>
                 </button>
               )}
             </div>
@@ -287,16 +287,16 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               <div 
                 className="relative rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 bg-slate-950 flex flex-col items-center justify-center p-2 group cursor-pointer shadow-inner"
                 onClick={() => setLightboxUrl(proofImg)}
-                title="Cliquer pour voir en plein écran"
+                title={t("Cliquer pour voir en plein écran")}
               >
                 <img
                   src={proofImg}
-                  alt="Preuve Zelle Capture"
+                  alt={t("Preuve Zelle Capture")}
                   className="w-full max-h-[380px] sm:max-h-[460px] object-contain rounded-xl select-none"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs">
                   <Eye className="w-5 h-5" />
-                  <span>Cliquer pour agrandir en plein écran</span>
+                  <span>{t('Cliquer pour agrandir en plein écran')}</span>
                 </div>
               </div>
             ) : (
@@ -451,20 +451,20 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
               ) : isApproved ? (
                 <div className="flex items-center justify-between text-xs pt-1">
                   <span className="text-emerald-800 dark:text-emerald-300 font-bold">
-                    L'agent est autorisé à décaisser <strong>{netPayout.toLocaleString()} {payoutCurrency}</strong> au client.
+                    {t("L'agent est autorisé à décaisser")} <strong>{netPayout.toLocaleString()} {payoutCurrency}</strong> {t("au client.")}
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowRejectInput(true)}
                     className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
                   >
-                    Annuler / Révoquer ce Zelle
+                    {t("Annuler / Révoquer ce Zelle")}
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between text-xs pt-1">
                   <span className="text-rose-800 dark:text-rose-300 font-bold">
-                    Ce virement Zelle a été refusé. Aucun décaissement n'est autorisé.
+                    {t("Ce virement Zelle a été refusé. Aucun décaissement n'est autorisé.")}
                   </span>
                   <button
                     type="button"
@@ -472,7 +472,7 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
                     onClick={handleAdminApprove}
                     className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
                   >
-                    Réactiver et Valider (OUI)
+                    {t("Réactiver et Valider (OUI)")}
                   </button>
                 </div>
               )}
