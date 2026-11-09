@@ -61,12 +61,12 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
   const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
-  const feeUSD = tx.zelleFeeUSD || Math.round(amountUSD * 0.005 * 100) / 100; // 0.5% frais de service guichet
-  const feeDOP = Math.round(feeUSD * appliedRate);
-  const commUSD = tx.zelleCommissionUSD || Math.round(amountUSD * 0.01 * 100) / 100; // 1% commission admin
-  const commDOP = Math.round(commUSD * appliedRate);
+  const feeUSD = Math.round(amountUSD * 0.005 * 100) / 100; // 0.5% frais de service guichet
+  const feeDOP = Math.max(1, Math.round(feeUSD * appliedRate));
+  const commUSD = Math.round(amountUSD * 0.01 * 100) / 100; // 1% commission admin
+  const commDOP = Math.max(1, Math.round(commUSD * appliedRate));
   const netUSD = Math.round((amountUSD - feeUSD) * 100) / 100;
-  const netPayout = tx.netPayoutAmount || (payoutCurrency === 'DOP' ? Math.round(netUSD * appliedRate) : netUSD);
+  const netPayout = payoutCurrency === 'DOP' ? Math.max(0, Math.round(amountUSD * appliedRate) - feeDOP) : netUSD;
 
   const proofImg = tx.zelleProofUrl || tx.proofUrl;
 

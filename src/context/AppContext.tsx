@@ -34,11 +34,11 @@ import { soundPlayer } from '../utils/audioNotification';
 export const DEFAULT_SERVICE_COMMISSION_RATES: Record<string, number> = {
   moncash: 1.0,
   natcash: 1.0,
-  zelle: 1.5,
-  digicel: 2.0,
-  natcom: 2.0,
-  claro: 2.5,
-  altice: 2.5,
+  zelle: 1.0,
+  digicel: 1.0,
+  natcom: 1.0,
+  claro: 1.0,
+  altice: 1.0,
 };
 
 interface AppContextType {
@@ -451,14 +451,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const [serviceCommissionRates, setServiceCommissionRates] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem('service_commission_rates');
-    if (saved) {
-      try {
-        return { ...DEFAULT_SERVICE_COMMISSION_RATES, ...JSON.parse(saved) };
-      } catch (e) {
-        console.error('Failed to parse service_commission_rates', e);
-      }
-    }
+    localStorage.setItem('service_commission_rates', JSON.stringify(DEFAULT_SERVICE_COMMISSION_RATES));
     return DEFAULT_SERVICE_COMMISSION_RATES;
   });
 

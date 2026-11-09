@@ -172,14 +172,14 @@ export const INITIAL_SERVICE_COMMISSIONS: ServiceCommissionConfig[] = [
     serviceType: 'topup_mobile',
     serviceName: 'Recharge Mobile & Data Télécom',
     defaultFeeRate: 0.5,
-    adminCommissionRate: 1.5,
+    adminCommissionRate: 1.0,
     description: 'Recharges téléphoniques (Digicel, Natcom, Claro, Altice)'
   },
   {
     serviceType: 'bill_payment',
     serviceName: 'Paiement de Factures & Services',
     defaultFeeRate: 0.5,
-    adminCommissionRate: 0.8,
+    adminCommissionRate: 1.0,
     description: 'Règlement de factures d\'eau, d\'électricité et services publics'
   }
 ];
@@ -206,7 +206,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
   {
     operator: 'zelle',
     operatorName: 'Zelle (Transfert USD)',
-    adminCommissionRate: 1.5,
+    adminCommissionRate: 1.0,
     defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'USD / DOP',
@@ -215,7 +215,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
   {
     operator: 'digicel',
     operatorName: 'Digicel (Recharge & Data)',
-    adminCommissionRate: 2.0,
+    adminCommissionRate: 1.0,
     defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'HTG',
@@ -224,7 +224,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
   {
     operator: 'natcom',
     operatorName: 'Natcom (Recharge & Data)',
-    adminCommissionRate: 2.0,
+    adminCommissionRate: 1.0,
     defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'HTG',
@@ -233,7 +233,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
   {
     operator: 'claro',
     operatorName: 'Claro (Recharge R.D.)',
-    adminCommissionRate: 2.5,
+    adminCommissionRate: 1.0,
     defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'DOP',
@@ -242,7 +242,7 @@ export const INITIAL_OPERATOR_COMMISSIONS: OperatorCommissionConfig[] = [
   {
     operator: 'altice',
     operatorName: 'Altice (Recharge R.D.)',
-    adminCommissionRate: 2.5,
+    adminCommissionRate: 1.0,
     defaultFeeRate: 0.5,
     flatCommissionDOP: 0,
     currency: 'DOP',

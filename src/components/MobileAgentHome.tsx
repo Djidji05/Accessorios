@@ -768,7 +768,7 @@ export const MobileAgentHome: React.FC = () => {
       ? usdToHtgRate
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const numUSD = parseFloat(zelleAmountUSD) || 0;
-      const feeUSD = Math.round(numUSD * 0.01 * 100) / 100;
+      const feeUSD = Math.round(numUSD * 0.005 * 100) / 100;
       const netUSD = Math.max(0, numUSD - feeUSD);
       const netPayoutDOP = Math.round(netUSD * usdToDop);
       const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netUSD.toFixed(2)} USD`;

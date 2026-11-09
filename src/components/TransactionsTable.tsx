@@ -141,8 +141,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
           </thead>
           <tbody className="divide-y divide-slate-100 font-sans">
             {paginatedTransactions.map((tx) => {
-              const commRate = serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0;
-              const opCommDOP = tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
+              const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
+              const commRate = isHaitiInbound ? 0 : 1.0;
+              const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
 
               return (
                 <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
@@ -162,9 +163,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                   {/* Commission Opérateur */}
                   <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                     <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 inline-block text-[11px]">
-                      +{opCommDOP.toLocaleString()} DOP
+                      {isHaitiInbound ? '0 DOP' : `+${opCommDOP.toLocaleString()} DOP`}
                     </span>
-                    <div className="text-[10px] text-slate-400 font-semibold">Taux: {commRate}%</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">{isHaitiInbound ? 'Dépôt (0%)' : `Taux: ${commRate}%`}</div>
                   </td>
 
                   {/* Bénéficiaire */}
@@ -178,7 +179,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                   {/* Montants DOP & HTG empilés élégamment */}
                   <td className="py-2.5 px-3 text-right whitespace-nowrap">
                     <div className="font-black font-mono text-slate-900 text-xs leading-tight">
-                      {tx.amountDOP.toLocaleString()} <span className="text-[10px] text-slate-400">DOP</span>
+                      {isHaitiInbound && tx.status !== 'completed' ? (
+                        <span className="text-orange-600">En attente DOP</span>
+                      ) : (
+                        <>{tx.amountDOP.toLocaleString()} <span className="text-[10px] text-slate-400">DOP</span></>
+                      )}
                     </div>
                     <div className="font-bold font-mono text-emerald-600 text-[11px] leading-tight mt-0.5">
                       {tx.amountHTG.toLocaleString()} <span className="text-[10px] text-emerald-500">HTG</span>
@@ -187,7 +192,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
 
                   {/* Commission Admin */}
                   <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 text-xs whitespace-nowrap">
-                    +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
+                    {isHaitiInbound ? '0 DOP' : `+${opCommDOP.toLocaleString()} DOP`}
                   </td>
 
                   {/* SLA Badge */}
@@ -216,8 +221,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       {/* 2. MOBILE CARD VIEW (md:hidden) */}
       <div className="md:hidden divide-y divide-slate-100">
         {paginatedTransactions.map((tx) => {
-          const commRate = serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0;
-          const opCommDOP = tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
+          const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
+          const commRate = isHaitiInbound ? 0 : 1.0;
+          const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
 
           return (
             <div
@@ -247,7 +253,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                     {tx.amountHTG.toLocaleString()} HTG
                   </span>
                   <span className="text-[10px] text-slate-400 font-semibold">
-                    ({tx.amountDOP.toLocaleString()} DOP)
+                    {isHaitiInbound && tx.status !== 'completed' ? '(En attente DOP)' : `(${tx.amountDOP.toLocaleString()} DOP)`}
                   </span>
                 </div>
               </div>
@@ -255,7 +261,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
               {/* Commission & Action */}
               <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                  Com. : <strong className="text-emerald-700">+{opCommDOP.toLocaleString()} DOP</strong> ({commRate}%)
+                  {isHaitiInbound ? (
+                    <>Dépôt : <strong className="text-emerald-700">0 DOP (Sans Frais)</strong></>
+                  ) : (
+                    <>Com. : <strong className="text-emerald-700">+{opCommDOP.toLocaleString()} DOP</strong> ({commRate}%)</>
+                  )}
                 </span>
 
                 <button

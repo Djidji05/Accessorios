@@ -235,20 +235,43 @@ export const HistoryView: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <span className="text-slate-500 font-medium">{t('Montant Envoyé', 'Montant Envoyé')}</span>
-              <span className="font-mono font-black text-slate-900 dark:text-white text-sm">{tx.amountDOP.toLocaleString()} DOP</span>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-              <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin (DOP)', 'Commission Admin (DOP)')}</span>
-              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
-                +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
+              <span className="text-slate-500 font-medium">{tx.serviceType === 'haiti_inbound_cash' ? t('Montant Reçu (Haïti)', 'Montant Reçu (Haïti)') : t('Montant Envoyé', 'Montant Envoyé')}</span>
+              <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                {tx.serviceType === 'haiti_inbound_cash' ? `${tx.amountHTG.toLocaleString()} HTG` : `${tx.amountDOP.toLocaleString()} DOP`}
               </span>
             </div>
 
+            {tx.serviceType === 'haiti_inbound_cash' ? (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40">
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold">{t('Frais & Commission', 'Frais & Commission')}</span>
+                <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">0 DOP (Dépôt Sans Frais)</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40">
+                  <span className="text-amber-800 dark:text-amber-400 font-bold">{t('Frais de Service (0.5%)', 'Frais de Service (0.5%)')}</span>
+                  <span className="font-mono font-black text-amber-700 dark:text-amber-400 text-sm">
+                    -{(tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005))).toLocaleString()} DOP
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+                  <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin (1%)', 'Commission Admin (1%)')}</span>
+                  <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                    +{(tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01))).toLocaleString()} DOP
+                  </span>
+                </div>
+              </>
+            )}
+
             <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-              <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Montant Reçu', 'Montant Reçu')}</span>
-              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">{tx.amountHTG.toLocaleString()} HTG</span>
+              <span className="text-blue-700 dark:text-blue-400 font-bold">
+                {tx.serviceType === 'haiti_inbound_cash' ? t('Montant à Payer (RD)', 'Montant à Payer (RD)') : t('Montant Reçu', 'Montant Reçu')}
+              </span>
+              <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-base">
+                {tx.serviceType === 'haiti_inbound_cash'
+                  ? (tx.status === 'completed' ? `${tx.amountDOP.toLocaleString()} DOP` : t('En attente de validation Admin', 'En attente de validation Admin'))
+                  : `${tx.amountHTG.toLocaleString()} HTG`}
+              </span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
@@ -653,7 +676,11 @@ export const HistoryView: React.FC = () => {
                       {/* Montants DOP & HTG empilés élégamment */}
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
                         <div className="font-black font-mono text-slate-900 dark:text-white text-xs leading-tight">
-                          {tx.amountDOP.toLocaleString()} <span className="text-[10px] text-slate-400">DOP</span>
+                          {tx.serviceType === 'haiti_inbound_cash' && tx.status !== 'completed' ? (
+                            <span className="text-orange-600">En attente DOP</span>
+                          ) : (
+                            <>{tx.amountDOP.toLocaleString()} <span className="text-[10px] text-slate-400">DOP</span></>
+                          )}
                         </div>
                         <div className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-[11px] leading-tight mt-0.5">
                           {tx.amountHTG.toLocaleString()} <span className="text-[10px] text-emerald-500">HTG</span>
@@ -662,7 +689,9 @@ export const HistoryView: React.FC = () => {
 
                       {/* Commission Admin */}
                       <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">
-                        +{(tx.commissionDOP || Math.round(tx.amountDOP * 0.01)).toLocaleString()} DOP
+                        {tx.serviceType === 'haiti_inbound_cash'
+                          ? '0 DOP'
+                          : `+${(tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01))).toLocaleString()} DOP`}
                       </td>
 
                       {/* Statut */}

@@ -16,15 +16,17 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     ? usdToHtgRate
     : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
 
-  // Helper pour calculer la commission d'une transaction en DOP
+  // Helper pour calculer la commission d'une transaction en DOP (1% sur tous les services, 0 sur Dépôt)
   const getTxCommissionDOP = (tx: typeof transactions[0]) => {
-    const commRate = serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0;
+    if (tx.status === 'cancelled' || tx.serviceType === 'haiti_inbound_cash') {
+      return 0;
+    }
     if (tx.operator === 'zelle' || tx.amountUSD) {
       const amtUSD = tx.amountUSD || (tx.amountDOP ? tx.amountDOP / usdToDopRate : 0);
-      const commUSD = amtUSD * (commRate / 100);
-      return Math.round(commUSD * usdToDopRate);
+      const commUSD = amtUSD * 0.01;
+      return tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(commUSD * usdToDopRate));
     }
-    return tx.commissionDOP || Math.round(tx.amountDOP * (commRate / 100));
+    return tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01));
   };
 
   // Filtrer les transactions selon la plage de dates sélectionnée dans le calendrier du Dashboard
@@ -179,12 +181,13 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
     }
 
     // 3. Admin / Gestionnaire
+    const activeTransactions = scopedTransactions.filter(tx => tx.status !== 'cancelled');
     const totalCount = scopedTransactions.length;
     const completedCount = scopedTransactions.filter(tx => tx.status === 'completed').length;
     const pendingCount = scopedTransactions.filter(tx => tx.status === 'in_progress').length;
-    const totalVolumeDOP = scopedTransactions.reduce((acc, tx) => acc + (tx.amountDOP || 0), 0);
+    const totalVolumeDOP = activeTransactions.reduce((acc, tx) => acc + (tx.amountDOP || 0), 0);
 
-    const totalCommissionDOP = scopedTransactions.reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
+    const totalCommissionDOP = activeTransactions.reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);
     const completedCommissionDOP = scopedTransactions
       .filter(tx => tx.status === 'completed')
       .reduce((acc, tx) => acc + getTxCommissionDOP(tx), 0);

@@ -256,17 +256,24 @@ export function exportToPDF<T>(
  * Exports CSV & PDF pour les Transactions (Avec Détails Financiers)
  */
 export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_Transferencia_Transactions') {
-  const totalVolumeDOP = transactions.reduce((acc, t) => acc + (t.amountDOP || 0), 0);
-  const totalVolumeHTG = transactions.reduce((acc, t) => acc + (t.amountHTG || 0), 0);
-  const totalCommissionsDOP = transactions.reduce((acc, t) => acc + (t.commissionDOP || 0), 0);
-  const totalFeesDOP = transactions.reduce((acc, t) => acc + (t.feeDOP || 0), 0);
+  const activeTxs = transactions.filter(t => t.status !== 'cancelled');
+  const totalVolumeDOP = activeTxs.reduce((acc, t) => acc + (t.amountDOP || 0), 0);
+  const totalVolumeHTG = activeTxs.reduce((acc, t) => acc + (t.amountHTG || 0), 0);
+  const totalCommissionsDOP = activeTxs.reduce((acc, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return acc;
+    return acc + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+  }, 0);
+  const totalFeesDOP = activeTxs.reduce((acc, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return acc;
+    return acc + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+  }, 0);
 
   const extraSummary = [
     ['=== RECAPITULATIF DES FLUX ET DE L\'ARGENT REÇU ==='],
     ['Volume Total Traité en Pesos (RD)', `${totalVolumeDOP.toLocaleString()} DOP`],
     ['Volume Total Traité en Gourdes (Haïti)', `${totalVolumeHTG.toLocaleString()} HTG`],
-    ['Commissions Administrateur Cumulées', `${totalCommissionsDOP.toLocaleString()} DOP`],
-    ['Frais de Service Guichet (3%) Collectés', `${totalFeesDOP.toLocaleString()} DOP`],
+    ['Commissions Administrateur Cumulées (1%)', `${totalCommissionsDOP.toLocaleString()} DOP`],
+    ['Frais de Service Guichet (0.5%) Collectés', `${totalFeesDOP.toLocaleString()} DOP`],
     ['Nombre Total de Transactions', `${transactions.length}`],
     ['=== DETAIL INDIVIDUEL DES TRANSACTIONS ===']
   ];
@@ -282,8 +289,8 @@ export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_
     { header: 'Bénéficiaire', accessor: (t) => t.receiverName },
     { header: 'Tél. Bénéficiaire', accessor: (t) => t.receiverPhone },
     { header: 'Montant Reçu (DOP)', accessor: (t) => t.amountDOP },
-    { header: 'Frais Collectés (DOP)', accessor: (t) => t.feeDOP || 0 },
-    { header: 'Commission Admin (DOP)', accessor: (t) => t.commissionDOP || 0 },
+    { header: 'Frais Collectés (0.5% DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.feeDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.005))) },
+    { header: 'Commission Admin (1% DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.commissionDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.01))) },
     { header: 'Taux Change', accessor: (t) => t.exchangeRate },
     { header: 'Montant Livré (HTG)', accessor: (t) => t.amountHTG },
     { header: 'Montant (USD)', accessor: (t) => t.amountUSD || 0 },
@@ -295,9 +302,13 @@ export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_
 }
 
 export function exportTransactionsToPDF(transactions: any[], title = 'Rapport Financier des Transactions') {
-  const totalVolumeDOP = transactions.reduce((acc, t) => acc + (t.amountDOP || 0), 0);
-  const totalVolumeHTG = transactions.reduce((acc, t) => acc + (t.amountHTG || 0), 0);
-  const totalCommissionsDOP = transactions.reduce((acc, t) => acc + (t.commissionDOP || 0), 0);
+  const activeTxs = transactions.filter(t => t.status !== 'cancelled');
+  const totalVolumeDOP = activeTxs.reduce((acc, t) => acc + (t.amountDOP || 0), 0);
+  const totalVolumeHTG = activeTxs.reduce((acc, t) => acc + (t.amountHTG || 0), 0);
+  const totalCommissionsDOP = activeTxs.reduce((acc, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return acc;
+    return acc + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+  }, 0);
 
   const summaryBoxes: SummaryBox[] = [
     { label: 'Volume Reçu (Pesos RD)', value: `${totalVolumeDOP.toLocaleString()} DOP`, subtext: `${transactions.length} Transactions` },
@@ -365,17 +376,24 @@ export function exportTreasuryReportToCSV(
   const totalHTG = accountBalances.filter(b => b.currency === 'HTG').reduce((acc, curr) => acc + (curr.balance || 0), 0);
   const totalUSD = accountBalances.filter(b => b.currency === 'USD').reduce((acc, curr) => acc + (curr.balance || 0), 0);
 
-  const totalVolumeDOP = transactions.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
-  const totalVolumeHTG = transactions.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
-  const totalFeesDOP = transactions.reduce((sum, t) => sum + (t.feeDOP || Math.round((t.amountDOP || 0) * 0.03)), 0);
-  const totalCommissionsDOP = transactions.reduce((sum, t) => sum + (t.commissionDOP || Math.round((t.amountDOP || 0) * 0.01)), 0);
+  const activeTxs = transactions.filter(t => t.status !== 'cancelled');
+  const totalVolumeDOP = activeTxs.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+  const totalVolumeHTG = activeTxs.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
+  const totalFeesDOP = activeTxs.reduce((sum, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return sum;
+    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+  }, 0);
+  const totalCommissionsDOP = activeTxs.reduce((sum, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return sum;
+    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+  }, 0);
   const totalPlatformRevenueDOP = totalFeesDOP + totalCommissionsDOP;
 
   const extraSummary = [
     ['=== BILAN ET SYSTEME FINANCIER GLOBAL ALEXIS TRANSFERENCIA ==='],
     ['Revenu Brut Total Agence (Frais + Commissions)', `${totalPlatformRevenueDOP.toLocaleString()} DOP`],
-    ['Frais de Service Guichet Encaissés (3%)', `${totalFeesDOP.toLocaleString()} DOP`],
-    ['Commissions Administrateur Cumulées', `${totalCommissionsDOP.toLocaleString()} DOP`],
+    ['Frais de Service Guichet Encaissés (0.5%)', `${totalFeesDOP.toLocaleString()} DOP`],
+    ['Commissions Administrateur Cumulées (1%)', `${totalCommissionsDOP.toLocaleString()} DOP`],
     ['Volume Total Argent Reçu en Agences (Pesos RD)', `${totalVolumeDOP.toLocaleString()} DOP`],
     ['Volume Total Argent Livré aux Bénéficiaires (Gourdes HTG)', `${totalVolumeHTG.toLocaleString()} HTG`],
     ['Liquidités Totales Disponibles RD (Comptes Bancaires & Caisses DOP)', `${totalDOP.toLocaleString()} DOP`],
@@ -432,10 +450,17 @@ export function exportTreasuryReportToPDF(
   const totalHTG = accountBalances.filter(b => b.currency === 'HTG').reduce((acc, curr) => acc + (curr.balance || 0), 0);
   const totalUSD = accountBalances.filter(b => b.currency === 'USD').reduce((acc, curr) => acc + (curr.balance || 0), 0);
 
-  const totalVolumeDOP = transactions.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
-  const totalVolumeHTG = transactions.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
-  const totalFeesDOP = transactions.reduce((sum, t) => sum + (t.feeDOP || Math.round((t.amountDOP || 0) * 0.03)), 0);
-  const totalCommissionsDOP = transactions.reduce((sum, t) => sum + (t.commissionDOP || Math.round((t.amountDOP || 0) * 0.01)), 0);
+  const activeTxs = transactions.filter(t => t.status !== 'cancelled');
+  const totalVolumeDOP = activeTxs.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
+  const totalVolumeHTG = activeTxs.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
+  const totalFeesDOP = activeTxs.reduce((sum, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return sum;
+    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+  }, 0);
+  const totalCommissionsDOP = activeTxs.reduce((sum, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return sum;
+    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+  }, 0);
   const totalPlatformRevenueDOP = totalFeesDOP + totalCommissionsDOP;
 
   const summaryBoxes: SummaryBox[] = [
@@ -443,8 +468,8 @@ export function exportTreasuryReportToPDF(
     { label: 'Volume Argent Reçu (RD)', value: `${totalVolumeDOP.toLocaleString()} DOP`, subtext: `${totalVolumeHTG.toLocaleString()} HTG distribués` },
     { label: 'Liquidités Disponibles (RD)', value: `${totalDOP.toLocaleString()} DOP`, subtext: 'Comptes Banreservas & Caisses' },
     { label: 'Réserves Flottes (Haïti)', value: `${totalHTG.toLocaleString()} HTG`, subtext: 'MonCash, Natcash, Digicel, Natcom' },
-    { label: 'Commissions Encaissées', value: `${totalCommissionsDOP.toLocaleString()} DOP`, subtext: 'Prélèvements sur services' },
-    { label: 'Frais de Service (3%)', value: `${totalFeesDOP.toLocaleString()} DOP`, subtext: 'Collectés au comptoir' },
+    { label: 'Commissions Encaissées (1%)', value: `${totalCommissionsDOP.toLocaleString()} DOP`, subtext: 'Prélèvements sur services' },
+    { label: 'Frais de Service (0.5%)', value: `${totalFeesDOP.toLocaleString()} DOP`, subtext: 'Collectés au comptoir' },
   ];
 
   const columns: ExportColumn<any>[] = [

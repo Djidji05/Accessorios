@@ -81,7 +81,7 @@ export const TreasuryView: React.FC = () => {
   const usdToDopRate = (usdToHtgRate && usdToHtgRate <= 100)
     ? usdToHtgRate
     : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-  const zelleCommRate = serviceCommissionRates['zelle'] ?? adminCommissionRate ?? 1.5;
+  const zelleCommRate = 1.0;
 
   // Filtrage temporel précis des transactions
   const isTxInDateRange = (t: any, range: DateRange) => {
@@ -138,23 +138,24 @@ export const TreasuryView: React.FC = () => {
 
   // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME SUR LA PÉRIODE SÉLECTIONNÉE ---
   const liveFeesDOP = validPeriodTxs.reduce((sum, t) => {
+    if (t.serviceType === 'haiti_inbound_cash') return sum; // Dépôt : 0 frais
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
       const feeUSD = amtUSD * 0.005; // 0.5% frais de service guichet
-      return sum + Math.round(feeUSD * usdToDopRate);
+      return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(feeUSD * usdToDopRate)));
     }
-    return sum + (t.feeDOP || Math.round(t.amountDOP * 0.005));
+    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(t.amountDOP * 0.005)));
   }, 0);
   const totalFeesDOP = (liveFeesDOP > 0 || hasSystemHistory) ? liveFeesDOP : 48500;
 
   const liveAdminCommissionsDOP = validPeriodTxs.reduce((sum, t) => {
-    const commRate = serviceCommissionRates[t.operator] ?? adminCommissionRate ?? 1.0;
+    if (t.serviceType === 'haiti_inbound_cash') return sum; // Dépôt : 0 commission
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
-      const commUSD = amtUSD * (commRate / 100);
-      return sum + Math.round(commUSD * usdToDopRate);
+      const commUSD = amtUSD * 0.01; // 1.0% commission admin
+      return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(commUSD * usdToDopRate)));
     }
-    return sum + (t.commissionDOP || Math.round(t.amountDOP * (commRate / 100)));
+    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(t.amountDOP * 0.01)));
   }, 0);
   const totalAdminCommissionsDOP = (liveAdminCommissionsDOP > 0 || hasSystemHistory) ? liveAdminCommissionsDOP : 24800;
 
