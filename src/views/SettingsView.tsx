@@ -780,7 +780,9 @@ export const SettingsView: React.FC = () => {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">HTG</span>
               </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-1">Saisir <span className="font-mono font-bold text-slate-700">230</span> signifie que <span className="font-mono font-bold text-slate-700">100 Pesos (DOP) = 230 HTG</span>.</p>
+              <p className="text-[10px] text-slate-500 font-medium mt-1">
+                {t('Saisir')} <span className="font-mono font-bold text-slate-700 dark:text-slate-300">230</span> {t('signifie que')} <span className="font-mono font-bold text-slate-700 dark:text-slate-300">100 Pesos (DOP) = 230 HTG</span>.
+              </p>
             </div>
 
             <div>
@@ -822,13 +824,13 @@ export const SettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
             {[
-              { key: 'moncash', desc: 'Transferts & paiements mobiles MonCash Haïti' },
-              { key: 'natcash', desc: 'Portefeuille électronique & décaissement Natcash Haïti' },
-              { key: 'zelle', desc: 'Virements & transferts directs Zelle USA' },
-              { key: 'digicel', desc: 'Recharge minutes & forfaits internet Digicel Haïti' },
-              { key: 'natcom', desc: 'Recharge minutes & forfaits data Natcom Haïti' },
-              { key: 'claro', desc: 'Recharge téléphonique Claro République Dominicaine' },
-              { key: 'altice', desc: 'Recharge téléphonique Altice République Dominicaine' },
+              { key: 'moncash', desc: t('Transferts & paiements mobiles MonCash Haïti') },
+              { key: 'natcash', desc: t('Portefeuille électronique & décaissement Natcash Haïti') },
+              { key: 'zelle', desc: t('Virements & transferts directs Zelle USA') },
+              { key: 'digicel', desc: t('Recharge minutes & forfaits internet Digicel Haïti') },
+              { key: 'natcom', desc: t('Recharge minutes & forfaits data Natcom Haïti') },
+              { key: 'claro', desc: t('Recharge téléphonique Claro République Dominicaine') },
+              { key: 'altice', desc: t('Recharge téléphonique Altice République Dominicaine') },
             ].map((svc) => {
               const currentCommRate = svcRatesState[svc.key] ?? 1.0;
               const currentFeeRate = svcFeeRatesState[svc.key] ?? 0.5;

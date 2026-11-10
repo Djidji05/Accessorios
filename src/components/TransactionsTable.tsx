@@ -142,8 +142,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
           <tbody className="divide-y divide-slate-100 font-sans">
             {paginatedTransactions.map((tx) => {
               const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
-              const commRate = isHaitiInbound ? 0 : 1.0;
-              const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
+              const commRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? 1.0));
+              const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (commRate / 100))));
 
               return (
                 <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
@@ -222,8 +222,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       <div className="md:hidden divide-y divide-slate-100">
         {paginatedTransactions.map((tx) => {
           const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
-          const commRate = isHaitiInbound ? 0 : 1.0;
-          const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
+          const commRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? 1.0));
+          const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (commRate / 100))));
 
           return (
             <div

@@ -1236,7 +1236,8 @@ export const OperationsGuichetView: React.FC = () => {
                 const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
         ? usdToHtgRate
         : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
-                const feeUSD = Math.round(numUSD * 0.005 * 100) / 100;
+                const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
+                const feeUSD = Math.round(numUSD * (zelleFeePct / 100) * 100) / 100;
                 const netUSD = Math.max(0, numUSD - feeUSD);
                 const netDOP = Math.round(netUSD * usdToDop);
                 const netUSDExact = Math.round(netUSD * 100) / 100;
@@ -1255,7 +1256,7 @@ export const OperationsGuichetView: React.FC = () => {
 
                     {currentUser.role === 'admin' && (
                       <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                        <span>{t('Frais de service (0.5%) :')}</span>
+                        <span>{t('Frais de service')} ({zelleFeePct}%) :</span>
                         <span className="font-mono font-bold text-slate-700">-${feeUSD.toFixed(2)} USD</span>
                       </div>
                     )}

@@ -26,7 +26,7 @@ import { ZellePayoutModal } from '../components/ZellePayoutModal';
 export type TimeFilterPreset = 'all' | 'today' | 'week' | 'month' | 'year';
 
 export const HistoryView: React.FC = () => {
-  const { transactions, currentUser, setSelectedReceiptTx, completeTask, setIsTransactionDetailOpen, currentLang, t } = useApp();
+  const { transactions, currentUser, setSelectedReceiptTx, completeTask, setIsTransactionDetailOpen, serviceFeeRates, serviceCommissionRates, currentLang, t } = useApp();
   const dateLocale = currentLang === 'ES' ? 'es-DO' : currentLang === 'HT' ? 'fr-HT' : 'fr-FR';
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilterPreset>('all');
@@ -246,22 +246,32 @@ export const HistoryView: React.FC = () => {
                 <span className="text-emerald-700 dark:text-emerald-400 font-bold">{t('Frais & Commission', 'Frais & Commission')}</span>
                 <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">0 DOP (Dépôt Sans Frais)</span>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40">
-                  <span className="text-amber-800 dark:text-amber-400 font-bold">{t('Frais de Service (0.5%)', 'Frais de Service (0.5%)')}</span>
-                  <span className="font-mono font-black text-amber-700 dark:text-amber-400 text-sm">
-                    -{(tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005))).toLocaleString()} DOP
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-                  <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin (1%)', 'Commission Admin (1%)')}</span>
-                  <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
-                    +{(tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01))).toLocaleString()} DOP
-                  </span>
-                </div>
-              </>
-            )}
+            ) : (() => {
+              const txFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP)
+                ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10
+                : (serviceFeeRates[tx.operator] ?? 0.5);
+              const txCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP)
+                ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10
+                : (serviceCommissionRates[tx.operator] ?? 1.0);
+              const calcFee = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * (txFeePct / 100)));
+              const calcComm = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (txCommPct / 100)));
+              return (
+                <>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40">
+                    <span className="text-amber-800 dark:text-amber-400 font-bold">{t('Frais de service')} ({txFeePct}%)</span>
+                    <span className="font-mono font-black text-amber-700 dark:text-amber-400 text-sm">
+                      -{calcFee.toLocaleString()} DOP
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+                    <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin')} ({txCommPct}%)</span>
+                    <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                      +{calcComm.toLocaleString()} DOP
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
               <span className="text-blue-700 dark:text-blue-400 font-bold">
@@ -691,7 +701,7 @@ export const HistoryView: React.FC = () => {
                       <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">
                         {tx.serviceType === 'haiti_inbound_cash'
                           ? '0 DOP'
-                          : `+${(tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01))).toLocaleString()} DOP`}
+                          : `+${(tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * ((serviceCommissionRates[tx.operator] ?? 1.0) / 100)))).toLocaleString()} DOP`}
                       </td>
 
                       {/* Statut */}

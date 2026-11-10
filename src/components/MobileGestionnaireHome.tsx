@@ -78,6 +78,8 @@ export const MobileGestionnaireHome: React.FC = () => {
     openSearch,
     readNotificationIds,
     killSwitchList,
+    serviceFeeRates,
+    serviceCommissionRates,
     currentLang,
     setLanguage,
     t
@@ -249,8 +251,10 @@ export const MobileGestionnaireHome: React.FC = () => {
 
     setIsSubmittingDirect(true);
 
-    const feeDOP = Math.round(numAmount * 0.005); // 0.5% frais de service guichet
-    const commDOP = Math.round(numAmount * 0.01); // 1% commission admin
+    const activeFeeRate = (serviceFeeRates[directOperator] ?? 0.5) / 100;
+    const activeCommRate = (serviceCommissionRates[directOperator] ?? 1.0) / 100;
+    const feeDOP = Math.round(numAmount * activeFeeRate);
+    const commDOP = Math.round(numAmount * activeCommRate);
 
     const finalReceiverName = isNoBeneficiaryOperator
       ? (directReceiverName.trim() || `Recharge ${directOperator.toUpperCase()}`)

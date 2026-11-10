@@ -231,8 +231,10 @@ export const TaskQueueView: React.FC = () => {
       return;
     }
 
-    const feeDOP = Math.max(1, Math.round(amountNum * 0.005)); // 0.5% frais de service
-    const commissionDOP = Math.max(1, Math.round(amountNum * 0.01)); // 1% commission
+    const opFeeRate = (serviceFeeRates[newTxOperator] ?? 0.5) / 100;
+    const opCommRate = (serviceCommissionRates[newTxOperator] ?? 1.0) / 100;
+    const feeDOP = Math.max(1, Math.round(amountNum * opFeeRate));
+    const commissionDOP = Math.max(1, Math.round(amountNum * opCommRate));
 
     const finalReceiverName = isNoBeneficiaryOperator
       ? (newTxReceiverName.trim() || `Recharge ${newTxOperator.toUpperCase()}`)
@@ -2213,12 +2215,20 @@ export const TaskQueueView: React.FC = () => {
                       </div>
                       <div className="text-xs text-blue-800/80 flex justify-between border-t border-blue-200/70 pt-2">
                         <span>{t('Montant Zelle :', 'Montant Zelle :')} <strong>${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</strong></span>
-                        {currentUser.role === 'admin' && (
-                          <>
-                            <span>{t('Frais (1%) :', 'Frais (1%) :')} <strong>${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD</strong></span>
-                            <span>{t('Commission :', 'Commission :')} <strong>${tx.zelleCommissionUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD</strong></span>
-                          </>
-                        )}
+                        {currentUser.role === 'admin' && (() => {
+                          const zFeePct = (tx.amountUSD && tx.amountUSD > 0 && tx.zelleFeeUSD)
+                            ? Math.round((tx.zelleFeeUSD / tx.amountUSD) * 1000) / 10
+                            : (serviceFeeRates['zelle'] ?? 0.5);
+                          const zCommPct = (tx.amountUSD && tx.amountUSD > 0 && tx.zelleCommissionUSD)
+                            ? Math.round((tx.zelleCommissionUSD / tx.amountUSD) * 1000) / 10
+                            : (serviceCommissionRates['zelle'] ?? 1.0);
+                          return (
+                            <>
+                              <span>{t('Frais')} ({zFeePct}%) : <strong>${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * (zFeePct / 100) * 100) / 100)} USD</strong></span>
+                              <span>{t('Commission')} ({zCommPct}%) : <strong>${tx.zelleCommissionUSD || (Math.round((tx.amountUSD || 0) * (zCommPct / 100) * 100) / 100)} USD</strong></span>
+                            </>
+                          );
+                        })()}
                       </div>
                     </>
                   ) : (
@@ -2677,8 +2687,12 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                         {(() => {
                           const appliedHtgRate = tx.exchangeRate || dopToHtgRate || 2.35;
-                          const opFeePct = serviceFeeRates[tx.operator] ?? 0.5;
-                          const opCommPct = serviceCommissionRates[tx.operator] ?? 1.0;
+                          const opFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP)
+                            ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10
+                            : (serviceFeeRates[tx.operator] ?? 0.5);
+                          const opCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP)
+                            ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10
+                            : (serviceCommissionRates[tx.operator] ?? 1.0);
                           const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round((tx.amountDOP || 0) * (opFeePct / 100)));
                           const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * (opCommPct / 100)));
                           const calcNetDOP = Math.max(0, (tx.amountDOP || 0) - calcFeeDOP);
@@ -2893,10 +2907,14 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         const grossDOP = isHaitiInboundTx ? inboundDOP : (tx.amountDOP || Math.round(numUSD * appliedRate));
                         const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
                         const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
-                        const zFeeUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * (zFeePct / 100) * 100) / 100;
-                        const zFeeDOP = isHaitiInboundTx ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(zFeeUSD * appliedRate)));
-                        const zCommUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * (zCommPct / 100) * 100) / 100;
-                        const zCommDOP = isHaitiInboundTx ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(zCommUSD * appliedRate)));
+                        const zFeeDOP = isHaitiInboundTx ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(numUSD * (zFeePct / 100) * appliedRate)));
+                        const zFeeUSD = isHaitiInboundTx ? 0 : (tx.zelleFeeUSD || Math.round((zFeeDOP / appliedRate) * 100) / 100);
+                        const effectiveZFeePct = isHaitiInboundTx ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : zFeePct);
+
+                        const zCommDOP = isHaitiInboundTx ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(numUSD * (zCommPct / 100) * appliedRate)));
+                        const zCommUSD = isHaitiInboundTx ? 0 : (tx.zelleCommissionUSD || Math.round((zCommDOP / appliedRate) * 100) / 100);
+                        const effectiveZCommPct = isHaitiInboundTx ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : zCommPct);
+
                         const zPayoutCurrency = isHaitiInboundTx ? 'DOP' : (tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP');
                         const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
                         const zNetPayout = isHaitiInboundTx
@@ -2989,14 +3007,14 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                                 </div>
 
                                 <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                  <span>{t('Frais de Service Guichet')} ({zFeePct}%) :</span>
+                                  <span>{t('Frais de Service Guichet')} ({effectiveZFeePct}%) :</span>
                                   <span className="font-mono font-bold text-amber-700">
                                     -${zFeeUSD.toFixed(2)} USD (-{zFeeDOP.toLocaleString()} DOP)
                                   </span>
                                 </div>
 
                                 <div className="flex justify-between items-center text-slate-600 text-[11px]">
-                                  <span>{t('Commission Admin')} ({zCommPct}%) :</span>
+                                  <span>{t('Commission Admin')} ({effectiveZCommPct}%) :</span>
                                   <span className="font-mono font-bold text-emerald-700">
                                     +${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
                                   </span>
@@ -3771,8 +3789,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                   <span className="text-blue-700 dark:text-blue-400 font-bold">{t("Commission Admin", "Commission Admin")}</span>
                   <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
                     {gestionnaireDetailTx.operator === 'zelle'
-                      ? `+${(gestionnaireDetailTx.zelleCommissionUSD || (Math.round((gestionnaireDetailTx.amountUSD || 0) * 0.01 * 100) / 100)).toLocaleString()} USD`
-                      : `+${(gestionnaireDetailTx.commissionDOP || Math.round(gestionnaireDetailTx.amountDOP * 0.01)).toLocaleString()} DOP`}
+                      ? `+${(gestionnaireDetailTx.zelleCommissionUSD || (Math.round((gestionnaireDetailTx.amountUSD || 0) * ((serviceCommissionRates['zelle'] ?? 1.0) / 100) * 100) / 100)).toLocaleString()} USD`
+                      : `+${(gestionnaireDetailTx.commissionDOP || Math.round(gestionnaireDetailTx.amountDOP * ((serviceCommissionRates[gestionnaireDetailTx.operator] ?? 1.0) / 100))).toLocaleString()} DOP`}
                   </span>
                 </div>
               )}

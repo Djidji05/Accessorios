@@ -272,8 +272,8 @@ export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_
     ['=== RECAPITULATIF DES FLUX ET DE L\'ARGENT REÇU ==='],
     ['Volume Total Traité en Pesos (RD)', `${totalVolumeDOP.toLocaleString()} DOP`],
     ['Volume Total Traité en Gourdes (Haïti)', `${totalVolumeHTG.toLocaleString()} HTG`],
-    ['Commissions Administrateur Cumulées (1%)', `${totalCommissionsDOP.toLocaleString()} DOP`],
-    ['Frais de Service Guichet (0.5%) Collectés', `${totalFeesDOP.toLocaleString()} DOP`],
+    ['Commissions Administrateur Cumulées', `${totalCommissionsDOP.toLocaleString()} DOP`],
+    ['Frais de Service Guichet Collectés', `${totalFeesDOP.toLocaleString()} DOP`],
     ['Nombre Total de Transactions', `${transactions.length}`],
     ['=== DETAIL INDIVIDUEL DES TRANSACTIONS ===']
   ];
@@ -289,8 +289,8 @@ export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_
     { header: 'Bénéficiaire', accessor: (t) => t.receiverName },
     { header: 'Tél. Bénéficiaire', accessor: (t) => t.receiverPhone },
     { header: 'Montant Reçu (DOP)', accessor: (t) => t.amountDOP },
-    { header: 'Frais Collectés (0.5% DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.feeDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.005))) },
-    { header: 'Commission Admin (1% DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.commissionDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.01))) },
+    { header: 'Frais Collectés (DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.feeDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.005))) },
+    { header: 'Commission Admin (DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.commissionDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.01))) },
     { header: 'Taux Change', accessor: (t) => t.exchangeRate },
     { header: 'Montant Livré (HTG)', accessor: (t) => t.amountHTG },
     { header: 'Montant (USD)', accessor: (t) => t.amountUSD || 0 },
@@ -392,8 +392,8 @@ export function exportTreasuryReportToCSV(
   const extraSummary = [
     ['=== BILAN ET SYSTEME FINANCIER GLOBAL ALEXIS TRANSFERENCIA ==='],
     ['Revenu Brut Total Agence (Frais + Commissions)', `${totalPlatformRevenueDOP.toLocaleString()} DOP`],
-    ['Frais de Service Guichet Encaissés (0.5%)', `${totalFeesDOP.toLocaleString()} DOP`],
-    ['Commissions Administrateur Cumulées (1%)', `${totalCommissionsDOP.toLocaleString()} DOP`],
+    ['Frais de Service Guichet Encaissés', `${totalFeesDOP.toLocaleString()} DOP`],
+    ['Commissions Administrateur Cumulées', `${totalCommissionsDOP.toLocaleString()} DOP`],
     ['Volume Total Argent Reçu en Agences (Pesos RD)', `${totalVolumeDOP.toLocaleString()} DOP`],
     ['Volume Total Argent Livré aux Bénéficiaires (Gourdes HTG)', `${totalVolumeHTG.toLocaleString()} HTG`],
     ['Liquidités Totales Disponibles RD (Comptes Bancaires & Caisses DOP)', `${totalDOP.toLocaleString()} DOP`],
@@ -468,8 +468,8 @@ export function exportTreasuryReportToPDF(
     { label: 'Volume Argent Reçu (RD)', value: `${totalVolumeDOP.toLocaleString()} DOP`, subtext: `${totalVolumeHTG.toLocaleString()} HTG distribués` },
     { label: 'Liquidités Disponibles (RD)', value: `${totalDOP.toLocaleString()} DOP`, subtext: 'Comptes Banreservas & Caisses' },
     { label: 'Réserves Flottes (Haïti)', value: `${totalHTG.toLocaleString()} HTG`, subtext: 'MonCash, Natcash, Digicel, Natcom' },
-    { label: 'Commissions Encaissées (1%)', value: `${totalCommissionsDOP.toLocaleString()} DOP`, subtext: 'Prélèvements sur services' },
-    { label: 'Frais de Service (0.5%)', value: `${totalFeesDOP.toLocaleString()} DOP`, subtext: 'Collectés au comptoir' },
+    { label: 'Commissions Encaissées', value: `${totalCommissionsDOP.toLocaleString()} DOP`, subtext: 'Prélèvements sur services' },
+    { label: 'Frais de Service', value: `${totalFeesDOP.toLocaleString()} DOP`, subtext: 'Collectés au comptoir' },
   ];
 
   const columns: ExportColumn<any>[] = [
