@@ -117,8 +117,20 @@ export const api = {
               : isZelle
               ? Math.max(0, (t.amountDOP || 0) - computedFeeDOP)
               : t.netPayoutAmount,
-            zelleFeeUSD: isZelle && t.amountUSD ? Number((t.amountUSD * 0.005).toFixed(2)) : t.zelleFeeUSD,
-            zelleCommissionUSD: isZelle && t.amountUSD ? Number((t.amountUSD * 0.01).toFixed(2)) : t.zelleCommissionUSD,
+            zelleFeeUSD: isZelle && t.amountUSD
+              ? (t.zelleFeeUSD && t.zelleFeeUSD > 0
+                  ? t.zelleFeeUSD
+                  : (t.feeDOP && t.amountDOP
+                      ? Number(((t.feeDOP / t.amountDOP) * t.amountUSD).toFixed(2))
+                      : Number((t.amountUSD * 0.005).toFixed(2))))
+              : t.zelleFeeUSD,
+            zelleCommissionUSD: isZelle && t.amountUSD
+              ? (t.zelleCommissionUSD && t.zelleCommissionUSD > 0
+                  ? t.zelleCommissionUSD
+                  : (t.commissionDOP && t.amountDOP
+                      ? Number(((t.commissionDOP / t.amountDOP) * t.amountUSD).toFixed(2))
+                      : Number((t.amountUSD * 0.01).toFixed(2))))
+              : t.zelleCommissionUSD,
             proofUrl: finalProof || t.zelleProofUrl || t.haitiInboundProofUrl,
             zelleProofUrl: isZelle ? (finalProof || t.zelleProofUrl) : t.zelleProofUrl,
             zelleStatus: isZelle
@@ -246,13 +258,26 @@ export const api = {
       }),
   },
 
-  // 6. Taux de change officiel
+  // 6. Taux de change officiel & commissions par service
   rates: {
-    get: () => request<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number }>('/rates').catch(() => ({ baseCurrency: 'DOP', targetCurrency: 'HTG', rate: 2.35, usdRate: 140.5 })),
+    get: (): Promise<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number; commissions?: Record<string, number>; fees?: Record<string, number> }> =>
+      request<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number; commissions?: Record<string, number>; fees?: Record<string, number> }>('/rates').catch(() => ({
+        baseCurrency: 'DOP',
+        targetCurrency: 'HTG',
+        rate: 2.35,
+        usdRate: 58.0,
+        commissions: undefined as Record<string, number> | undefined,
+        fees: undefined as Record<string, number> | undefined,
+      })),
     update: (rate: number, actorName?: string, currency: 'DOP' | 'USD' = 'DOP') =>
       request<{ success: boolean; message: string; rate: { rate: number } }>('/rates', {
         method: 'PUT',
         body: JSON.stringify({ rate, actorName, currency }),
+      }),
+    updateRates: (data: { rate?: number; currency?: string; actorName?: string; commissions?: Record<string, number>; fees?: Record<string, number>; serviceKey?: string; commissionRate?: number; feeRate?: number }) =>
+      request<{ success: boolean; message: string; commissions?: Record<string, number>; fees?: Record<string, number> }>('/rates', {
+        method: 'PUT',
+        body: JSON.stringify(data),
       }),
   },
 

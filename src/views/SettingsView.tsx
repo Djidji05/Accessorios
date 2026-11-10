@@ -72,10 +72,12 @@ export const SettingsView: React.FC = () => {
 
   const handleSvcRateChange = (key: string, val: number) => {
     setSvcRatesState((prev) => ({ ...prev, [key]: val }));
+    updateServiceCommissionRate(key, val);
   };
 
   const handleSvcFeeRateChange = (key: string, val: number) => {
     setSvcFeeRatesState((prev) => ({ ...prev, [key]: val }));
+    updateServiceFeeRate(key, val);
   };
   
   // State pour le Taux de Commission Admin Global
@@ -940,6 +942,28 @@ export const SettingsView: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+
+          {/* Quick Save Bar for Service Rates & Commissions */}
+          <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[11px] font-medium">{t('Synchronisation immédiate avec la base de données et tous les postes agents.')}</span>
+            </div>
+            {currentUser.role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => {
+                  Object.entries(svcRatesState).forEach(([key, val]) => updateServiceCommissionRate(key, val));
+                  Object.entries(svcFeeRatesState).forEach(([key, val]) => updateServiceFeeRate(key, val));
+                  showToast(t('Commissions et frais enregistrés et diffusés en direct !', 'Commissions et frais enregistrés et diffusés en direct !'), 'success');
+                }}
+                className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{t('Enregistrer & Diffuser les Commissions', 'Enregistrer & Diffuser les Commissions')}</span>
+              </button>
+            )}
           </div>
         </div>
 

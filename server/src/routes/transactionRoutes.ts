@@ -165,9 +165,17 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // 2.2 Récupération du taux officiel
-    const officialRateObj = await prisma.exchangeRate.findUnique({ where: { id: 'rate_official' } });
+    // 2.2 Récupération du taux officiel et des taux de commission/frais configurés en base
+    const [officialRateObj, allDbRates] = await Promise.all([
+      prisma.exchangeRate.findUnique({ where: { id: 'rate_official' } }),
+      prisma.exchangeRate.findMany(),
+    ]);
     const exchangeRate = officialRateObj?.rate || 2.35;
+
+    const dbCommRate = allDbRates.find((r) => r.id === `comm_${operator}`);
+    const dbFeeRate = allDbRates.find((r) => r.id === `fee_${operator}`);
+    const activeCommPercent = dbCommRate ? dbCommRate.rate : 1.0;
+    const activeFeePercent = dbFeeRate ? dbFeeRate.rate : 0.5;
 
     // 2.3 Récupération de l'agent émetteur authentifié
     const userId = req.user?.id || currentUserId;
@@ -182,13 +190,12 @@ router.post('/', authMiddleware, async (req, res) => {
     const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
     const targetRole = (isZelle || isHaitiInbound) ? 'admin' : (isHaitiCash ? 'agent_haiti' : 'gestionnaire');
 
-    // Calcul systématique des frais (0.5%) et commissions (1%) sur tous les services SAUF Dépôt (haiti_inbound_cash = 0 frais)
-    const finalFeeDOP = isHaitiInbound
-      ? 0
-      : (feeDOP && feeDOP > 0 ? feeDOP : Math.max(1, Math.round(amountDOP * 0.005)));
-    const finalCommDOP = isHaitiInbound
-      ? 0
-      : (commissionDOP && commissionDOP > 0 ? commissionDOP : Math.max(1, Math.round(amountDOP * 0.01)));
+    // Calcul systématique des frais et commissions (Dépôt = strictement 0)
+    const expectedFeeDOP = Math.max(1, Math.round(amountDOP * (activeFeePercent / 100)));
+    const expectedCommDOP = Math.max(1, Math.round(amountDOP * (activeCommPercent / 100)));
+
+    const finalFeeDOP = isHaitiInbound ? 0 : expectedFeeDOP;
+    const finalCommDOP = isHaitiInbound ? 0 : expectedCommDOP;
     const netDOP = isHaitiInbound ? amountDOP : Math.max(0, amountDOP - finalFeeDOP);
     const amountHTG = isHaitiInbound
       ? (rawAmountHTG && rawAmountHTG > 0 ? Math.round(rawAmountHTG) : Math.round(amountDOP * exchangeRate))

@@ -480,6 +480,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('service_commission_rates', JSON.stringify(updated));
       return updated;
     });
+    api.rates.updateRates({ serviceKey, commissionRate: rate, actorName: currentUser?.name }).catch(() => null);
   };
 
   const [serviceFeeRates, setServiceFeeRates] = useState<Record<string, number>>(() => {
@@ -500,6 +501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('service_fee_rates', JSON.stringify(updated));
       return updated;
     });
+    api.rates.updateRates({ serviceKey, feeRate: rate, actorName: currentUser?.name }).catch(() => null);
   };
   
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -921,6 +923,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   setUsdToHtgRateState((prev) => (prev === normalizedUsd ? prev : normalizedUsd));
                 }
               }
+              if (rateData?.commissions) {
+                setServiceCommissionRates((prev) => {
+                  const merged = { ...prev, ...rateData.commissions };
+                  localStorage.setItem('service_commission_rates', JSON.stringify(merged));
+                  return merged;
+                });
+              }
+              if (rateData?.fees) {
+                setServiceFeeRates((prev) => {
+                  const merged = { ...prev, ...rateData.fees };
+                  localStorage.setItem('service_fee_rates', JSON.stringify(merged));
+                  return merged;
+                });
+              }
             }
           }).catch(() => null);
         }
@@ -1210,10 +1226,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         });
 
-        // 5. Mise à jour du taux officiel
+        // 5. Mise à jour du taux officiel et des commissions / frais
         eventSource.addEventListener('RATE_UPDATED', (e: MessageEvent) => {
           try {
             const rateObj = JSON.parse(e.data);
+            if (rateObj?.commissions) {
+              setServiceCommissionRates((prev) => {
+                const merged = { ...prev, ...rateObj.commissions };
+                localStorage.setItem('service_commission_rates', JSON.stringify(merged));
+                return merged;
+              });
+            }
+            if (rateObj?.fees) {
+              setServiceFeeRates((prev) => {
+                const merged = { ...prev, ...rateObj.fees };
+                localStorage.setItem('service_fee_rates', JSON.stringify(merged));
+                return merged;
+              });
+            }
             if (rateObj?.isUSD || rateObj?.baseCurrency === 'USD') {
               const u = parseFloat(String(rateObj.rate || rateObj.usdRate));
               if (!isNaN(u) && u > 0) {
