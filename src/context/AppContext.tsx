@@ -1594,8 +1594,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       : isHaitiInbound
         ? `Preuve Dépôt ${data.operator.toUpperCase()} (${finalAmountHTG.toLocaleString()} HTG) enregistrée ! Transmise à l'Admin. Après validation, elle passera en Pesos (${finalAmountDOP.toLocaleString()} DOP, 0 Frais).`
         : isHaitiCashChannel
-        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée ! Brut: ${finalAmountDOP.toLocaleString()} DOP | Frais (0.5%): -${finalFeeDOP} DOP | Net à verser: ${finalAmountHTG.toLocaleString()} HTG.`
-        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée ! Brut: ${finalAmountDOP.toLocaleString()} DOP | Frais (0.5%): -${finalFeeDOP} DOP | Net: ${finalAmountHTG.toLocaleString()} HTG.`;
+        ? `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée ! Brut: ${finalAmountDOP.toLocaleString()} DOP | Frais (${serviceFeePct}%): -${finalFeeDOP} DOP | Net à verser: ${finalAmountHTG.toLocaleString()} HTG.`
+        : `Transaction ${refNum} (${data.operator.toUpperCase()}) enregistrée ! Brut: ${finalAmountDOP.toLocaleString()} DOP | Frais (${serviceFeePct}%): -${finalFeeDOP} DOP | Net: ${finalAmountHTG.toLocaleString()} HTG.`;
     showToast(toastMsg, (isZelle || isHaitiInbound) ? 'info' : 'success');
 
     return {
