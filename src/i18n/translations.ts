@@ -1765,6 +1765,11 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Recharge minutes & forfaits data Natcom Haïti": "Rechaj minit & plan done Natcom Ayiti",
     "Recharge téléphonique Claro République Dominicaine": "Rechaj telefonik Claro Repiblik Dominikèn",
     "Recharge téléphonique Altice République Dominicaine": "Rechaj telefonik Altice Repiblik Dominikèn",
+    "Commissions Admin et frais de service par opérateur mis à jour avec succès !": "Komisyon Admin ak frè sèvis pa operatè mete ajou avèk siksè !",
+    "Taux de change et commissions Admin enregistrés avec succès !": "To chanj ak komisyon Admin anrejistre avèk siksè !",
+    "Commissions Admin et frais de service enregistrés avec succès !": "Komisyon Admin ak frè sèvis anrejistre avèk siksè !",
+    "Taux de change enregistrés avec succès !": "To chanj anrejistre avèk siksè !",
+    "Paramètres enregistrés avec succès !": "Paramèt anrejistre avèk siksè !",
     "Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.": "Aplikasyon telechaje avèk siksè ! Jwenn rakousi Alexis Transferencia a nan telechajman ou yo.",
     // PWA Prompt
     "Installer Alexis Transferencia PWA": "Enstale Alexis Transferencia PWA",
@@ -2668,6 +2673,11 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Recharge minutes & forfaits data Natcom Haïti": "Recarga de minutos y paquetes de datos Natcom Haití",
     "Recharge téléphonique Claro République Dominicaine": "Recarga telefónica Claro República Dominicana",
     "Recharge téléphonique Altice République Dominicaine": "Recarga telefónica Altice República Dominicana",
+    "Commissions Admin et frais de service par opérateur mis à jour avec succès !": "¡Comisiones Admin y tarifas de servicio por operador actualizadas con éxito!",
+    "Taux de change et commissions Admin enregistrés avec succès !": "¡Tasas de cambio y comisiones Admin guardadas con éxito!",
+    "Commissions Admin et frais de service enregistrés avec succès !": "¡Comisiones Admin y tarifas de servicio guardadas con éxito!",
+    "Taux de change enregistrés avec succès !": "¡Tasas de cambio guardadas con éxito!",
+    "Paramètres enregistrés avec succès !": "¡Configuraciones guardadas con éxito!",
     "Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.": "¡Aplicación descargada con éxito! Encuentre el acceso directo de Alexis Transferencia en sus descargas.",
     // PWA Prompt
     "Installer Alexis Transferencia PWA": "Instalar Alexis Transferencia PWA",

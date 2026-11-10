@@ -52,6 +52,7 @@ export const SettingsView: React.FC = () => {
     updateServiceFeeRate,
     currentLang,
     setLanguage,
+    showToast,
     t
   } = useApp();
   const isAgentHaiti = currentUser.role === 'agent_haiti';
@@ -300,27 +301,59 @@ export const SettingsView: React.FC = () => {
 
   const handleAdminSave = (e: React.FormEvent) => {
     e.preventDefault();
+    let ratesChanged = false;
+    let commissionsChanged = false;
+
     const newRate = parseFloat(rateInput);
     if (!isNaN(newRate) && newRate > 0) {
       const finalRate = newRate > 10 ? newRate / 100 : newRate;
-      setDopToHtgRate(finalRate);
+      // Ne déclencher la notification de taux que si le taux a réellement changé
+      if (Math.abs(finalRate - dopToHtgRate) > 0.0001) {
+        setDopToHtgRate(finalRate);
+        ratesChanged = true;
+      }
     }
 
     const newUsdRate = parseFloat(usdRateInput);
     if (!isNaN(newUsdRate) && newUsdRate > 0) {
-      setUsdToHtgRate(newUsdRate);
+      const normalizedUsd = Math.round(newUsdRate * 100) / 100;
+      // Ne déclencher la notification USD que si le taux USD a réellement changé
+      if (Math.abs(normalizedUsd - usdToHtgRate) > 0.001) {
+        setUsdToHtgRate(normalizedUsd);
+        ratesChanged = true;
+      }
     }
 
     // Enregistrer les taux de commission et frais de service par service configurés par l'Admin
+    let svcModified = false;
     Object.entries(svcRatesState).forEach(([serviceKey, val]) => {
-      updateServiceCommissionRate(serviceKey, val);
+      if (serviceCommissionRates[serviceKey] !== val) {
+        updateServiceCommissionRate(serviceKey, val);
+        svcModified = true;
+      }
     });
 
     Object.entries(svcFeeRatesState).forEach(([serviceKey, val]) => {
-      updateServiceFeeRate(serviceKey, val);
+      if (serviceFeeRates[serviceKey] !== val) {
+        updateServiceFeeRate(serviceKey, val);
+        svcModified = true;
+      }
     });
 
-    setFeedbackMessage('Taux de change (DOP & USD), frais de service et commissions Admin enregistrés avec succès !');
+    if (svcModified) {
+      commissionsChanged = true;
+      showToast(t('Commissions Admin et frais de service par opérateur mis à jour avec succès !', 'Commissions Admin et frais de service par opérateur mis à jour avec succès !'), 'success');
+    }
+
+    const msg = ratesChanged && commissionsChanged
+      ? t('Taux de change et commissions Admin enregistrés avec succès !', 'Taux de change et commissions Admin enregistrés avec succès !')
+      : commissionsChanged
+      ? t('Commissions Admin et frais de service enregistrés avec succès !', 'Commissions Admin et frais de service enregistrés avec succès !')
+      : ratesChanged
+      ? t('Taux de change enregistrés avec succès !', 'Taux de change enregistrés avec succès !')
+      : t('Paramètres enregistrés avec succès !', 'Paramètres enregistrés avec succès !');
+
+    setFeedbackMessage(msg);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
