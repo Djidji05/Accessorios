@@ -97,10 +97,10 @@ export const api = {
           const rate = t.exchangeRate || 2.35;
           const computedFeeDOP = isHaitiInbound
             ? 0
-            : (t.feeDOP !== undefined && t.feeDOP !== null ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+            : (t.feeDOP !== undefined && t.feeDOP !== null ? t.feeDOP : 0);
           const computedCommDOP = isHaitiInbound
             ? 0
-            : (t.commissionDOP !== undefined && t.commissionDOP !== null ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+            : (t.commissionDOP !== undefined && t.commissionDOP !== null ? t.commissionDOP : 0);
           const netDOP = isHaitiInbound ? (t.amountDOP || 0) : Math.max(0, (t.amountDOP || 0) - computedFeeDOP);
           const computedHTG = isHaitiInbound
             ? (t.amountHTG && t.amountHTG > 0 ? t.amountHTG : Math.round((t.amountDOP || 0) * rate))
@@ -117,20 +117,8 @@ export const api = {
               : isZelle
               ? Math.max(0, (t.amountDOP || 0) - computedFeeDOP)
               : t.netPayoutAmount,
-            zelleFeeUSD: isZelle && t.amountUSD
-              ? (t.zelleFeeUSD && t.zelleFeeUSD > 0
-                  ? t.zelleFeeUSD
-                  : (t.feeDOP && t.amountDOP
-                      ? Number(((t.feeDOP / t.amountDOP) * t.amountUSD).toFixed(2))
-                      : Number((t.amountUSD * 0.005).toFixed(2))))
-              : t.zelleFeeUSD,
-            zelleCommissionUSD: isZelle && t.amountUSD
-              ? (t.zelleCommissionUSD && t.zelleCommissionUSD > 0
-                  ? t.zelleCommissionUSD
-                  : (t.commissionDOP && t.amountDOP
-                      ? Number(((t.commissionDOP / t.amountDOP) * t.amountUSD).toFixed(2))
-                      : Number((t.amountUSD * 0.01).toFixed(2))))
-              : t.zelleCommissionUSD,
+            zelleFeeUSD: isZelle && t.amountUSD ? Number((t.amountUSD * 0.005).toFixed(2)) : t.zelleFeeUSD,
+            zelleCommissionUSD: isZelle && t.amountUSD ? Number((t.amountUSD * 0.01).toFixed(2)) : t.zelleCommissionUSD,
             proofUrl: finalProof || t.zelleProofUrl || t.haitiInboundProofUrl,
             zelleProofUrl: isZelle ? (finalProof || t.zelleProofUrl) : t.zelleProofUrl,
             zelleStatus: isZelle
@@ -178,10 +166,10 @@ export const api = {
         const rate = res.transaction.exchangeRate || 2.35;
         const computedFeeDOP = isHaitiInbound
           ? 0
-          : (data.feeDOP !== undefined && data.feeDOP !== null ? data.feeDOP : (res.transaction.feeDOP && res.transaction.feeDOP > 0 ? res.transaction.feeDOP : Math.max(1, Math.round(res.transaction.amountDOP * 0.005))));
+          : (res.transaction.feeDOP !== undefined && res.transaction.feeDOP !== null ? res.transaction.feeDOP : (data.feeDOP || 0));
         const computedCommDOP = isHaitiInbound
           ? 0
-          : (data.commissionDOP !== undefined && data.commissionDOP !== null ? data.commissionDOP : (res.transaction.commissionDOP && res.transaction.commissionDOP > 0 ? res.transaction.commissionDOP : Math.max(1, Math.round(res.transaction.amountDOP * 0.01))));
+          : (res.transaction.commissionDOP !== undefined && res.transaction.commissionDOP !== null ? res.transaction.commissionDOP : (data.commissionDOP || 0));
         const netDOP = isHaitiInbound ? res.transaction.amountDOP : Math.max(0, res.transaction.amountDOP - computedFeeDOP);
         res.transaction = {
           ...res.transaction,
@@ -260,15 +248,7 @@ export const api = {
 
   // 6. Taux de change officiel & commissions par service
   rates: {
-    get: (): Promise<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number; commissions?: Record<string, number>; fees?: Record<string, number> }> =>
-      request<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number; commissions?: Record<string, number>; fees?: Record<string, number> }>('/rates').catch(() => ({
-        baseCurrency: 'DOP',
-        targetCurrency: 'HTG',
-        rate: 2.35,
-        usdRate: 58.0,
-        commissions: undefined as Record<string, number> | undefined,
-        fees: undefined as Record<string, number> | undefined,
-      })),
+    get: () => request<{ baseCurrency: string; targetCurrency: string; rate: number; usdRate?: number; commissions?: Record<string, number>; fees?: Record<string, number> }>('/rates').catch(() => ({ baseCurrency: 'DOP', targetCurrency: 'HTG', rate: 2.35, usdRate: 58.0 })),
     update: (rate: number, actorName?: string, currency: 'DOP' | 'USD' = 'DOP') =>
       request<{ success: boolean; message: string; rate: { rate: number } }>('/rates', {
         method: 'PUT',

@@ -1915,7 +1915,7 @@ export const TaskQueueView: React.FC = () => {
                             <>
                               <span className="text-purple-700 font-black">${(tx.amountUSD || Math.round(((tx.amountDOP || 0) / (tx.zelleExchangeRate || 58)) * 100) / 100).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
                               {currentUser.role === 'admin' && (
-                                <span className="text-[9px] text-slate-400 block font-normal">{t('Frais:', 'Frais:')} ${tx.zelleFeeUSD || (Math.round((tx.amountUSD || 0) * 0.01 * 100) / 100)} USD</span>
+                                <span className="text-[9px] text-slate-400 block font-normal">{t('Frais:', 'Frais:')} ${tx.zelleFeeUSD !== undefined ? tx.zelleFeeUSD : (Math.round((tx.amountUSD || 0) * ((serviceFeeRates['zelle'] ?? 0.5) / 100) * 100) / 100)} USD</span>
                               )}
                             </>
                           ) : (

@@ -911,28 +911,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // 1. Données publiques (taux de change - toutes les 60s ou initial)
         if (isFullSync) {
           api.rates.get().then((rateData) => {
-            if (isMounted) {
-              if (rateData?.rate) {
-                const r = rateData.rate > 10 ? rateData.rate / 100 : rateData.rate;
+            if (isMounted && rateData) {
+              const data = rateData as any;
+              if (data.rate) {
+                const r = data.rate > 10 ? data.rate / 100 : data.rate;
                 setDopToHtgRateState((prev) => (prev === r ? prev : r));
               }
-              if (rateData?.usdRate) {
-                const u = parseFloat(String(rateData.usdRate));
+              if (data.usdRate) {
+                const u = parseFloat(String(data.usdRate));
                 if (!isNaN(u) && u > 0) {
                   const normalizedUsd = u > 100 ? 58.0 : u;
                   setUsdToHtgRateState((prev) => (prev === normalizedUsd ? prev : normalizedUsd));
                 }
               }
-              if (rateData?.commissions) {
+              if (data.commissions) {
                 setServiceCommissionRates((prev) => {
-                  const merged = { ...prev, ...rateData.commissions };
+                  const merged = { ...prev, ...data.commissions };
                   localStorage.setItem('service_commission_rates', JSON.stringify(merged));
                   return merged;
                 });
               }
-              if (rateData?.fees) {
+              if (data.fees) {
                 setServiceFeeRates((prev) => {
-                  const merged = { ...prev, ...rateData.fees };
+                  const merged = { ...prev, ...data.fees };
                   localStorage.setItem('service_fee_rates', JSON.stringify(merged));
                   return merged;
                 });
@@ -1226,24 +1227,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         });
 
-        // 5. Mise à jour du taux officiel et des commissions / frais
+        // 5. Mise à jour du taux officiel
         eventSource.addEventListener('RATE_UPDATED', (e: MessageEvent) => {
           try {
             const rateObj = JSON.parse(e.data);
-            if (rateObj?.commissions) {
-              setServiceCommissionRates((prev) => {
-                const merged = { ...prev, ...rateObj.commissions };
-                localStorage.setItem('service_commission_rates', JSON.stringify(merged));
-                return merged;
-              });
-            }
-            if (rateObj?.fees) {
-              setServiceFeeRates((prev) => {
-                const merged = { ...prev, ...rateObj.fees };
-                localStorage.setItem('service_fee_rates', JSON.stringify(merged));
-                return merged;
-              });
-            }
             if (rateObj?.isUSD || rateObj?.baseCurrency === 'USD') {
               const u = parseFloat(String(rateObj.rate || rateObj.usdRate));
               if (!isNaN(u) && u > 0) {
@@ -1463,13 +1450,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? 0
       : isZelle
       ? Math.max(1, Math.round(zelleFeeUSD * usdToDop))
-      : (data.feeDOP && data.feeDOP > 0 ? data.feeDOP : Math.max(1, Math.round(finalAmountDOP * (serviceFeePct / 100))));
+      : Math.max(1, Math.round(finalAmountDOP * (serviceFeePct / 100)));
 
     const finalCommDOP = isHaitiInbound
       ? 0
       : isZelle
       ? Math.max(1, Math.round(zelleCommissionUSD * usdToDop))
-      : (data.commissionDOP && data.commissionDOP > 0 ? data.commissionDOP : Math.max(1, Math.round(finalAmountDOP * (serviceCommPct / 100))));
+      : Math.max(1, Math.round(finalAmountDOP * (serviceCommPct / 100)));
 
     const netDOP = isHaitiInbound ? finalAmountDOP : Math.max(0, finalAmountDOP - finalFeeDOP);
     const finalAmountHTG = isHaitiInbound
