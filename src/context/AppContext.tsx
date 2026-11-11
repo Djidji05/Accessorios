@@ -1458,20 +1458,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? Math.max(1, Math.round(zelleCommissionUSD * usdToDop))
       : Math.max(1, Math.round(finalAmountDOP * (serviceCommPct / 100)));
 
-    const netDOP = isHaitiInbound ? finalAmountDOP : Math.max(0, finalAmountDOP - finalFeeDOP);
+    const netDOP = isHaitiInbound ? finalAmountDOP : Math.max(0, finalAmountDOP - finalFeeDOP - finalCommDOP);
     const finalAmountHTG = isHaitiInbound
       ? inboundHTG
       : Math.round(netDOP * currentHtgRate);
 
     const payoutCurrency = data.payoutCurrency || 'DOP';
-    const netUSD = finalAmountUSD - zelleFeeUSD;
+    const netUSD = Math.max(0, Math.round((finalAmountUSD - zelleFeeUSD - zelleCommissionUSD) * 100) / 100);
     const netPayoutAmount = isHaitiInbound
       ? finalAmountDOP
       : (payoutCurrency === 'DOP'
-        ? Math.max(0, finalAmountDOP - finalFeeDOP)
+        ? Math.max(0, finalAmountDOP - finalFeeDOP - finalCommDOP)
         : payoutCurrency === 'HTG'
         ? Math.round(netUSD * (usdToDop * currentHtgRate))
-        : Math.round(netUSD * 100) / 100);
+        : netUSD);
 
     // 3. Determine Channel & Intelligent Task Routing :
     // - Zelle Direct & Réception Haïti Inbound -> Admin pour vérification bancaire / compte

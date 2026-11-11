@@ -765,8 +765,8 @@ export const MobileAgentHome: React.FC = () => {
     const activeFeeRate = serviceFeeRates[selectedService] ?? 0.5;
     const activeCommRate = serviceCommissionRates[selectedService] ?? 1.0;
     const previewFeeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
-    const previewNetDOP = Math.max(0, numAmountDOP - previewFeeDOP);
     const previewCommDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
+    const previewNetDOP = Math.max(0, numAmountDOP - previewFeeDOP - previewCommDOP);
     const computedHTG = Math.round(previewNetDOP * dopToHtgRate);
     const serviceInfo = SERVICES_LIST.find(s => s.id === selectedService);
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
@@ -778,8 +778,10 @@ export const MobileAgentHome: React.FC = () => {
       : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
       const numUSD = parseFloat(zelleAmountUSD) || 0;
       const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
+      const zelleCommPct = serviceCommissionRates['zelle'] ?? 1.0;
       const feeUSD = Math.round(numUSD * (zelleFeePct / 100) * 100) / 100;
-      const netUSD = Math.max(0, numUSD - feeUSD);
+      const commUSD = Math.round(numUSD * (zelleCommPct / 100) * 100) / 100;
+      const netUSD = Math.max(0, Math.round((numUSD - feeUSD - commUSD) * 100) / 100);
       const netPayoutDOP = Math.round(netUSD * usdToDop);
       const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netUSD.toFixed(2)} USD`;
 
@@ -1132,12 +1134,12 @@ export const MobileAgentHome: React.FC = () => {
                   <span className="font-mono font-bold text-amber-600 dark:text-amber-400">-{lastCreatedTx.feeDOP || 0} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{t('Montant Net Converti')}</span>
-                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{Math.max(0, lastCreatedTx.amountDOP - (lastCreatedTx.feeDOP || 0)).toLocaleString()} DOP</span>
+                  <span className="text-slate-500 font-medium">{t('Commission Admin déduite')}</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">-{lastCreatedTx.commissionDOP || 0} DOP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">{t('Commission Admin')}</span>
-                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{lastCreatedTx.commissionDOP || 0} DOP</span>
+                  <span className="text-slate-500 font-medium">{t('Montant Net Converti')}</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{Math.max(0, lastCreatedTx.amountDOP - (lastCreatedTx.feeDOP || 0) - (lastCreatedTx.commissionDOP || 0)).toLocaleString()} DOP</span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800">
                   <span className="text-slate-500 font-medium">{t('Montant Net Reçu (Haïti)')}</span>
@@ -1268,16 +1270,23 @@ export const MobileAgentHome: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                <span className="text-slate-500 font-medium">{t('Frais de Service')} ({activeFeeRate}%) {t('déduits')}</span>
+                <span className="text-slate-500 font-medium">{t('Frais Guichet')} ({activeFeeRate}%) {t('déduits')}</span>
                 <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                  -{previewFeeDOP} DOP (Net converti: {previewNetDOP.toLocaleString()} DOP)
+                  -{previewFeeDOP} DOP
                 </span>
               </div>
 
               <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60">
-                <span className="text-slate-500 font-medium">{t('Commission')} ({activeCommRate}%)</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                  +{previewCommDOP} DOP
+                <span className="text-slate-500 font-medium">{t('Commission Admin')} ({activeCommRate}%) {t('déduite', 'déduite')}</span>
+                <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                  -{previewCommDOP} DOP
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 font-semibold">
+                <span className="text-slate-700 dark:text-slate-300">{t('Montant Net Converti')}</span>
+                <span className="font-mono font-black text-slate-900 dark:text-white">
+                  {previewNetDOP.toLocaleString()} DOP
                 </span>
               </div>
 

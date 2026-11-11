@@ -73,8 +73,8 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const commUSD = tx.zelleCommissionUSD || Math.round((commDOP / appliedRate) * 100) / 100;
   const effectiveCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : zCommPct;
 
-  const netUSD = Math.round((amountUSD - feeUSD) * 100) / 100;
-  const netPayout = payoutCurrency === 'DOP' ? Math.max(0, Math.round(amountUSD * appliedRate) - feeDOP) : netUSD;
+  const netUSD = Math.max(0, Math.round((amountUSD - feeUSD - commUSD) * 100) / 100);
+  const netPayout = payoutCurrency === 'DOP' ? Math.max(0, Math.round(amountUSD * appliedRate) - feeDOP - commDOP) : netUSD;
 
   const proofImg = tx.zelleProofUrl || tx.proofUrl;
 
@@ -347,8 +347,8 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
 
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="text-[10px] text-slate-400 uppercase font-bold block">{t('Commission Admin')} ({effectiveCommPct}%)</span>
-                    <p className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
-                      +${commUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(+{commDOP.toLocaleString()} DOP)</span>
+                    <p className="text-sm font-black font-mono text-blue-600 dark:text-blue-400 mt-0.5">
+                      -${commUSD.toFixed(2)} USD <span className="text-[11px] font-medium text-slate-400 block sm:inline">(-{commDOP.toLocaleString()} DOP)</span>
                     </p>
                   </div>
                 </>

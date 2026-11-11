@@ -196,7 +196,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
     const finalFeeDOP = isHaitiInbound ? 0 : expectedFeeDOP;
     const finalCommDOP = isHaitiInbound ? 0 : expectedCommDOP;
-    const netDOP = isHaitiInbound ? amountDOP : Math.max(0, amountDOP - finalFeeDOP);
+    const netDOP = isHaitiInbound ? amountDOP : Math.max(0, amountDOP - finalFeeDOP - finalCommDOP);
     const amountHTG = isHaitiInbound
       ? (rawAmountHTG && rawAmountHTG > 0 ? Math.round(rawAmountHTG) : Math.round(amountDOP * exchangeRate))
       : Math.round(netDOP * exchangeRate);

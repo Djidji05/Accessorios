@@ -263,12 +263,12 @@ export const HistoryView: React.FC = () => {
                       -{calcFee.toLocaleString()} DOP
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
-                    <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin')} ({txCommPct}%)</span>
-                    <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
-                      +{calcComm.toLocaleString()} DOP
-                    </span>
-                  </div>
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40">
+                      <span className="text-blue-700 dark:text-blue-400 font-bold">{t('Commission Admin')} ({txCommPct}%)</span>
+                      <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                        -{calcComm.toLocaleString()} DOP
+                      </span>
+                    </div>
                 </>
               );
             })()}

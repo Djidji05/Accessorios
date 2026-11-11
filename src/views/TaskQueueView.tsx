@@ -2695,7 +2695,7 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                             : (serviceCommissionRates[tx.operator] ?? 1.0);
                           const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round((tx.amountDOP || 0) * (opFeePct / 100)));
                           const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * (opCommPct / 100)));
-                          const calcNetDOP = Math.max(0, (tx.amountDOP || 0) - calcFeeDOP);
+                          const calcNetDOP = Math.max(0, (tx.amountDOP || 0) - calcFeeDOP - calcCommDOP);
                           const calcFeeHTG = Math.round(calcFeeDOP * appliedHtgRate);
                           const calcNetHTG = Math.round(calcNetDOP * appliedHtgRate);
 
@@ -2916,10 +2916,10 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                         const effectiveZCommPct = isHaitiInboundTx ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : zCommPct);
 
                         const zPayoutCurrency = isHaitiInboundTx ? 'DOP' : (tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP');
-                        const zNetUSD = Math.round((numUSD - zFeeUSD) * 100) / 100;
+                        const zNetUSD = Math.max(0, Math.round((numUSD - zFeeUSD - zCommUSD) * 100) / 100);
                         const zNetPayout = isHaitiInboundTx
                           ? inboundDOP
-                          : (zPayoutCurrency === 'DOP' ? Math.max(0, grossDOP - zFeeDOP) : zNetUSD);
+                          : (zPayoutCurrency === 'DOP' ? Math.max(0, grossDOP - zFeeDOP - zCommDOP) : zNetUSD);
 
                         const isPendingAdminDecision =
                           !isCompleted &&
@@ -3015,8 +3015,8 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
 
                                 <div className="flex justify-between items-center text-slate-600 text-[11px]">
                                   <span>{t('Commission Admin')} ({effectiveZCommPct}%) :</span>
-                                  <span className="font-mono font-bold text-emerald-700">
-                                    +${zCommUSD.toFixed(2)} USD (+{zCommDOP.toLocaleString()} DOP)
+                                  <span className="font-mono font-bold text-blue-700">
+                                    -${zCommUSD.toFixed(2)} USD (-{zCommDOP.toLocaleString()} DOP)
                                   </span>
                                 </div>
 

@@ -101,7 +101,7 @@ export const api = {
           const computedCommDOP = isHaitiInbound
             ? 0
             : (t.commissionDOP !== undefined && t.commissionDOP !== null ? t.commissionDOP : 0);
-          const netDOP = isHaitiInbound ? (t.amountDOP || 0) : Math.max(0, (t.amountDOP || 0) - computedFeeDOP);
+          const netDOP = isHaitiInbound ? (t.amountDOP || 0) : Math.max(0, (t.amountDOP || 0) - computedFeeDOP - computedCommDOP);
           const computedHTG = isHaitiInbound
             ? (t.amountHTG && t.amountHTG > 0 ? t.amountHTG : Math.round((t.amountDOP || 0) * rate))
             : Math.round(netDOP * rate);
@@ -115,7 +115,7 @@ export const api = {
             netPayoutAmount: isHaitiInbound
               ? (t.amountDOP || 0)
               : isZelle
-              ? Math.max(0, (t.amountDOP || 0) - computedFeeDOP)
+              ? Math.max(0, (t.amountDOP || 0) - computedFeeDOP - computedCommDOP)
               : t.netPayoutAmount,
             zelleFeeUSD: isZelle && t.amountUSD ? Number((t.amountUSD * 0.005).toFixed(2)) : t.zelleFeeUSD,
             zelleCommissionUSD: isZelle && t.amountUSD ? Number((t.amountUSD * 0.01).toFixed(2)) : t.zelleCommissionUSD,
@@ -170,7 +170,7 @@ export const api = {
         const computedCommDOP = isHaitiInbound
           ? 0
           : (res.transaction.commissionDOP !== undefined && res.transaction.commissionDOP !== null ? res.transaction.commissionDOP : (data.commissionDOP || 0));
-        const netDOP = isHaitiInbound ? res.transaction.amountDOP : Math.max(0, res.transaction.amountDOP - computedFeeDOP);
+        const netDOP = isHaitiInbound ? res.transaction.amountDOP : Math.max(0, res.transaction.amountDOP - computedFeeDOP - computedCommDOP);
         res.transaction = {
           ...res.transaction,
           serviceType: isHaitiInbound ? 'haiti_inbound_cash' : res.transaction.serviceType,
@@ -182,7 +182,7 @@ export const api = {
           netPayoutAmount: isHaitiInbound
             ? res.transaction.amountDOP
             : isZelle
-            ? Math.max(0, res.transaction.amountDOP - computedFeeDOP)
+            ? Math.max(0, res.transaction.amountDOP - computedFeeDOP - computedCommDOP)
             : res.transaction.netPayoutAmount,
           proofUrl: finalProof,
           zelleProofUrl: isZelle ? (finalProof || data.proofUrl) : res.transaction.zelleProofUrl,

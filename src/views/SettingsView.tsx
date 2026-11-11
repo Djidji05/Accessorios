@@ -936,7 +936,13 @@ export const SettingsView: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span>{t('Sur 1,000 DOP : Commission Admin')}</span>
-                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">+{exampleComm} DOP ({currentCommRate}%)</span>
+                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">-{exampleComm} DOP ({currentCommRate}%)</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800 font-bold">
+                      <span>{t('Net Converti / Remis')}</span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                        {Math.max(0, 1000 - exampleFee - exampleComm)} DOP
+                      </span>
                     </div>
                   </div>
                 </div>

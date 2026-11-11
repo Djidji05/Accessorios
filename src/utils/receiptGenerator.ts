@@ -52,7 +52,7 @@ export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): strin
   const appliedRate = tx.exchangeRate || 2.35;
   const calcFeeDOP = isHaitiInbound ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005)));
   const calcCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
-  const calcNetDOP = isHaitiInbound ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOP);
+  const calcNetDOP = isHaitiInbound ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOP - calcCommDOP);
   const calcNetHTG = isHaitiInbound ? tx.amountHTG : Math.round(calcNetDOP * appliedRate);
   const feePct = isHaitiInbound ? 0 : (tx.amountDOP > 0 && calcFeeDOP > 0 ? (Math.round((calcFeeDOP / tx.amountDOP) * 1000) / 10) : 0.5);
   const commPct = isHaitiInbound ? 0 : (tx.amountDOP > 0 && calcCommDOP > 0 ? (Math.round((calcCommDOP / tx.amountDOP) * 1000) / 10) : 1.0);
@@ -60,8 +60,8 @@ export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): strin
   const financialLines = isHaitiInbound
     ? `💰 *Somme Reçue (Dépôt) :* ${tx.amountHTG.toLocaleString()} HTG\n🎁 *Frais sur Dépôt :* 0 DOP (Aucun frais)\n📊 *Taux :* 100 DOP = ${Math.round(appliedRate * 100)} HTG\n💵 *Montant Converti (RD) :* ${tx.amountDOP.toLocaleString()} DOP`
     : isZelle
-    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP\n💼 *Commission (${commPct}%) :* +${calcCommDOP} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
-    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP (-${Math.round(calcFeeDOP * appliedRate)} HTG)\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n💼 *Commission (${commPct}%) :* +${calcCommDOP} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
+    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP\n💼 *Commission (${commPct}%) :* -${calcCommDOP} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
+    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP\n💼 *Commission (${commPct}%) :* -${calcCommDOP} DOP\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
 
   return `${headerTitle}
 ${subTitle}
@@ -264,7 +264,7 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   const appliedRateCanvas = tx.exchangeRate || 2.35;
   const calcFeeDOPCanvas = isHaitiInboundCanvas ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005)));
   const calcCommDOPCanvas = isHaitiInboundCanvas ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
-  const calcNetDOPCanvas = isHaitiInboundCanvas ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOPCanvas);
+  const calcNetDOPCanvas = isHaitiInboundCanvas ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOPCanvas - calcCommDOPCanvas);
   const calcFeeHTGCanvas = Math.round(calcFeeDOPCanvas * appliedRateCanvas);
   const calcNetHTGCanvas = isHaitiInboundCanvas ? tx.amountHTG : Math.round(calcNetDOPCanvas * appliedRateCanvas);
 
@@ -357,8 +357,8 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
     isHaitiInboundCanvas
       ? `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG (Comm: 0 DOP)`
       : isZelleCanvas
-      ? `1 USD = ${(tx.zelleExchangeRate || appliedRateCanvas).toFixed(2)} DOP | Comm: +${calcCommDOPCanvas} DOP`
-      : `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG | Comm: +${calcCommDOPCanvas} DOP`,
+      ? `1 USD = ${(tx.zelleExchangeRate || appliedRateCanvas).toFixed(2)} DOP | Comm: -${calcCommDOPCanvas} DOP`
+      : `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG | Comm: -${calcCommDOPCanvas} DOP`,
     585,
     finY
   );

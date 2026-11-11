@@ -204,9 +204,9 @@ export const OperationsGuichetView: React.FC = () => {
   const activeFeeRate = operator ? (serviceFeeRates[operator] ?? 0.5) : 0.5;
   const activeCommRate = operator ? (serviceCommissionRates[operator] ?? 1.0) : 1.0;
   const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
-  const netDOP = Math.max(0, numAmountDOP - feeDOP);
-  const computedHTG = Math.round(netDOP * dopToHtgRate);
   const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
+  const netDOP = Math.max(0, numAmountDOP - feeDOP - commissionDOP);
+  const computedHTG = Math.round(netDOP * dopToHtgRate);
 
   // Filtrage des transactions récentes de l'opérateur au guichet
   const isAgentRD = currentUser.role === 'agent_rd';
@@ -1237,10 +1237,12 @@ export const OperationsGuichetView: React.FC = () => {
         ? usdToHtgRate
         : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
                 const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
+                const zelleCommPct = serviceCommissionRates['zelle'] ?? 1.0;
                 const feeUSD = Math.round(numUSD * (zelleFeePct / 100) * 100) / 100;
-                const netUSD = Math.max(0, numUSD - feeUSD);
+                const commUSD = Math.round(numUSD * (zelleCommPct / 100) * 100) / 100;
+                const netUSD = Math.max(0, Math.round((numUSD - feeUSD - commUSD) * 100) / 100);
                 const netDOP = Math.round(netUSD * usdToDop);
-                const netUSDExact = Math.round(netUSD * 100) / 100;
+                const netUSDExact = netUSD;
                 const netPayout = zellePayoutCurrency === 'DOP' ? netDOP : netUSDExact;
 
                 return (
@@ -1363,23 +1365,23 @@ export const OperationsGuichetView: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between items-center text-amber-700 text-[11px]">
-                  <span className="whitespace-nowrap font-semibold">{t('Frais de service')} ({activeFeeRate}%) :</span>
-                  <span className="font-mono font-bold whitespace-nowrap">-{feeDOP.toLocaleString()} DOP (-{Math.round(feeDOP * dopToHtgRate).toLocaleString()} HTG)</span>
+                  <span className="whitespace-nowrap font-semibold">{t('Frais Guichet')} ({activeFeeRate}%) :</span>
+                  <span className="font-mono font-bold whitespace-nowrap">-{feeDOP.toLocaleString()} DOP</span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                <div className="flex justify-between items-center text-blue-700 text-[11px]">
+                  <span className="whitespace-nowrap font-semibold">{t('Commission Admin')} ({activeCommRate}%) :</span>
+                  <span className="font-mono font-bold whitespace-nowrap">-{commissionDOP.toLocaleString()} DOP</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-800 text-[11px] font-bold pt-1 border-t border-slate-200/50">
                   <span className="whitespace-nowrap font-medium">{t('Montant Net Converti', 'Montant Net Converti')} :</span>
-                  <span className="font-mono font-bold text-slate-800 whitespace-nowrap">{netDOP.toLocaleString()} DOP</span>
+                  <span className="font-mono font-bold text-slate-900 whitespace-nowrap">{netDOP.toLocaleString()} DOP</span>
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
                   <span className="whitespace-nowrap font-medium">{t('rate_label', 'Taux appliqué')} :</span>
                   <span className="font-mono font-bold text-slate-900 whitespace-nowrap">100 DOP = {Math.round(dopToHtgRate * 100)} HTG</span>
-                </div>
-
-                <div className="flex justify-between items-center text-emerald-700 text-[11px]">
-                  <span className="whitespace-nowrap font-semibold">{t('Commission Admin')} ({activeCommRate}%) :</span>
-                  <span className="font-mono font-bold whitespace-nowrap">+{commissionDOP.toLocaleString()} DOP</span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-slate-200/70 text-slate-900">
