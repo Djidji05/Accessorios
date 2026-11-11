@@ -1306,7 +1306,7 @@ export const SettingsView: React.FC = () => {
                 className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 text-xs px-3 py-2.5 rounded-xl font-mono focus:ring-2 focus:ring-indigo-500/20"
               />
               <p className="text-[10px] text-slate-400 mt-1">
-                {t('Les liens dans les e-mails ("Accéder à la Transaction", etc.) renverront directement vers cette adresse (ex: https://alexistransferencia.app au lieu de localhost).')}
+                {t('email_redirect_note', 'Les liens dans les e-mails renverront directement vers cette adresse (ex: https://alexistransferencia.app au lieu de localhost).')}
               </p>
             </div>
 
