@@ -16,8 +16,6 @@ import {
   Zap, 
   Building2, 
   History, 
-  Edit3,
-  RefreshCcw,
   Clock,
   ExternalLink,
   ChevronRight,
@@ -180,9 +178,6 @@ export const OperationsGuichetView: React.FC = () => {
   const zelleCameraInputRef = useRef<HTMLInputElement>(null);
   const zelleFileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isEditingRate, setIsEditingRate] = useState(false);
-  const [tempRate, setTempRate] = useState<string>(dopToHtgRate.toString());
-
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
 
@@ -240,16 +235,6 @@ export const OperationsGuichetView: React.FC = () => {
   const GUICHET_PAGE_SIZE = 10;
   const guichetTotalPages = Math.ceil(recentCashierTx.length / GUICHET_PAGE_SIZE) || 1;
   const paginatedCashierTx = recentCashierTx.slice((guichetPage - 1) * GUICHET_PAGE_SIZE, guichetPage * GUICHET_PAGE_SIZE);
-
-  const handleUpdateRateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newR = parseFloat(tempRate);
-    if (newR > 0) {
-      setDopToHtgRate(newR);
-      setIsEditingRate(false);
-      setFeedback({ type: 'success', message: `Taux de change mis à jour avec succès : 100 Pesos = ${Math.round(newR * 100)} HTG` });
-    }
-  };
 
   const handleInboundProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -445,78 +430,6 @@ export const OperationsGuichetView: React.FC = () => {
 
       {/* 💻 MODE DESKTOP PC (hidden md:block) */}
       <div className="hidden md:block p-3 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-in fade-in">
-      
-      {/* 1. PAGE HEADER & RATE CONTROLLER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              {t('counter_rd_title', 'Saisie Opérations au Guichet (R.D.)')}
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 font-medium mt-1">
-            {t('operational_portal', 'Interface taillée pour la saisie rapide au comptoir, l\'encaissement en Pesos (DOP) et le décaissement en Gourdes (HTG).')}
-          </p>
-        </div>
-
-        {/* Live Exchange Rate Display / Controller */}
-        <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 self-start md:self-auto">
-          <div className="text-right">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t('rate_label', 'Taux officiel')}</span>
-            <span className="text-sm font-black text-slate-900 font-mono">
-              100 DOP = {Math.round(dopToHtgRate * 100)} HTG
-            </span>
-          </div>
-
-          {currentUser.role === 'admin' && (
-            <button
-              onClick={() => setIsEditingRate(!isEditingRate)}
-              className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
-              title="Modifier le Taux de Change Officiel"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>{t('edit', 'Ajuster')}</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* RATE EDIT MODAL (ADMIN ONLY) */}
-      {isEditingRate && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <RefreshCcw className="w-5 h-5 text-blue-600" />
-            <div>
-              <p className="text-xs font-extrabold text-blue-900">{t('official_exchange_rate', 'Ajustement du Taux de Change Appliqué')}</p>
-              <p className="text-[11px] text-blue-700">{t('rate_today', 'Modifie le taux de conversion immédiatement pour toutes les nouvelles opérations.')}</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleUpdateRateSubmit} className="flex items-center gap-2 w-full sm:w-auto">
-            <input
-              type="number"
-              step="0.05"
-              value={tempRate}
-              onChange={(e) => setTempRate(e.target.value)}
-              className="w-28 bg-white border border-blue-300 text-slate-900 font-mono font-black text-xs px-3 py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
-              required
-            />
-            <button
-              type="submit"
-              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 shadow-xs cursor-pointer"
-            >
-              {t('save', 'Appliquer')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditingRate(false)}
-              className="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-300 cursor-pointer"
-            >
-              {t('cancel', 'Annuler')}
-            </button>
-          </form>
-        </div>
-      )}
 
       {/* POST-CREATION INSTANT CONFIRMATION & RECEIPT CARD */}
       {lastCreatedTx && (
