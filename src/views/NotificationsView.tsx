@@ -64,7 +64,10 @@ export const NotificationsView: React.FC = () => {
       );
     }
     if (isAgentHaiti) {
-      return tx.operator === 'natcash' || tx.operator === 'natcom' || tx.channel === 'haiti_cash';
+      return (tx.operator === 'natcash' || tx.operator === 'natcom') && tx.serviceType !== 'haiti_inbound_cash';
+    }
+    if (currentUser.role === 'gestionnaire') {
+      return tx.operator !== 'natcash' && tx.operator !== 'natcom';
     }
     return true; // Admin & Gestionnaire voient tout
   });

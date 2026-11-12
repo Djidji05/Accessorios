@@ -186,7 +186,7 @@ router.post('/', authMiddleware, async (req, res) => {
     // 2.4 Détermination du canal et routage vers le bon agent
     const isZelle = operator === 'zelle';
     const isHaitiInbound = serviceType === 'haiti_inbound_cash' || senderName === 'Client Haïti';
-    const isHaitiCash = operator === 'moncash' || operator === 'natcash' || operator === 'natcom';
+    const isHaitiCash = operator === 'natcash' || operator === 'natcom';
     const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
     const targetRole = (isZelle || isHaitiInbound) ? 'admin' : (isHaitiCash ? 'agent_haiti' : 'gestionnaire');
 

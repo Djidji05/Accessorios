@@ -356,16 +356,16 @@ export const TaskQueueView: React.FC = () => {
     if (!matchesDate) return false;
 
     if (isAgentHaiti) {
-      // Agent Haïti : flux destinés à Haïti (MonCash, Natcash, Natcom, Digicel)
-      return tx.operator === 'natcash' || tx.operator === 'natcom' || tx.operator === 'moncash' || tx.operator === 'digicel' || tx.channel === 'haiti_cash';
+      // Agent Haïti : flux destinés exclusivement à Natcash et Natcom
+      return (tx.operator === 'natcash' || tx.operator === 'natcom') && tx.serviceType !== 'haiti_inbound_cash';
     }
     if (isAgentRD) {
       // Agent RD : uniquement les transferts initiés par son guichet/agence ou qui lui sont assignés
       return tx.createdByRole === 'agent_rd' || tx.createdByName === currentUser.name || tx.assignedToRole === 'agent_rd';
     }
     if (isGestionnaire) {
-      // Pour le gestionnaire : toutes les transactions des autres services sont visibles dans le flux, SAUF Natcash
-      return tx.operator !== 'natcash';
+      // Pour le gestionnaire : toutes les transactions des autres services sont visibles dans le flux, SAUF Natcash et Natcom (réservés à l'Agent Haïti)
+      return tx.operator !== 'natcash' && tx.operator !== 'natcom';
     }
     return true; // Admin voit l'ensemble
   });
@@ -518,16 +518,12 @@ export const TaskQueueView: React.FC = () => {
     setTimeout(() => setCopiedPhoneId(null), 2000);
   };
 
-  // VUE PARTICULIÈRE & ÉPURÉE : AGENT HAÏTI (Natcash, Natcom, MonCash & Décaissements Haïti)
+  // VUE PARTICULIÈRE & ÉPURÉE : AGENT HAÏTI (Natcash & Natcom Décaissements Haïti)
   if (isAgentHaiti) {
     const haitiScopedTasks = transactions.filter(
       (tx) =>
-        tx.operator === 'natcash' ||
-        tx.operator === 'natcom' ||
-        tx.operator === 'moncash' ||
-        tx.operator === 'digicel' ||
-        tx.channel === 'haiti_cash' ||
-        tx.assignedToRole === 'agent_haiti'
+        (tx.operator === 'natcash' || tx.operator === 'natcom') &&
+        tx.serviceType !== 'haiti_inbound_cash'
     );
 
     const haitiFilteredTasks = haitiScopedTasks.filter((tx) => {
@@ -676,39 +672,6 @@ export const TaskQueueView: React.FC = () => {
               }`}
             >
               {t('Validées', 'Validées')} ({haitiCompletedCount})
-            </button>
-
-            <button
-              onClick={() => setHaitiOperatorFilter(haitiOperatorFilter === 'natcash' ? 'all' : 'natcash')}
-              className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
-                haitiOperatorFilter === 'natcash'
-                  ? 'bg-emerald-600 text-white border-emerald-600 font-extrabold'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              Natcash
-            </button>
-
-            <button
-              onClick={() => setHaitiOperatorFilter(haitiOperatorFilter === 'natcom' ? 'all' : 'natcom')}
-              className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
-                haitiOperatorFilter === 'natcom'
-                  ? 'bg-blue-600 text-white border-blue-600 font-extrabold'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              Natcom
-            </button>
-
-            <button
-              onClick={() => setHaitiOperatorFilter(haitiOperatorFilter === 'moncash' ? 'all' : 'moncash')}
-              className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer ${
-                haitiOperatorFilter === 'moncash'
-                  ? 'bg-rose-600 text-white border-rose-600 font-extrabold'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              MonCash
             </button>
           </div>
 

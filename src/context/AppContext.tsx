@@ -1153,9 +1153,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             // Notification sonore et toast adaptées au rôle de l'agent
             const userRole = currentUser?.role;
-            if (userRole === 'agent_haiti' && newTx.channel === 'haiti_cash') {
+            if (userRole === 'agent_haiti' && (newTx.operator === 'natcash' || newTx.operator === 'natcom')) {
               showToast(`🚨 Nouveau transfert Haïti reçu : ${newTx.amountHTG.toLocaleString()} HTG (#${newTx.referenceNumber})`, 'success');
-            } else if (userRole === 'gestionnaire' && newTx.channel === 'digital_telecom') {
+            } else if (userRole === 'gestionnaire' && newTx.operator !== 'natcash' && newTx.operator !== 'natcom') {
               showToast(`⚡ Nouvelle recharge reçue : ${newTx.operator.toUpperCase()} (#${newTx.referenceNumber})`, 'info');
             } else if (userRole === 'admin') {
               showToast(`⚡ Nouveau transfert émis : ${newTx.referenceNumber} (${newTx.operator.toUpperCase()})`, 'info');
@@ -1350,8 +1350,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const unreadTasksCount = transactions.filter((tx) => {
     if (tx.status === 'completed' || tx.status === 'cancelled') return false;
     if (currentUser.role === 'admin') return true;
-    if (currentUser.role === 'agent_haiti' && tx.channel === 'haiti_cash') return true;
-    if (currentUser.role === 'gestionnaire' && tx.operator !== 'natcash') return true;
+    if (currentUser.role === 'agent_haiti' && (tx.operator === 'natcash' || tx.operator === 'natcom')) return true;
+    if (currentUser.role === 'gestionnaire' && tx.operator !== 'natcash' && tx.operator !== 'natcom') return true;
     return false;
   }).length;
 
@@ -1475,9 +1475,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 3. Determine Channel & Intelligent Task Routing :
     // - Zelle Direct & Réception Haïti Inbound -> Admin pour vérification bancaire / compte
-    // - Haïti Cash / Mobile Money (MonCash, Natcash, Natcom) -> Agent Haïti
-    // - Télécoms & Numériques (Digicel, Claro, Altice) -> Gestionnaire
-    const isHaitiCashChannel = data.operator === 'moncash' || data.operator === 'natcash' || data.operator === 'natcom';
+    // - Haïti Cash / Mobile Money (Natcash, Natcom) -> Agent Haïti
+    // - Télécoms, Numériques & MonCash (Digicel, MonCash, Claro, Altice) -> Gestionnaire
+    const isHaitiCashChannel = data.operator === 'natcash' || data.operator === 'natcom';
     const channel: ChannelType = isHaitiCashChannel ? 'haiti_cash' : 'digital_telecom';
     
     const assignedRole: Role = (isZelle || isHaitiInbound) ? 'admin' : (isHaitiCashChannel ? 'agent_haiti' : 'gestionnaire');

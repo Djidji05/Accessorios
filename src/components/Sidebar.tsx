@@ -66,7 +66,7 @@ export const Sidebar: React.FC = () => {
 
   // Compteur des flux numériques en attente pour le gestionnaire
   const gestionnairePendingCount = transactions.filter(
-    t => (t.operator === 'moncash' || t.operator === 'digicel' || t.operator === 'claro' || t.operator === 'altice' || t.operator === 'natcom' || t.channel === 'digital_telecom') && t.status === 'in_progress'
+    t => (t.operator !== 'natcash' && t.operator !== 'natcom') && t.status === 'in_progress'
   ).length;
 
   const canSeeGuichet = isAdmin;

@@ -142,7 +142,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ dateRange }) => {
 
     // 2. Spécifique Agent Haïti
     if (currentUser.role === 'agent_haiti') {
-      const htTxs = scopedTransactions.filter(tx => tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash' || tx.operator === 'natcom');
+      const htTxs = scopedTransactions.filter(tx => (tx.operator === 'natcash' || tx.operator === 'natcom') && tx.serviceType !== 'haiti_inbound_cash');
       const htVolHTG = htTxs.filter(tx => tx.status === 'completed').reduce((acc, tx) => acc + tx.amountHTG, 0);
       const htPending = htTxs.filter(tx => tx.status === 'in_progress').length;
       const { txCounts, txVolumes } = getDailyMetrics(htTxs);

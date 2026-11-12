@@ -143,8 +143,9 @@ export const CommandPalette: React.FC = () => {
 
   // Transactions scopées au rôle
   const scopedTransactions = transactions.filter((tx) => {
-    if (isAgentHaiti) return tx.channel === 'haiti_cash' || tx.assignedToRole === 'agent_haiti' || tx.operator === 'moncash' || tx.operator === 'natcash' || tx.operator === 'natcom';
+    if (isAgentHaiti) return (tx.operator === 'natcash' || tx.operator === 'natcom') && tx.serviceType !== 'haiti_inbound_cash';
     if (isAgentRD) return tx.createdByRole === 'agent_rd' || tx.createdByName === currentUser.name || tx.assignedToRole === 'agent_rd';
+    if (currentUser.role === 'gestionnaire') return tx.operator !== 'natcash' && tx.operator !== 'natcom';
     return true;
   });
 

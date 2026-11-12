@@ -227,7 +227,7 @@ export const MobileAgentHome: React.FC = () => {
     }
 
     if (isAgentHaiti) {
-      return t.operator === 'natcash' || t.operator === 'natcom' || t.channel === 'haiti_cash';
+      return (t.operator === 'natcash' || t.operator === 'natcom') && t.serviceType !== 'haiti_inbound_cash';
     }
 
     return createdByName === currentName;

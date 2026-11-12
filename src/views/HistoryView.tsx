@@ -61,14 +61,7 @@ export const HistoryView: React.FC = () => {
   // Périmètre strict selon le rôle : l'agent voit uniquement son propre historique
   const roleScopedTransactions = transactions.filter((tx) => {
     if (isAgentHaiti) {
-      return (
-        tx.operator === 'natcash' ||
-        tx.operator === 'natcom' ||
-        tx.operator === 'moncash' ||
-        tx.operator === 'digicel' ||
-        tx.channel === 'haiti_cash' ||
-        tx.assignedToRole === 'agent_haiti'
-      );
+      return (tx.operator === 'natcash' || tx.operator === 'natcom') && tx.serviceType !== 'haiti_inbound_cash';
     }
     if (isAgentRD) {
       return (
@@ -76,7 +69,10 @@ export const HistoryView: React.FC = () => {
         tx.senderName?.toLowerCase() === currentUser.name?.toLowerCase()
       );
     }
-    return true; // Admin & Gestionnaire voient toutes les transactions
+    if (currentUser.role === 'gestionnaire') {
+      return tx.operator !== 'natcash' && tx.operator !== 'natcom';
+    }
+    return true; // Admin voit toutes les transactions
   });
 
   const filteredTransactions = roleScopedTransactions.filter((tx) => {
