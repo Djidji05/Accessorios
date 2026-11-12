@@ -1637,8 +1637,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (approved) {
       const preservedProof = tx.zelleProofUrl || tx.proofUrl;
-      const payoutText = `${tx.netPayoutAmount ? tx.netPayoutAmount.toLocaleString() : tx.amountDOP.toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`;
-      const proofNotes = `[ZELLE CONFIRMÉ PAR L'ADMIN ${currentUser.name}] Virement de $${tx.amountUSD || 0} USD vérifié et validé sur le compte bancaire. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
+      const usdToDop = (usdToHtgRate && usdToHtgRate <= 100)
+        ? usdToHtgRate
+        : ((usdToHtgRate && dopToHtgRate && dopToHtgRate > 0) ? (usdToHtgRate / dopToHtgRate) : 58.0);
+      const appliedRate = tx.zelleExchangeRate || usdToDop;
+      const numUSD = tx.amountUSD || Math.round((tx.amountDOP / appliedRate) * 100) / 100;
+      const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
+      const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
+      const finalFeeUSD = Math.round(numUSD * (zFeePct / 100) * 100) / 100;
+      const finalCommUSD = Math.round(numUSD * (zCommPct / 100) * 100) / 100;
+      const finalFeeDOP = Math.max(1, Math.round(finalFeeUSD * appliedRate));
+      const finalCommDOP = Math.max(1, Math.round(finalCommUSD * appliedRate));
+      const grossDOP = Math.round(numUSD * appliedRate);
+      const netUSD = Math.max(0, Math.round((numUSD - finalFeeUSD - finalCommUSD) * 100) / 100);
+      const netDOP = Math.max(0, grossDOP - finalFeeDOP - finalCommDOP);
+      const finalPayoutCurrency = tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP';
+      const finalNetPayout = finalPayoutCurrency === 'USD' ? netUSD : netDOP;
+      const payoutText = `${finalNetPayout.toLocaleString()} ${finalPayoutCurrency}`;
+
+      const proofNotes = `[ZELLE CONFIRMÉ PAR L'ADMIN ${currentUser.name}] Virement de $${numUSD} USD vérifié et validé sur le compte bancaire. PAIEMENT CLIENT AUTORISÉ : ${payoutText}. ${note ? `Note: ${note}` : ''}`;
 
       setTransactions((prev) =>
         prev.map((t) => {
@@ -1647,6 +1664,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...t,
               status: 'completed',
               zelleStatus: 'approved',
+              feeDOP: finalFeeDOP,
+              commissionDOP: finalCommDOP,
+              zelleFeeUSD: finalFeeUSD,
+              zelleCommissionUSD: finalCommUSD,
+              netPayoutAmount: finalNetPayout,
+              netPayoutCurrency: finalPayoutCurrency,
               completedAt: new Date().toISOString(),
               proofNotes,
               proofUrl: preservedProof || t.proofUrl,

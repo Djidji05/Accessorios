@@ -8,18 +8,28 @@ import {
   AlertCircle,
   Globe2,
   TrendingUp,
-  Zap
+  Zap,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Language } from '../i18n/translations';
+
+const languages: { code: Language; label: string; flag: string }[] = [
+  { code: 'FR', label: 'Français', flag: '🇫🇷' },
+  { code: 'HT', label: 'Kreyòl', flag: '🇭🇹' },
+  { code: 'ES', label: 'Español', flag: '🇩🇴' },
+];
 
 export const LoginView: React.FC = () => {
-  const { login, t, currentLang } = useApp();
+  const { login, t, currentLang, setLanguage } = useApp();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLangOpen, setIsLangOpen] = useState(false);
 
   // Forcer le Mode Clair absolu et retirer la classe 'dark' du DOM
   useEffect(() => {
@@ -64,6 +74,53 @@ export const LoginView: React.FC = () => {
   return (
     <div className="min-h-screen w-full bg-slate-50 text-slate-800 relative overflow-hidden font-sans flex items-center justify-center p-4 sm:p-6 lg:p-12 transition-colors duration-300 selection:bg-blue-600 selection:text-white">
       
+      {/* Top-Right Language Switcher with Submenu */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsLangOpen(!isLangOpen)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 shadow-md shadow-blue-900/5 text-slate-700 hover:text-slate-900 transition-all text-xs font-black backdrop-blur-xl cursor-pointer active:scale-95"
+            title={currentLang === 'HT' ? 'Chanje lang' : currentLang === 'ES' ? 'Cambiar idioma' : 'Changer de langue'}
+          >
+            <Globe2 className="w-4 h-4 text-blue-600" />
+            <span>{languages.find((l) => l.code === currentLang)?.flag} {languages.find((l) => l.code === currentLang)?.label || currentLang}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isLangOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="space-y-1">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setIsLangOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
+                        currentLang === lang.code
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">{lang.flag}</span>
+                        <span>{lang.label}</span>
+                      </div>
+                      {currentLang === lang.code && <Check className="w-4 h-4 text-white" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Dynamic Background Mesh Aurora Glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-gradient-to-br from-blue-300/40 via-cyan-200/50 to-transparent rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-gradient-to-tl from-indigo-300/40 via-sky-200/50 to-transparent rounded-full blur-[140px] pointer-events-none" />
@@ -155,14 +212,29 @@ export const LoginView: React.FC = () => {
             {/* Soft Ambient Glow inside card */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
 
-            {/* Title */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                {t('login_title', 'Connexion au Portail')}
-              </h2>
-              <p className="text-sm text-slate-500 font-medium mt-2">
-                {t('login_subtitle', 'Veuillez entrer vos identifiants pour accéder à votre espace sécurisé.')}
-              </p>
+            {/* Title & Language Selector Header */}
+            <div className="flex items-start justify-between gap-3 mb-8">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                  {t('login_title', 'Connexion au Portail')}
+                </h2>
+                <p className="text-sm text-slate-500 font-medium mt-1.5">
+                  {t('login_subtitle', 'Veuillez entrer vos identifiants pour accéder à votre espace sécurisé.')}
+                </p>
+              </div>
+
+              {/* Quick Language badge on mobile */}
+              <div className="sm:hidden relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsLangOpen(!isLangOpen)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black cursor-pointer shadow-2xs"
+                  title="Changer de langue"
+                >
+                  <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{languages.find((l) => l.code === currentLang)?.flag} {currentLang}</span>
+                </button>
+              </div>
             </div>
 
             {/* Error Notice */}

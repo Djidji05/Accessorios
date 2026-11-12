@@ -782,7 +782,7 @@ export const OperationsGuichetView: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Operator Selection Card with Official Logos */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
                 {t('step1_service', '1. Sélection du Service & Opérateur')}
@@ -792,7 +792,7 @@ export const OperationsGuichetView: React.FC = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(Object.keys(OPERATOR_VISUAL_CARDS) as OperatorCode[]).map((opKey) => {
                 const conf = OPERATOR_VISUAL_CARDS[opKey];
                 const ks = killSwitchList.find(k => k.operator === opKey);
@@ -808,7 +808,7 @@ export const OperationsGuichetView: React.FC = () => {
                     onClick={() => {
                       if (!isLocked) setOperator(opKey);
                     }}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between h-28 ${
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between h-26 sm:h-28 ${
                       isLocked 
                         ? 'bg-slate-100 border-slate-300 opacity-50 cursor-not-allowed' 
                         : isSelected 

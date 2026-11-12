@@ -2868,15 +2868,19 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
                           tx.amountUSD ||
                           (tx.amountDOP ? Math.round((tx.amountDOP / appliedRate) * 100) / 100 : 0);
                         const grossDOP = isHaitiInboundTx ? inboundDOP : (tx.amountDOP || Math.round(numUSD * appliedRate));
-                        const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
-                        const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
-                        const zFeeDOP = isHaitiInboundTx ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(numUSD * (zFeePct / 100) * appliedRate)));
-                        const zFeeUSD = isHaitiInboundTx ? 0 : (tx.zelleFeeUSD || Math.round((zFeeDOP / appliedRate) * 100) / 100);
-                        const effectiveZFeePct = isHaitiInboundTx ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : zFeePct);
+                        const zFeePct = (isCompleted && tx.amountDOP && tx.feeDOP)
+                          ? (Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10)
+                          : (serviceFeeRates['zelle'] ?? 0.5);
+                        const zCommPct = (isCompleted && tx.amountDOP && tx.commissionDOP)
+                          ? (Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10)
+                          : (serviceCommissionRates['zelle'] ?? 1.0);
+                        const zFeeUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * (zFeePct / 100) * 100) / 100;
+                        const zFeeDOP = isHaitiInboundTx ? 0 : Math.max(1, Math.round(zFeeUSD * appliedRate));
+                        const effectiveZFeePct = isHaitiInboundTx ? 0 : zFeePct;
 
-                        const zCommDOP = isHaitiInboundTx ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(numUSD * (zCommPct / 100) * appliedRate)));
-                        const zCommUSD = isHaitiInboundTx ? 0 : (tx.zelleCommissionUSD || Math.round((zCommDOP / appliedRate) * 100) / 100);
-                        const effectiveZCommPct = isHaitiInboundTx ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : zCommPct);
+                        const zCommUSD = isHaitiInboundTx ? 0 : Math.round(numUSD * (zCommPct / 100) * 100) / 100;
+                        const zCommDOP = isHaitiInboundTx ? 0 : Math.max(1, Math.round(zCommUSD * appliedRate));
+                        const effectiveZCommPct = isHaitiInboundTx ? 0 : zCommPct;
 
                         const zPayoutCurrency = isHaitiInboundTx ? 'DOP' : (tx.netPayoutCurrency === 'USD' ? 'USD' : 'DOP');
                         const zNetUSD = Math.max(0, Math.round((numUSD - zFeeUSD - zCommUSD) * 100) / 100);

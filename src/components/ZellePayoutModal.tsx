@@ -63,15 +63,20 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
   const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
-  const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
-  const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
-  const feeDOP = (tx.feeDOP && tx.feeDOP > 0) ? tx.feeDOP : Math.max(1, Math.round(amountUSD * (zFeePct / 100) * appliedRate));
-  const feeUSD = tx.zelleFeeUSD || Math.round((feeDOP / appliedRate) * 100) / 100;
-  const effectiveFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : zFeePct;
+  const zFeePct = (isApproved && tx.amountDOP && tx.feeDOP)
+    ? (Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10)
+    : (serviceFeeRates['zelle'] ?? 0.5);
+  const zCommPct = (isApproved && tx.amountDOP && tx.commissionDOP)
+    ? (Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10)
+    : (serviceCommissionRates['zelle'] ?? 1.0);
 
-  const commDOP = (tx.commissionDOP && tx.commissionDOP > 0) ? tx.commissionDOP : Math.max(1, Math.round(amountUSD * (zCommPct / 100) * appliedRate));
-  const commUSD = tx.zelleCommissionUSD || Math.round((commDOP / appliedRate) * 100) / 100;
-  const effectiveCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : zCommPct;
+  const feeUSD = Math.round(amountUSD * (zFeePct / 100) * 100) / 100;
+  const feeDOP = Math.max(1, Math.round(feeUSD * appliedRate));
+  const effectiveFeePct = zFeePct;
+
+  const commUSD = Math.round(amountUSD * (zCommPct / 100) * 100) / 100;
+  const commDOP = Math.max(1, Math.round(commUSD * appliedRate));
+  const effectiveCommPct = zCommPct;
 
   const netUSD = Math.max(0, Math.round((amountUSD - feeUSD - commUSD) * 100) / 100);
   const netPayout = payoutCurrency === 'DOP' ? Math.max(0, Math.round(amountUSD * appliedRate) - feeDOP - commDOP) : netUSD;
