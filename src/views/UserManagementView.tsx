@@ -49,6 +49,7 @@ import { jsPDF } from 'jspdf';
 import { useApp } from '../context/AppContext';
 import { OperatorCode, Role, User } from '../types';
 import { Pagination } from '../components/Pagination';
+import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { compressImage } from '../utils/imageCompressor';
 
 export const UserManagementView: React.FC = () => {
@@ -81,7 +82,14 @@ export const UserManagementView: React.FC = () => {
   
   // Full-page User Inspection State (NO POPUP DIV MODAL)
   const [inspectedUser, setInspectedUser] = useState<User | null>(null);
-  const [inspectionPeriod, setInspectionPeriod] = useState<'week' | 'month' | 'year' | 'all'>('week');
+
+  // Filtre Calendrier Universel (même calendrier que Trésorerie, Tableau de Bord, etc.)
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange>({
+    preset: 'last_7_days',
+    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    endDate: new Date(),
+    label: '7 derniers jours',
+  });
 
   const currentYearNow = new Date().getFullYear();
   const currentWeekNumberNow = (() => {
@@ -168,24 +176,50 @@ export const UserManagementView: React.FC = () => {
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
   ];
 
-  const isDateInFilter = (dateStr: string, periodMode: 'week' | 'month' | 'year' | 'all') => {
-    if (periodMode === 'all') return true;
+  const isDateInFilter = (dateStr: string) => {
     if (!dateStr) return false;
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return false;
 
-    if (periodMode === 'week') {
-      return d >= selectedWeekInfo.start && d <= selectedWeekInfo.end;
-    }
+    const { preset, startDate, endDate } = selectedDateRange;
+    const now = new Date();
 
-    if (periodMode === 'month') {
-      return d.getFullYear() === selectedWeekYear && d.getMonth() === selectedMonth;
+    if (preset === 'today') {
+      return d.toDateString() === now.toDateString();
     }
-
-    if (periodMode === 'year') {
-      return d.getFullYear() === selectedWeekYear;
+    if (preset === 'yesterday') {
+      const yest = new Date();
+      yest.setDate(now.getDate() - 1);
+      return d.toDateString() === yest.toDateString();
     }
-
+    if (preset === 'last_7_days') {
+      const s = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      s.setHours(0, 0, 0, 0);
+      return d >= s;
+    }
+    if (preset === 'this_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      firstDay.setHours(0, 0, 0, 0);
+      return d >= firstDay;
+    }
+    if (preset === 'last_30_days') {
+      const s = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      s.setHours(0, 0, 0, 0);
+      return d >= s;
+    }
+    if (preset === 'last_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      firstDay.setHours(0, 0, 0, 0);
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return d >= firstDay && d <= lastDay;
+    }
+    if (startDate && endDate) {
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      return d >= s && d <= e;
+    }
     return true;
   };
 
@@ -203,7 +237,7 @@ export const UserManagementView: React.FC = () => {
       return nameMatch || nodeMatch || userMatch;
     });
 
-    const periodTx = userTx.filter(t => isDateInFilter(t.createdAt, inspectionPeriod));
+    const periodTx = userTx.filter(t => isDateInFilter(t.createdAt));
     const volumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
     const txCount = periodTx.length;
     const commissionDOP = periodTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
@@ -219,7 +253,7 @@ export const UserManagementView: React.FC = () => {
     userSettlements.forEach(s => {
       if (s.deposits && s.deposits.length > 0) {
         s.deposits.forEach(d => {
-          if (isDateInFilter(d.date, inspectionPeriod)) {
+          if (isDateInFilter(d.date)) {
             depositedDOP += (d.amount || 0);
           }
         });
@@ -438,7 +472,7 @@ export const UserManagementView: React.FC = () => {
 
   React.useEffect(() => {
     setUserPage(1);
-  }, [searchQuery, inspectionPeriod]);
+  }, [searchQuery, selectedDateRange]);
 
   const toggleOperatorPermission = (userId: string, operator: OperatorCode) => {
     const userPerm = permissions.find(p => p.userId === userId);
@@ -521,8 +555,8 @@ export const UserManagementView: React.FC = () => {
       (inspectedUser.username && s.agentName.toLowerCase().includes(inspectedUser.username.toLowerCase()))
     );
 
-    // Period-filtered transactions using the global week/month/year calendar
-    const periodTx = userTx.filter(t => isDateInFilter(t.createdAt, inspectionPeriod));
+    // Period-filtered transactions using the dynamic date range calendar
+    const periodTx = userTx.filter(t => isDateInFilter(t.createdAt));
     const periodVolumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
     const periodTxCount = periodTx.length;
 
@@ -562,11 +596,11 @@ export const UserManagementView: React.FC = () => {
     userSettlements.forEach(s => {
       if (s.deposits && s.deposits.length > 0) {
         s.deposits.forEach(d => {
-          if (isDateInFilter(d.date, inspectionPeriod)) {
+          if (isDateInFilter(d.date)) {
             periodDepositsList.push(d);
           }
         });
-      } else if (s.amountDeposited > 0 && isDateInFilter(s.startDate, inspectionPeriod)) {
+      } else if (s.amountDeposited > 0 && isDateInFilter(s.startDate)) {
         periodDepositsList.push({
           amount: s.amountDeposited,
           date: s.startDate,
@@ -598,13 +632,7 @@ export const UserManagementView: React.FC = () => {
         format: 'a4',
       });
 
-      const periodLabel = inspectionPeriod === 'week'
-        ? selectedWeekInfo.label
-        : inspectionPeriod === 'month'
-          ? `${monthNames[selectedMonth]} ${selectedWeekYear}`
-          : inspectionPeriod === 'year'
-            ? `Année ${selectedWeekYear}`
-            : 'Tout l\'Historique';
+      const periodLabel = selectedDateRange.label;
 
       // Header Background Banner
       doc.setFillColor(15, 23, 42);
@@ -818,13 +846,7 @@ export const UserManagementView: React.FC = () => {
 
       // Trigger download
       const safeName = inspectedUser.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const safePeriod = inspectionPeriod === 'week'
-        ? `Semaine_${selectedWeekNo}_${selectedWeekYear}`
-        : inspectionPeriod === 'month'
-          ? `${monthNames[selectedMonth]}_${selectedWeekYear}`
-          : inspectionPeriod === 'year'
-            ? `Annee_${selectedWeekYear}`
-            : 'Global';
+      const safePeriod = selectedDateRange.label.replace(/[^a-zA-Z0-9]/g, '_');
       doc.save(`Rapport_Agent_${safeName}_${safePeriod}.pdf`);
     };
 
@@ -1291,72 +1313,19 @@ export const UserManagementView: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Calendrier de sélection par Semaine */}
+                  {/* Calendrier de sélection identique à Trésorerie & Dashboard */}
                   <div className="bg-slate-50/90 border border-slate-200/90 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 mr-1">
-                        <CalendarDays className="w-4 h-4 text-blue-600" />
-                        <span>Semaine :</span>
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <span>{t('filter_period', 'Période & Calendrier :')}</span>
                       </span>
+                      <DateRangePicker value={selectedDateRange} onChange={setSelectedDateRange} />
+                    </div>
 
-                      {/* Année */}
-                      <select
-                        value={selectedWeekYear}
-                        onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
-                        className="bg-white text-slate-800 text-xs font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
-                      >
-                        <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
-                        <option value={currentYearNow}>{currentYearNow}</option>
-                        <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
-                      </select>
-
-                      {/* Semaine précédente */}
-                      <button
-                        type="button"
-                        onClick={goToPrevWeek}
-                        title="Semaine précédente"
-                        className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-
-                      {/* Sélecteur déroulant Semaine 1 à 52 */}
-                      <div className="relative min-w-[240px] max-w-[320px]">
-                        <select
-                          value={selectedWeekNo}
-                          onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
-                          className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
-                        >
-                          {allWeeksOfYear.map((w) => (
-                            <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
-                              {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-
-                      {/* Semaine suivante */}
-                      <button
-                        type="button"
-                        onClick={goToNextWeek}
-                        title="Semaine suivante"
-                        className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-all border border-slate-200 shadow-2xs cursor-pointer active:scale-95"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-
-                      {/* Raccourci Semaine Actuelle */}
-                      {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
-                        <button
-                          type="button"
-                          onClick={goToCurrentWeek}
-                          className="px-2.5 py-1.5 bg-blue-100/70 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1"
-                        >
-                          <Clock className="w-3 h-3 text-blue-600" />
-                          <span>Sem. Actuelle ({currentWeekNumberNow})</span>
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <Clock className="w-3.5 h-3.5 text-blue-500" />
+                      <span>{selectedDateRange.label}</span>
                     </div>
                   </div>
 
@@ -1445,7 +1414,7 @@ export const UserManagementView: React.FC = () => {
                         <span>Transactions Effectuées par Service ({periodTxCount})</span>
                       </h5>
                       <span className="text-[11px] text-slate-400 font-mono">
-                        Période : {inspectionPeriod === 'week' ? 'Semaine en cours' : inspectionPeriod === 'month' ? 'Ce mois' : inspectionPeriod === 'year' ? 'Cette année' : 'Tout l\'historique'}
+                        Période : {selectedDateRange.label}
                       </span>
                     </div>
 
@@ -1918,74 +1887,21 @@ export const UserManagementView: React.FC = () => {
       {subTab === 'user_list' && (
         <div className="space-y-4">
           
-          {/* Calendrier de Filtrage par Semaine */}
+          {/* Calendrier de Filtrage par Calendrier & DateRangePicker */}
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs font-black text-slate-800 mr-1">
                 <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
-                  <CalendarDays className="w-4 h-4" />
+                  <Calendar className="w-4 h-4" />
                 </div>
-                <span>Semaine :</span>
+                <span>{t('filter_period', 'Période & Calendrier :')}</span>
               </div>
+              <DateRangePicker value={selectedDateRange} onChange={setSelectedDateRange} />
+            </div>
 
-              {/* Sélecteur Année */}
-              <select
-                value={selectedWeekYear}
-                onChange={(e) => setSelectedWeekYear(Number(e.target.value))}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold px-2.5 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-              >
-                <option value={currentYearNow - 1}>{currentYearNow - 1}</option>
-                <option value={currentYearNow}>{currentYearNow}</option>
-                <option value={currentYearNow + 1}>{currentYearNow + 1}</option>
-              </select>
-
-              {/* Bouton Semaine Précédente */}
-              <button
-                type="button"
-                onClick={goToPrevWeek}
-                title="Semaine précédente"
-                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Sélecteur Déroulant de Toutes les Semaines (Semaine 1, Semaine 2, etc.) */}
-              <div className="relative min-w-[240px] max-w-[320px]">
-                <select
-                  value={selectedWeekNo}
-                  onChange={(e) => setSelectedWeekNo(Number(e.target.value))}
-                  className="w-full bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-8 shadow-xs"
-                >
-                  {allWeeksOfYear.map((w) => (
-                    <option key={w.weekNo} value={w.weekNo} className="bg-slate-900 text-white">
-                      {w.label} {w.isCurrent ? '⭐ (Actuelle)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-
-              {/* Bouton Semaine Suivante */}
-              <button
-                type="button"
-                onClick={goToNextWeek}
-                title="Semaine suivante"
-                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-200 active:scale-95 cursor-pointer shadow-2xs"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              {/* Bouton Raccourci Semaine en cours */}
-              {(!selectedWeekInfo.isCurrent || selectedWeekYear !== currentYearNow) && (
-                <button
-                  type="button"
-                  onClick={goToCurrentWeek}
-                  className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1 shadow-2xs"
-                >
-                  <Clock className="w-3 h-3 text-blue-600" />
-                  <span>Sem. Actuelle ({currentWeekNumberNow})</span>
-                </button>
-              )}
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+              <Clock className="w-3.5 h-3.5 text-blue-500" />
+              <span>{selectedDateRange.label}</span>
             </div>
           </div>
           
@@ -2053,7 +1969,7 @@ export const UserManagementView: React.FC = () => {
                   <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">
-                        Volume ({inspectionPeriod === 'week' ? selectedWeekInfo.shortLabel : 'Période'})
+                        Volume ({selectedDateRange.label})
                       </span>
                       <span className="font-black text-slate-900 font-mono text-sm">
                         {userStats.volumeDOP.toLocaleString()} DOP
@@ -2155,9 +2071,7 @@ export const UserManagementView: React.FC = () => {
                 {t('employee_accounts_directory', 'Répertoire des Comptes Employés & Performance')}
               </span>
               <span className="text-[11px] text-blue-600 font-bold bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/80">
-                {inspectionPeriod === 'week' ? selectedWeekInfo.label :
-                 inspectionPeriod === 'month' ? `${monthNames[selectedMonth]} ${selectedWeekYear}` :
-                 inspectionPeriod === 'year' ? `Année ${selectedWeekYear}` : t('all_dates', 'Toutes dates')}
+                {selectedDateRange.label}
               </span>
             </div>
 
@@ -2167,7 +2081,7 @@ export const UserManagementView: React.FC = () => {
                 <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-50/40 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 items-center">
                   <div className="col-span-3">{t('user_email_header', 'Utilisateur / Courriel')}</div>
                   <div className="col-span-2">{t('role_privilege_header', 'Rôle / Privilège')}</div>
-                  <div className="col-span-2">{t('activity_header', 'Activité')} ({inspectionPeriod === 'week' ? selectedWeekInfo.shortLabel : t('period', 'Période')})</div>
+                  <div className="col-span-2">{t('activity_header', 'Activité')} ({selectedDateRange.label})</div>
                   <div className="col-span-2">{t('due_admin_deposited', 'Dû Admin / Déposé')}</div>
                   <div className="col-span-1 text-center">{t('commissions_header', 'Commissions')}</div>
                   <div className="col-span-1 text-center">{t('user_status', 'Statut')}</div>

@@ -127,6 +127,7 @@ export interface Translations {
   send_amount: string;
   receive_amount: string;
   admin_comm: string;
+  agent_comm: string;
 
   // Task Queue
   task_queue_title: string;
@@ -348,6 +349,7 @@ export const translations: Record<Language, Translations> = {
     send_amount: "Montant Envoyé",
     receive_amount: "Montant Recevant",
     admin_comm: "Commission Admin",
+    agent_comm: "Commission Agent",
 
     // Task Queue
     task_queue_title: "File d'attente des tâches numériques",
@@ -568,6 +570,7 @@ export const translations: Record<Language, Translations> = {
     send_amount: "Montan k ap voye a",
     receive_amount: "Montan k ap resevwa a",
     admin_comm: "Komisyon Admin",
+    agent_comm: "Komisyon Ajan",
 
     // Task Queue
     task_queue_title: "Fil d'atant tach dijital yo",
@@ -788,6 +791,7 @@ export const translations: Record<Language, Translations> = {
     send_amount: "Monto Enviado",
     receive_amount: "Monto a Recibir",
     admin_comm: "Comisión Admin",
+    agent_comm: "Comisión Agente",
 
     // Task Queue
     task_queue_title: "Cola de tareas digitales",
@@ -993,6 +997,7 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Commission": "Komisyon",
     "Comm.": "Kom.",
     "Commission Admin": "Komisyon Admin",
+    "Commission Agent": "Komisyon Ajan",
     "Commission Agence": "Komisyon Agans",
     "Taux du jour": "Tays pou jodi a",
     "Taux officiel": "Tays ofisyèl",
@@ -2396,6 +2401,7 @@ export const PHRASE_DICTIONARY: Record<Language, Record<string, string>> = {
     "Commission": "Comisión",
     "Comm.": "Com.",
     "Commission Admin": "Comisión Admin",
+    "Commission Agent": "Comisión Agente",
     "Commission Agence": "Comisión Agencia",
     "Taux du jour": "Tasa del día",
     "Taux officiel": "Tasa Oficial",

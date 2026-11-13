@@ -316,6 +316,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [showPWAInstallPrompt, setShowPWAInstallPrompt] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
+      const isStandalone = (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://')
+      );
+      if (isStandalone) return false;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        const dismissed = sessionStorage.getItem('pwa_prompt_dismissed');
+        return !dismissed;
+      }
       return Boolean((window as any).__deferredPWAPrompt);
     }
     return false;
@@ -372,6 +383,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isPWAInstalled) {
       return 'already_installed';
     }
+
+    const isIOS = typeof navigator !== 'undefined' && (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+
+    // Sur iOS, Safari ne supporte pas l'API beforeinstallprompt : guider vers le partage -> Sur l'écran d'accueil
+    if (isIOS) {
+      return 'unsupported_ios';
+    }
+
     const promptEvent = deferredPWAPrompt || (typeof window !== 'undefined' ? (window as any).__deferredPWAPrompt : null);
     if (promptEvent) {
       try {
@@ -392,8 +414,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Déclencher le téléchargement immédiat du lanceur d'application pour bureau / mobile
-    if (typeof window !== 'undefined') {
+    // Déclencher le téléchargement du raccourci applicatif uniquement pour bureau Windows/Mac
+    if (typeof window !== 'undefined' && !isIOS) {
       try {
         const origin = window.location.origin || 'https://alexistransferencia.app';
         const content = `[InternetShortcut]\r\nURL=${origin}/\r\nIconIndex=0\r\nIconFile=${origin}/favicon.png\r\nHotKey=0\r\n[{000214A0-0000-0000-C000-000000000046}]\r\nProp3=19,11\r\n`;
@@ -412,10 +434,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS) {
-      return 'unsupported_ios';
-    }
     return 'unavailable';
   }, [deferredPWAPrompt, isPWAInstalled]);
 

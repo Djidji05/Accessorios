@@ -10,7 +10,7 @@ interface TransactionsTableProps {
 }
 
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange }) => {
-  const { setSelectedReceiptTx, transactions, serviceCommissionRates, adminCommissionRate, t } = useApp();
+  const { setSelectedReceiptTx, transactions, serviceCommissionRates, adminCommissionRate, availableUsers, t } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState<number>(1);
@@ -131,7 +131,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
             <tr className="border-b border-slate-200/80 text-[10px] font-black text-slate-400 uppercase tracking-wider bg-slate-50/50">
               <th className="py-3 px-3">{t('reference', 'Réf Transaction')}</th>
               <th className="py-3 px-2.5">{t('operator', 'Opérateur')}</th>
-              <th className="py-3 px-2.5 text-center text-emerald-700">{t('admin_comm', 'Commission Opérateur')}</th>
+              <th className="py-3 px-2.5 text-center text-emerald-700">{t('agent_comm', 'Commission Agent')}</th>
               <th className="py-3 px-3">{t('beneficiary', 'Bénéficiaire (Haïti)')}</th>
               <th className="py-3 px-3 text-right">{t('amounts_dop_htg', 'Montants (DOP / HTG)')}</th>
               <th className="py-3 px-3 text-right text-blue-600">{t('admin_comm', 'Commission Admin')}</th>
@@ -142,8 +142,16 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
           <tbody className="divide-y divide-slate-100 font-sans">
             {paginatedTransactions.map((tx) => {
               const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
-              const commRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? 1.0));
-              const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (commRate / 100))));
+              const adminRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0));
+              const adminCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (adminRate / 100))));
+
+              const creatorUser = availableUsers?.find(u => 
+                (u.name && tx.createdByName && u.name.toLowerCase() === tx.createdByName.toLowerCase()) ||
+                (u.nodeId && tx.createdByNode && u.nodeId === tx.createdByNode) ||
+                (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
+              );
+              const agentRate = isHaitiInbound ? 0 : (creatorUser?.commissionRate !== undefined ? creatorUser.commissionRate : 1.0);
+              const agentCommDOP = isHaitiInbound ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
 
               return (
                 <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
@@ -160,12 +168,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                     <OperatorBadge operator={tx.operator} size="sm" />
                   </td>
 
-                  {/* Commission Opérateur */}
+                  {/* Commission Agent */}
                   <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                     <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 inline-block text-[11px]">
-                      {isHaitiInbound ? '0 DOP' : `+${opCommDOP.toLocaleString()} DOP`}
+                      {isHaitiInbound ? '0 DOP' : `+${agentCommDOP.toLocaleString()} DOP`}
                     </span>
-                    <div className="text-[10px] text-slate-400 font-semibold">{isHaitiInbound ? 'Dépôt (0%)' : `Taux: ${commRate}%`}</div>
+                    <div className="text-[10px] text-slate-400 font-semibold">{isHaitiInbound ? 'Dépôt (0%)' : `Taux: ${agentRate}%`}</div>
                   </td>
 
                   {/* Bénéficiaire */}
@@ -192,7 +200,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
 
                   {/* Commission Admin */}
                   <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 text-xs whitespace-nowrap">
-                    {isHaitiInbound ? '0 DOP' : `+${opCommDOP.toLocaleString()} DOP`}
+                    {isHaitiInbound ? '0 DOP' : `+${adminCommDOP.toLocaleString()} DOP`}
+                    <div className="text-[10px] text-slate-400 font-semibold">{isHaitiInbound ? 'Dépôt (0%)' : `Admin: ${adminRate}%`}</div>
                   </td>
 
                   {/* SLA Badge */}
@@ -222,8 +231,16 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       <div className="md:hidden divide-y divide-slate-100">
         {paginatedTransactions.map((tx) => {
           const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
-          const commRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? 1.0));
-          const opCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (commRate / 100))));
+          const adminRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0));
+          const adminCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (adminRate / 100))));
+
+          const creatorUser = availableUsers?.find(u => 
+            (u.name && tx.createdByName && u.name.toLowerCase() === tx.createdByName.toLowerCase()) ||
+            (u.nodeId && tx.createdByNode && u.nodeId === tx.createdByNode) ||
+            (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
+          );
+          const agentRate = isHaitiInbound ? 0 : (creatorUser?.commissionRate !== undefined ? creatorUser.commissionRate : 1.0);
+          const agentCommDOP = isHaitiInbound ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
 
           return (
             <div
@@ -259,14 +276,15 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
               </div>
 
               {/* Commission & Action */}
-              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                  {isHaitiInbound ? (
-                    <>Dépôt : <strong className="text-emerald-700">0 DOP (Sans Frais)</strong></>
-                  ) : (
-                    <>Com. : <strong className="text-emerald-700">+{opCommDOP.toLocaleString()} DOP</strong> ({commRate}%)</>
-                  )}
-                </span>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                    {isHaitiInbound ? 'Agent: 0 DOP' : `Agent: +${agentCommDOP.toLocaleString()} DOP (${agentRate}%)`}
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
+                    {isHaitiInbound ? 'Admin: 0 DOP' : `Admin: +${adminCommDOP.toLocaleString()} DOP`}
+                  </span>
+                </div>
 
                 <button
                   onClick={(e) => {
