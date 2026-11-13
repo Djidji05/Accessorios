@@ -1320,7 +1320,7 @@ export const UserManagementView: React.FC = () => {
                         <Calendar className="w-4 h-4 text-blue-600" />
                         <span>{t('filter_period', 'Période & Calendrier :')}</span>
                       </span>
-                      <DateRangePicker value={selectedDateRange} onChange={setSelectedDateRange} />
+                      <DateRangePicker value={selectedDateRange} onChange={setSelectedDateRange} align="left" />
                     </div>
 
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
@@ -1896,7 +1896,7 @@ export const UserManagementView: React.FC = () => {
                 </div>
                 <span>{t('filter_period', 'Période & Calendrier :')}</span>
               </div>
-              <DateRangePicker value={selectedDateRange} onChange={setSelectedDateRange} />
+              <DateRangePicker value={selectedDateRange} onChange={setSelectedDateRange} align="left" />
             </div>
 
             <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
