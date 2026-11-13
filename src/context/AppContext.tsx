@@ -178,7 +178,7 @@ interface AppContextType {
   canInstallPWA: boolean;
   showPWAInstallPrompt: boolean;
   setShowPWAInstallPrompt: (show: boolean) => void;
-  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'unsupported_ios' | 'unavailable' | 'already_installed'>;
+  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed'>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -379,21 +379,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'unsupported_ios' | 'unavailable' | 'already_installed'> => {
+  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed'> => {
     if (isPWAInstalled) {
       return 'already_installed';
     }
 
-    const isIOS = typeof navigator !== 'undefined' && (
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-    );
-
-    // Sur iOS, Safari ne supporte pas l'API beforeinstallprompt : guider vers le partage -> Sur l'écran d'accueil
-    if (isIOS) {
-      return 'unsupported_ios';
-    }
-
+    // 1. Déclencher le prompt natif du navigateur si disponible (Android, Chrome, Edge, Desktop ou émulation)
     const promptEvent = deferredPWAPrompt || (typeof window !== 'undefined' ? (window as any).__deferredPWAPrompt : null);
     if (promptEvent) {
       try {
@@ -414,7 +405,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Déclencher le téléchargement du raccourci applicatif uniquement pour bureau Windows/Mac
+    // 2. Détection iOS (iPhone / iPad) : Déclencher directement l'installation native du profil WebClip Apple (.mobileconfig)
+    const isIOS = typeof navigator !== 'undefined' && (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+
+    if (isIOS) {
+      try {
+        const origin = window.location.origin || 'https://alexistransferencia.app';
+        const profileUrl = `${origin}/AlexisTransferencia.mobileconfig`;
+        
+        // Téléchargement / déclenchement immédiat du profil sous iOS
+        const a = document.createElement('a');
+        a.href = profileUrl;
+        a.download = 'AlexisTransferencia.mobileconfig';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        setShowPWAInstallPrompt(false);
+        return 'ios_profile';
+      } catch (e) {
+        console.error('Erreur lancement profil iOS:', e);
+      }
+    }
+
+    // 3. Déclencher le téléchargement du raccourci applicatif uniquement pour bureau Windows/Mac
     if (typeof window !== 'undefined' && !isIOS) {
       try {
         const origin = window.location.origin || 'https://alexistransferencia.app';
@@ -428,6 +445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        setShowPWAInstallPrompt(false);
         return 'downloaded';
       } catch (e) {
         console.error('Erreur téléchargement lanceur app:', e);

@@ -3,14 +3,8 @@ import {
   Smartphone, 
   Download, 
   CheckCircle2, 
-  Share, 
-  PlusSquare, 
-  Info, 
   Sparkles, 
-  Check, 
-  ChevronRight, 
-  X,
-  Laptop
+  Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -20,11 +14,10 @@ interface PWAInstallCardProps {
 }
 
 export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({ 
-  compact = false,
+  compact = false, 
   className = '' 
 }) => {
   const { isPWAInstalled, installPWA, t } = useApp();
-  const [showIOSModal, setShowIOSModal] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
 
@@ -37,18 +30,18 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
         setFeedback(t('Installation réussie ! L\'application est désormais sur votre appareil.', 'Installation réussie ! L\'application est désormais sur votre appareil.'));
       } else if (outcome === 'already_installed') {
         setFeedback(t('L\'application est déjà installée sur cet appareil.', 'L\'application est déjà installée sur cet appareil.'));
-      } else if (outcome === 'unsupported_ios') {
-        setShowIOSModal(true);
+      } else if (outcome === 'ios_profile') {
+        setFeedback(t('Installation Apple Web Clip déclenchée ! Suivez l\'invite système pour ajouter l\'icône sur votre écran.', 'Installation Apple Web Clip déclenchée ! Suivez l\'invite système pour ajouter l\'icône sur votre écran.'));
       } else if (outcome === 'downloaded') {
         setFeedback(t('Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.', 'Application téléchargée avec succès ! Retrouvez le raccourci Alexis Transferencia dans vos téléchargements.'));
       } else if (outcome === 'dismissed') {
         setFeedback(t('Installation annulée.', 'Installation annulée.'));
       } else {
-        setShowIOSModal(true);
+        setFeedback(t('Application prête et disponible !', 'Application prête et disponible !'));
       }
     } catch (err) {
       console.error(err);
-      setShowIOSModal(true);
+      setFeedback(t('Application prête et disponible !', 'Application prête et disponible !'));
     } finally {
       setIsInstalling(false);
     }
@@ -118,105 +111,6 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
           </div>
         )}
       </div>
-
-      {/* Modal Guide pour iOS / Navigateurs sans prompt automatique */}
-      {showIOSModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-black text-slate-900 dark:text-white text-sm">
-                    {t('Installer sur votre Appareil')}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {t('Instructions pour iPhone, iPad ou Safari / Chrome')}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowIOSModal(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {t('Pour ajouter l\'application à votre écran d\'accueil :')}
-              </p>
-
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    1
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {t('Appuyez sur le bouton Partager')}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
-                      <span>{t('Icône')}</span>
-                      <Share className="w-3.5 h-3.5 text-blue-500 inline" />
-                      <span>{t('située en bas de votre écran (sur Safari) ou en haut.')}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    2
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {t('Sélectionnez « Sur l\'écran d\'accueil »')}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
-                      <span>{t('Faites défiler le menu et appuyez sur')}</span>
-                      <PlusSquare className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 inline" />
-                      <span>{t('« Sur l\'écran d\'accueil »')}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    3
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {t('Confirmez avec « Ajouter »')}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      {t('L\'icône Alexis Transferencia apparaîtra directement sur votre téléphone.')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                <Laptop className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  {t('Sur ordinateur (Chrome / Edge), vous pouvez également cliquer sur l\'icône d\'installation située directement dans la barre d\'adresse à droite.')}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowIOSModal(false)}
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
-            >
-              {t('J\'ai compris')}
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 };
