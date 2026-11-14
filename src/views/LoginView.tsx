@@ -212,29 +212,14 @@ export const LoginView: React.FC = () => {
             {/* Soft Ambient Glow inside card */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
 
-            {/* Title & Language Selector Header */}
-            <div className="flex items-start justify-between gap-3 mb-8">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                  {t('login_title', 'Connexion au Portail')}
-                </h2>
-                <p className="text-sm text-slate-500 font-medium mt-1.5">
-                  {t('login_subtitle', 'Veuillez entrer vos identifiants pour accéder à votre espace sécurisé.')}
-                </p>
-              </div>
-
-              {/* Quick Language badge on mobile */}
-              <div className="sm:hidden relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsLangOpen(!isLangOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black cursor-pointer shadow-2xs"
-                  title="Changer de langue"
-                >
-                  <Globe2 className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{languages.find((l) => l.code === currentLang)?.flag} {currentLang}</span>
-                </button>
-              </div>
+            {/* Title Header */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                {t('login_title', 'Connexion au Portail')}
+              </h2>
+              <p className="text-sm text-slate-500 font-medium mt-1.5">
+                {t('login_subtitle', 'Veuillez entrer vos identifiants pour accéder à votre espace sécurisé.')}
+              </p>
             </div>
 
             {/* Error Notice */}
