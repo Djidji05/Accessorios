@@ -162,7 +162,7 @@ export const OperationsGuichetView: React.FC = () => {
   const [guichetMode, setGuichetMode] = useState<'outbound' | 'inbound_haiti'>('outbound');
 
   // Haïti Inbound States (Dépôt MonCash/Natcash Haïti -> Retrait RD)
-  const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('moncash');
+  const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('natcash');
   const [inboundAmountUSD, setInboundAmountUSD] = useState<string>('');
   const [inboundProofImage, setInboundProofImage] = useState<string | null>(null);
   const [selectedHaitiInboundTx, setSelectedHaitiInboundTx] = useState<Transaction | null>(null);
@@ -177,6 +177,13 @@ export const OperationsGuichetView: React.FC = () => {
   const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
   const zelleCameraInputRef = useRef<HTMLInputElement>(null);
   const zelleFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Forcer DOP pour les agents (seul l'admin peut décaisser en USD)
+  useEffect(() => {
+    if (currentUser.role !== 'admin' && zellePayoutCurrency === 'USD') {
+      setZellePayoutCurrency('DOP');
+    }
+  }, [currentUser.role, zellePayoutCurrency]);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
@@ -546,43 +553,6 @@ export const OperationsGuichetView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => setInboundOperator('moncash')}
-                  className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
-                    inboundOperator === 'moncash'
-                      ? 'border-rose-600 bg-rose-50/50 ring-4 ring-rose-500/20 shadow-sm'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-rose-100 flex items-center justify-center p-1.5 overflow-hidden">
-                      <img 
-                        src="/images/mon cash.jpg" 
-                        alt="MonCash" 
-                        className="w-full h-full object-contain" 
-                        onError={(e) => {
-                          const img = e.target as HTMLImageElement;
-                          if (!img.dataset.failed) {
-                            img.dataset.failed = '1';
-                            img.src = '/images/moncash.png';
-                          } else if (img.dataset.failed === '1') {
-                            img.dataset.failed = '2';
-                            img.src = '/moncash.png';
-                          }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="font-black text-slate-900 text-sm">MonCash (Digicel)</p>
-                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG) • 0 Frais</p>
-                    </div>
-                  </div>
-                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'moncash' ? 'border-rose-600 bg-rose-600' : 'border-slate-300'}`}>
-                    {inboundOperator === 'moncash' && <span className="w-2 h-2 rounded-full bg-white" />}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setInboundOperator('natcash')}
                   className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
                     inboundOperator === 'natcash'
@@ -615,6 +585,43 @@ export const OperationsGuichetView: React.FC = () => {
                   </div>
                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'natcash' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
                     {inboundOperator === 'natcash' && <span className="w-2 h-2 rounded-full bg-white" />}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInboundOperator('moncash')}
+                  className={`p-5 rounded-2xl border-2 text-left transition-all flex items-center justify-between cursor-pointer ${
+                    inboundOperator === 'moncash'
+                      ? 'border-rose-600 bg-rose-50/50 ring-4 ring-rose-500/20 shadow-sm'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-white shadow-xs border border-rose-100 flex items-center justify-center p-1.5 overflow-hidden">
+                      <img 
+                        src="/images/mon cash.jpg" 
+                        alt="MonCash" 
+                        className="w-full h-full object-contain" 
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          if (!img.dataset.failed) {
+                            img.dataset.failed = '1';
+                            img.src = '/images/moncash.png';
+                          } else if (img.dataset.failed === '1') {
+                            img.dataset.failed = '2';
+                            img.src = '/moncash.png';
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 text-sm">MonCash (Digicel)</p>
+                      <p className="text-xs text-slate-500 font-medium">Réception Gourdes (HTG) • 0 Frais</p>
+                    </div>
+                  </div>
+                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${inboundOperator === 'moncash' ? 'border-rose-600 bg-rose-600' : 'border-slate-300'}`}>
+                    {inboundOperator === 'moncash' && <span className="w-2 h-2 rounded-full bg-white" />}
                   </span>
                 </button>
               </div>
@@ -1117,7 +1124,7 @@ export const OperationsGuichetView: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700">
                   Devise de remise au client :
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className={isAdmin ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
                   <button
                     type="button"
                     onClick={() => setZellePayoutCurrency('DOP')}
@@ -1129,17 +1136,19 @@ export const OperationsGuichetView: React.FC = () => {
                   >
                     <span>🇩🇴 Pesos (DOP)</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setZellePayoutCurrency('USD')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
-                      zellePayoutCurrency === 'USD'
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>🇺🇸 Dollars (USD)</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setZellePayoutCurrency('USD')}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                        zellePayoutCurrency === 'USD'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>🇺🇸 Dollars (USD)</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

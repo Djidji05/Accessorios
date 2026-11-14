@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Send, 
   Smartphone, 
@@ -174,7 +174,7 @@ export const MobileAgentHome: React.FC = () => {
 
   // Haïti Inbound specific states
   const [isHaitiInboundActive, setIsHaitiInboundActive] = useState<boolean>(false);
-  const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('moncash');
+  const [inboundOperator, setInboundOperator] = useState<'moncash' | 'natcash'>('natcash');
   const [inboundAmountUSD, setInboundAmountUSD] = useState<string>('');
   const [inboundProofImage, setInboundProofImage] = useState<string | null>(null);
   const [selectedHaitiInboundTx, setSelectedHaitiInboundTx] = useState<Transaction | null>(null);
@@ -186,6 +186,13 @@ export const MobileAgentHome: React.FC = () => {
   const [zelleAmountUSD, setZelleAmountUSD] = useState<string>('100');
   const [zellePayoutCurrency, setZellePayoutCurrency] = useState<'DOP' | 'USD'>('DOP');
   const [selectedZellePayoutTx, setSelectedZellePayoutTx] = useState<Transaction | null>(null);
+
+  // Forcer DOP pour les agents (seul l'admin peut décaisser en USD)
+  useEffect(() => {
+    if (currentUser.role !== 'admin' && zellePayoutCurrency === 'USD') {
+      setZellePayoutCurrency('DOP');
+    }
+  }, [currentUser.role, zellePayoutCurrency]);
   const [zelleLightboxUrl, setZelleLightboxUrl] = useState<string | null>(null);
   const zelleCameraInputRef = React.useRef<HTMLInputElement | null>(null);
   const zelleFileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -577,35 +584,6 @@ export const MobileAgentHome: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setInboundOperator('moncash')}
-                className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
-                  inboundOperator === 'moncash'
-                    ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/40 ring-4 ring-rose-500/20'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
-                }`}
-              >
-                <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs overflow-hidden">
-                  <img
-                    src="/images/mon cash.jpg"
-                    alt="MonCash"
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      const img = e.target as HTMLImageElement;
-                      if (!img.dataset.failed) {
-                        img.dataset.failed = '1';
-                        img.src = '/images/moncash.png';
-                      } else if (img.dataset.failed === '1') {
-                        img.dataset.failed = '2';
-                        img.src = '/moncash.png';
-                      }
-                    }}
-                  />
-                </div>
-                <span className="font-black text-xs text-slate-900 dark:text-white">MonCash</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setInboundOperator('natcash')}
                 className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
                   inboundOperator === 'natcash'
@@ -631,6 +609,35 @@ export const MobileAgentHome: React.FC = () => {
                   />
                 </div>
                 <span className="font-black text-xs text-slate-900 dark:text-white">Natcash</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInboundOperator('moncash')}
+                className={`p-3.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                  inboundOperator === 'moncash'
+                    ? 'border-rose-600 bg-rose-50 dark:bg-rose-950/40 ring-4 ring-rose-500/20'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
+                }`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs overflow-hidden">
+                  <img
+                    src="/images/mon cash.jpg"
+                    alt="MonCash"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (!img.dataset.failed) {
+                        img.dataset.failed = '1';
+                        img.src = '/images/moncash.png';
+                      } else if (img.dataset.failed === '1') {
+                        img.dataset.failed = '2';
+                        img.src = '/moncash.png';
+                      }
+                    }}
+                  />
+                </div>
+                <span className="font-black text-xs text-slate-900 dark:text-white">MonCash</span>
               </button>
             </div>
           </div>
@@ -972,7 +979,7 @@ export const MobileAgentHome: React.FC = () => {
                 <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
                   {t('Devise de retrait souhaitée par le client :')}
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className={isAdmin ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
                   <button
                     type="button"
                     onClick={() => setZellePayoutCurrency('DOP')}
@@ -984,17 +991,19 @@ export const MobileAgentHome: React.FC = () => {
                   >
                     <span>🇩🇴 Pesos (DOP)</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setZellePayoutCurrency('USD')}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      zellePayoutCurrency === 'USD'
-                        ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <span>🇺🇸 Dollars (USD)</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setZellePayoutCurrency('USD')}
+                      className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        zellePayoutCurrency === 'USD'
+                          ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <span>🇺🇸 Dollars (USD)</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
