@@ -46,6 +46,32 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
   const totalPages = Math.ceil(filteredTransactions.length / PAGE_SIZE) || 1;
   const paginatedTransactions = filteredTransactions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Helper to determine time-aware commission rate for transaction creator
+  const getAgentRateForTx = (txCreatedAt: string, user: typeof availableUsers[0] | undefined): number => {
+    if (!user) return 1.0;
+    const defaultRate = user.commissionRate !== undefined ? user.commissionRate : 1.0;
+    try {
+      const raw = localStorage.getItem(`dalexis_commission_history_${user.id}`);
+      if (raw) {
+        const history: Array<{ rate: number; effectiveFrom: string }> = JSON.parse(raw);
+        if (history && history.length > 0) {
+          const txTime = new Date(txCreatedAt).getTime();
+          const sorted = [...history].sort((a, b) => new Date(a.effectiveFrom).getTime() - new Date(b.effectiveFrom).getTime());
+          let applicable = defaultRate;
+          for (const h of sorted) {
+            if (new Date(h.effectiveFrom).getTime() <= txTime) {
+              applicable = h.rate;
+            }
+          }
+          return applicable;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return defaultRate;
+  };
+
   const getSlaStatus = (createdAtIso: string, status: string) => {
     if (status === 'cancelled') {
       return (
@@ -150,7 +176,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                 (u.nodeId && tx.createdByNode && u.nodeId === tx.createdByNode) ||
                 (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
               );
-              const agentRate = isHaitiInbound ? 0 : (creatorUser?.commissionRate !== undefined ? creatorUser.commissionRate : 1.0);
+              const agentRate = isHaitiInbound ? 0 : getAgentRateForTx(tx.createdAt, creatorUser);
               const agentCommDOP = isHaitiInbound ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
 
               return (
@@ -239,7 +265,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
             (u.nodeId && tx.createdByNode && u.nodeId === tx.createdByNode) ||
             (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
           );
-          const agentRate = isHaitiInbound ? 0 : (creatorUser?.commissionRate !== undefined ? creatorUser.commissionRate : 1.0);
+          const agentRate = isHaitiInbound ? 0 : getAgentRateForTx(tx.createdAt, creatorUser);
           const agentCommDOP = isHaitiInbound ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
 
           return (

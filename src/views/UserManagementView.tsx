@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
   UserCheck, 
@@ -47,7 +47,8 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { useApp } from '../context/AppContext';
-import { OperatorCode, Role, User } from '../types';
+import { OperatorCode, Role, User, CommissionRateHistoryItem } from '../types';
+import { api } from '../services/api';
 import { Pagination } from '../components/Pagination';
 import { DateRangePicker, DateRange } from '../components/DateRangePicker';
 import { compressImage } from '../utils/imageCompressor';
@@ -223,6 +224,58 @@ export const UserManagementView: React.FC = () => {
     return true;
   };
 
+  // Commission rate history cache map: userId -> CommissionRateHistoryItem[]
+  const [commissionHistoryMap, setCommissionHistoryMap] = useState<Record<string, CommissionRateHistoryItem[]>>({});
+
+  // Helper to load commission history for a user
+  const loadCommissionHistory = useCallback(async (userId: string) => {
+    // 1. Check local storage first
+    let localHistory: CommissionRateHistoryItem[] = [];
+    try {
+      const raw = localStorage.getItem(`dalexis_commission_history_${userId}`);
+      if (raw) localHistory = JSON.parse(raw);
+    } catch {
+      localHistory = [];
+    }
+
+    // 2. Fetch from backend API
+    try {
+      const serverHistory = await api.users.getCommissionHistory(userId);
+      if (Array.isArray(serverHistory) && serverHistory.length > 0) {
+        setCommissionHistoryMap(prev => ({ ...prev, [userId]: serverHistory }));
+        return serverHistory;
+      }
+    } catch {
+      // Backend offline or error -> fallback to local history
+    }
+
+    if (localHistory.length > 0) {
+      setCommissionHistoryMap(prev => ({ ...prev, [userId]: localHistory }));
+      return localHistory;
+    }
+    return [];
+  }, []);
+
+  // Compute effective commission rate for a specific transaction date
+  const getEffectiveRateForDate = (txDateStr: string, user: User): number => {
+    const history = commissionHistoryMap[user.id];
+    const defaultRate = user.commissionRate !== undefined ? user.commissionRate : 1.0;
+    if (!history || history.length === 0) {
+      return defaultRate;
+    }
+    const txTime = new Date(txDateStr).getTime();
+    // Sort ascending by effectiveFrom
+    const sorted = [...history].sort((a, b) => new Date(a.effectiveFrom).getTime() - new Date(b.effectiveFrom).getTime());
+    // Find the latest history entry with effectiveFrom <= txTime
+    let applicableRate = defaultRate;
+    for (const h of sorted) {
+      if (new Date(h.effectiveFrom).getTime() <= txTime) {
+        applicableRate = h.rate;
+      }
+    }
+    return applicableRate;
+  };
+
   // Helper to compute activity statistics for any user over the selected period
   const getUserPeriodStats = (user: User) => {
     const userTx = transactions.filter(t => {
@@ -240,8 +293,12 @@ export const UserManagementView: React.FC = () => {
     const periodTx = userTx.filter(t => isDateInFilter(t.createdAt));
     const volumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
     const txCount = periodTx.length;
-    const commissionDOP = periodTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
-      Math.round(volumeDOP * ((user.commissionRate !== undefined ? user.commissionRate : 1.0) / 100));
+    // Calculate commission with time-aware effective rate for each transaction
+    const commissionDOP = periodTx.reduce((sum, t) => {
+      if (t.commissionDOP && t.commissionDOP > 0) return sum + t.commissionDOP;
+      const rateForTx = getEffectiveRateForDate(t.createdAt, user);
+      return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
+    }, 0);
 
     const userSettlements = settlements.filter(s => 
       s.agentId === user.id || 
@@ -408,6 +465,8 @@ export const UserManagementView: React.FC = () => {
         if (editPassword.trim()) {
           setLastAssignedPassword(editPassword.trim());
         }
+        // Refresh commission rate history after update
+        loadCommissionHistory(inspectedUser.id);
       } else {
         setSaveUserMsg({ type: 'error', text: res.message });
       }
@@ -454,6 +513,20 @@ export const UserManagementView: React.FC = () => {
     setCopiedPassword(true);
     setTimeout(() => setCopiedPassword(false), 2000);
   };
+
+  // Load commission rate history when inspecting an agent
+  useEffect(() => {
+    if (inspectedUser) {
+      loadCommissionHistory(inspectedUser.id);
+    }
+  }, [inspectedUser, loadCommissionHistory]);
+
+  // Load commission rate history for all agents on mount for accurate calculations
+  useEffect(() => {
+    availableUsers.forEach(u => {
+      loadCommissionHistory(u.id);
+    });
+  }, [availableUsers, loadCommissionHistory]);
 
   const allOperators: OperatorCode[] = ['moncash', 'natcash', 'digicel', 'natcom', 'claro', 'altice', 'zelle'];
 
@@ -560,9 +633,12 @@ export const UserManagementView: React.FC = () => {
     const periodVolumeDOP = periodTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
     const periodTxCount = periodTx.length;
 
-    // Commission agent on period
-    const periodCommissionDOP = periodTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
-      Math.round(periodVolumeDOP * ((inspectedUser.commissionRate !== undefined ? inspectedUser.commissionRate : 1.0) / 100));
+    // Commission agent on period (time-aware using historical commission rates)
+    const periodCommissionDOP = periodTx.reduce((sum, t) => {
+      if (t.commissionDOP && t.commissionDOP > 0) return sum + t.commissionDOP;
+      const rateForTx = getEffectiveRateForDate(t.createdAt, inspectedUser);
+      return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
+    }, 0);
 
     // Service breakdown
     const servicesList: { code: OperatorCode; name: string; brandColor: string; bgBadge: string }[] = [
@@ -579,8 +655,11 @@ export const UserManagementView: React.FC = () => {
       const txs = periodTx.filter(t => t.operator === svc.code);
       const count = txs.length;
       const volumeDOP = txs.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
-      const commDOP = txs.reduce((sum, t) => sum + (t.commissionDOP || 0), 0) ||
-        Math.round(volumeDOP * ((inspectedUser.commissionRate !== undefined ? inspectedUser.commissionRate : 1.0) / 100));
+      const commDOP = txs.reduce((sum, t) => {
+        if (t.commissionDOP && t.commissionDOP > 0) return sum + t.commissionDOP;
+        const rateForTx = getEffectiveRateForDate(t.createdAt, inspectedUser);
+        return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
+      }, 0);
       const percentage = periodVolumeDOP > 0 ? Math.round((volumeDOP / periodVolumeDOP) * 100) : 0;
       return {
         ...svc,
@@ -1570,12 +1649,85 @@ export const UserManagementView: React.FC = () => {
                               : 'bg-slate-100 text-slate-400 border-slate-200 opacity-60'
                           }`}
                         >
-                          {isAllowed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <XCircle className="w-3.5 h-3.5 text-slate-400" />}
-                          <span className="capitalize">{op === 'zelle' ? '🇺🇸 Zelle USA' : op}</span>
+                          <span className={`w-2 h-2 rounded-full ${isAllowed ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                          <span className="capitalize">{op}</span>
+                          <span className="text-[10px] uppercase font-mono font-semibold">
+                            {isAllowed ? 'Actif' : 'Bloqué'}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Historique Temporel des Taux de Commission */}
+                <div className="space-y-3 pt-4 border-t border-slate-200/80">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      <span>Historique des Taux de Commission de l'Agent</span>
+                    </h4>
+                    <span className="text-[11px] font-bold text-slate-400">
+                      Taux actuel : <strong className="text-emerald-700">{inspectedUser.commissionRate !== undefined ? `${inspectedUser.commissionRate}%` : '1.0%'}</strong>
+                    </span>
+                  </div>
+
+                  {(() => {
+                    const history = commissionHistoryMap[inspectedUser.id] || [];
+                    if (history.length === 0) {
+                      return (
+                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs text-slate-500 font-medium flex items-center justify-between">
+                          <span>Taux fixe appliqué depuis la création : <strong>{inspectedUser.commissionRate !== undefined ? `${inspectedUser.commissionRate}%` : '1.0%'}</strong></span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">Aucune modification historique</span>
+                        </div>
+                      );
+                    }
+                    const sortedHistory = [...history].sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime());
+                    return (
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200/80">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-100 text-slate-600 font-black uppercase text-[10px] tracking-wider">
+                            <tr>
+                              <th className="px-4 py-2.5">Date d'Application</th>
+                              <th className="px-4 py-2.5 text-center">Taux (%)</th>
+                              <th className="px-4 py-2.5">Modifié par</th>
+                              <th className="px-4 py-2.5 text-right">Statut</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium">
+                            {sortedHistory.map((item, idx) => {
+                              const isLatest = idx === 0;
+                              const dateFormatted = new Date(item.effectiveFrom).toLocaleString('fr-FR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              });
+                              return (
+                                <tr key={item.id || idx} className={isLatest ? 'bg-emerald-50/50 font-bold' : 'hover:bg-slate-50'}>
+                                  <td className="px-4 py-2.5 text-slate-800 font-mono">{dateFormatted}</td>
+                                  <td className="px-4 py-2.5 text-center">
+                                    <span className={`px-2 py-0.5 rounded-lg font-mono font-black ${isLatest ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                                      {item.rate}%
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2.5 text-slate-600">{item.changedBy || 'Admin'}</td>
+                                  <td className="px-4 py-2.5 text-right">
+                                    {isLatest ? (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white uppercase">En vigueur</span>
+                                    ) : (
+                                      <span className="text-slate-400 text-[10px] font-semibold">Période passée</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
                 </div>
 
               </div>

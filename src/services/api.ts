@@ -293,6 +293,8 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(permissions),
       }),
+    getCommissionHistory: (id: string) =>
+      request<import('../types').CommissionRateHistoryItem[]>(`/users/${id}/commission-history`).catch(() => []),
   },
 
   // 9. Notifications et Service Email

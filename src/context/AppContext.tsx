@@ -2257,6 +2257,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUser = async (userId: string, data: Partial<User> & { password?: string }): Promise<{ success: boolean; message: string; user?: User }> => {
+    // Record commission rate history in localStorage as local fallback & cache
+    if (data.commissionRate !== undefined && data.commissionRate !== null) {
+      try {
+        const historyKey = `dalexis_commission_history_${userId}`;
+        const raw = localStorage.getItem(historyKey);
+        const historyList: any[] = raw ? JSON.parse(raw) : [];
+        const existingUser = availableUsers.find(u => u.id === userId);
+        if (!existingUser || existingUser.commissionRate !== data.commissionRate) {
+          historyList.push({
+            id: `hist_${Date.now()}`,
+            userId,
+            rate: data.commissionRate,
+            effectiveFrom: new Date().toISOString(),
+            changedBy: currentUser?.name || 'Admin',
+          });
+          localStorage.setItem(historyKey, JSON.stringify(historyList));
+        }
+      } catch (e) {
+        console.warn('Erreur cache local commission history:', e);
+      }
+    }
+
     try {
       const res = await api.users.update(userId, data);
       if (res && res.user) {

@@ -40,6 +40,14 @@ export interface User {
   commissionRate?: number; // e.g. 1.0 (1%), 1.5 (1.5%), 3.0 (3%)
 }
 
+export interface CommissionRateHistoryItem {
+  id: string;
+  userId: string;
+  rate: number;
+  effectiveFrom: string;
+  changedBy: string;
+}
+
 export interface Transaction {
   id: string;
   referenceNumber: string;

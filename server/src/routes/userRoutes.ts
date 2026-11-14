@@ -19,6 +19,7 @@ router.get('/', authMiddleware, async (_req, res) => {
         location: true,
         nodeId: true,
         status: true,
+        commissionRate: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -133,7 +134,7 @@ router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
 router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, username, email, password, role, location, status, avatar } = req.body;
+    const { name, username, email, password, role, location, status, avatar, commissionRate } = req.body;
 
     const existingUser = await prisma.user.findUnique({ where: { id } });
     if (!existingUser) {
@@ -191,6 +192,24 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
 
     if (avatar !== undefined && avatar !== null) {
       dataToUpdate.avatar = avatar;
+    }
+
+    if (commissionRate !== undefined && commissionRate !== null) {
+      const newRate = parseFloat(String(commissionRate));
+      if (!isNaN(newRate)) {
+        dataToUpdate.commissionRate = newRate;
+        // Record history entry if rate actually changed
+        if (existingUser.commissionRate !== newRate) {
+          await prisma.commissionRateHistory.create({
+            data: {
+              userId: id,
+              rate: newRate,
+              effectiveFrom: new Date(),
+              changedBy: req.user?.name || 'Admin',
+            },
+          });
+        }
+      }
     }
 
     const updatedUser = await prisma.user.update({
@@ -302,6 +321,20 @@ router.patch('/:id/permissions', authMiddleware, requireRole('admin'), async (re
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors de la mise à jour des permissions.' });
+  }
+});
+
+// 5. Historique des taux de commission d'un utilisateur
+router.get('/:id/commission-history', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const history = await prisma.commissionRateHistory.findMany({
+      where: { userId: id },
+      orderBy: { effectiveFrom: 'asc' },
+    });
+    return res.json(history);
+  } catch (error) {
+    return res.status(500).json({ error: 'Erreur lors de la récupération de l\'historique des commissions.' });
   }
 });
 

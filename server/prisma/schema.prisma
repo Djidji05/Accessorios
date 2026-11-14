@@ -18,13 +18,24 @@ model User {
   avatar    String?  @db.LongText
   location  String   @default("")
   nodeId    String   @default("node-default")
-  status    String   @default("offline") // online | busy | offline
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status         String   @default("offline") // online | busy | offline
+  commissionRate Float    @default(1.0) // e.g. 1.0 = 1%
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([role])
   @@index([status])
   @@index([createdAt])
+}
+
+model CommissionRateHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  rate          Float
+  effectiveFrom DateTime @default(now())
+  changedBy     String   @default("Admin")
+
+  @@index([userId, effectiveFrom])
 }
 
 model Transaction {
