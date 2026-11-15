@@ -200,6 +200,16 @@ export const MobileAgentHome: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastCreatedTx, setLastCreatedTx] = useState<Transaction | null>(null);
 
+  // Auto-dismiss in-page notifications after 4.5 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => {
+        setFeedback(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
+
   // Role Scoped Notifications (Strictly respects Agent RD, Gestionnaire & user rights)
   const isAgentRD = currentUser.role === 'agent_rd';
   const isAgentHaiti = currentUser.role === 'agent_haiti';
@@ -569,8 +579,8 @@ export const MobileAgentHome: React.FC = () => {
           <div className="w-9" />
         </header>
 
-        {feedback && (
-          <div className={`p-4 rounded-2xl text-xs font-bold ${feedback.type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
+        {feedback && feedback.type === 'error' && (
+          <div className="p-4 rounded-2xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
             {feedback.message}
           </div>
         )}
@@ -1557,13 +1567,9 @@ export const MobileAgentHome: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 pb-24 space-y-5 animate-in fade-in">
       
-      {/* Feedback Alert Banner */}
-      {feedback && (
-        <div className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-xs ${
-          feedback.type === 'error'
-            ? 'bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300'
-            : 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300'
-        }`}>
+      {/* Feedback Alert Banner (uniquement pour les erreurs car les succès sont déjà notifiés par GlobalToast) */}
+      {feedback && feedback.type === 'error' && (
+        <div className="p-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-xs bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300">
           <span className="pr-2">{feedback.message}</span>
           <button onClick={() => setFeedback(null)} className="p-1 hover:opacity-80 flex-shrink-0 cursor-pointer">
             <X className="w-3.5 h-3.5" />
