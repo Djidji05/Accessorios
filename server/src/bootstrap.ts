@@ -115,6 +115,25 @@ export async function bootstrapDatabase() {
     } else {
       console.log(`ℹ️ Base de données déjà initialisée (${userCount} utilisateur(s) présent(s)).`);
     }
+
+    // 6. Synchronisation automatique des Kill-Switches obligatoires (ex: Zelle) même sur base existante
+    const requiredKillSwitches = [
+      { operator: 'moncash', serviceName: 'MonCash (Paiement & Transfert HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+      { operator: 'natcash', serviceName: 'Natcash (Paiement & Cash-out HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+      { operator: 'digicel', serviceName: 'Digicel (Recharge Téléphonique)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+      { operator: 'natcom', serviceName: 'Natcom (Recharge & Data HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+      { operator: 'claro', serviceName: 'Claro RD (Paiement Factures)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+      { operator: 'altice', serviceName: 'Altice RD (Paiement & Recharges)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+      { operator: 'zelle', serviceName: 'Zelle USA (Paiement & Virement USD)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+    ];
+
+    for (const ks of requiredKillSwitches) {
+      const existing = await prisma.killSwitch.findUnique({ where: { operator: ks.operator } });
+      if (!existing) {
+        await prisma.killSwitch.create({ data: ks });
+        console.log(`🛡️ Opérateur Kill-Switch synchronisé : ${ks.operator}`);
+      }
+    }
   } catch (error) {
     console.error('⚠️ Erreur bootstrap initialisation BD:', error);
   }

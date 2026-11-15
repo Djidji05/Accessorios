@@ -195,7 +195,8 @@ export const KillSwitchView: React.FC = () => {
                     'Panne API MonCash',
                     'Maintenance Natcash',
                     'Seuil Flotte Insuffisant',
-                    'Instabilité Réseau'
+                    'Instabilité Réseau',
+                    'Incident Compte Zelle / US'
                   ].map((preset) => (
                     <button
                       key={preset}

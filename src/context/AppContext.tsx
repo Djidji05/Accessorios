@@ -1051,17 +1051,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
 
-        // Kill Switch avec stabilité de référence
+        // Kill Switch avec stabilité de référence et conservation des opérateurs obligatoires (dont zelle)
         if (Array.isArray(ks) && ks.length > 0) {
+          const mergedKs: KillSwitchItem[] = [...ks];
+          INITIAL_KILL_SWITCH.forEach((initialItem) => {
+            if (!mergedKs.some((item) => item.operator === initialItem.operator)) {
+              mergedKs.push(initialItem);
+            }
+          });
+
           setKillSwitchList((prev) => {
-            if (prev.length === ks.length) {
-              const changed = ks.some((k: any, idx: number) => {
+            if (prev.length === mergedKs.length) {
+              const changed = mergedKs.some((k: any, idx: number) => {
                 const p = prev[idx];
                 return !p || p.operator !== k.operator || p.enabled !== k.enabled;
               });
               if (!changed) return prev;
             }
-            return ks as KillSwitchItem[];
+            return mergedKs as KillSwitchItem[];
           });
         }
 
@@ -1288,9 +1295,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventSource.addEventListener('KILL_SWITCH_UPDATED', (e: MessageEvent) => {
           try {
             const ksItem = JSON.parse(e.data) as KillSwitchItem;
-            setKillSwitchList((prev) =>
-              prev.map(k => (k.operator === ksItem.operator ? ksItem : k))
-            );
+            setKillSwitchList((prev) => {
+              const exists = prev.some(k => k.operator === ksItem.operator);
+              if (!exists) {
+                return [...prev, ksItem];
+              }
+              return prev.map(k => (k.operator === ksItem.operator ? ksItem : k));
+            });
             if (!ksItem.enabled) {
               showToast(`⛔ ALERTE : Le service ${ksItem.operator.toUpperCase()} a été verrouillé d'urgence.`, 'error');
             } else {

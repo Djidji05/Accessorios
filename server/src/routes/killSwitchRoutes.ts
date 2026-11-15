@@ -5,10 +5,34 @@ import { realtimeService } from '../services/realtimeService';
 
 const router = Router();
 
+const REQUIRED_KILL_SWITCHES = [
+  { operator: 'moncash', serviceName: 'MonCash (Paiement & Transfert HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+  { operator: 'natcash', serviceName: 'Natcash (Paiement & Cash-out HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+  { operator: 'digicel', serviceName: 'Digicel (Recharge Téléphonique)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+  { operator: 'natcom', serviceName: 'Natcom (Recharge & Data HT)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+  { operator: 'claro', serviceName: 'Claro RD (Paiement Factures)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+  { operator: 'altice', serviceName: 'Altice RD (Paiement & Recharges)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+  { operator: 'zelle', serviceName: 'Zelle USA (Paiement & Virement USD)', enabled: true, updatedBy: 'Alexis D\'Alexis' },
+];
+
 // 1. Statut de tous les kill-switches (Authentifié)
 router.get('/', authMiddleware, async (_req, res) => {
   try {
-    const list = await prisma.killSwitch.findMany();
+    let list = await prisma.killSwitch.findMany();
+    const existingOps = new Set(list.map(k => k.operator));
+
+    // Auto-réparation si un opérateur (ex: zelle) n'a pas encore été migré en base
+    for (const reqKs of REQUIRED_KILL_SWITCHES) {
+      if (!existingOps.has(reqKs.operator)) {
+        try {
+          const created = await prisma.killSwitch.create({ data: reqKs });
+          list.push(created);
+        } catch {
+          // ignore concurrent write
+        }
+      }
+    }
+
     return res.json(list);
   } catch (error) {
     return res.status(500).json({ error: 'Erreur lors de la récupération des Kill-Switches.' });
@@ -23,9 +47,14 @@ router.post('/toggle', authMiddleware, requireRole('admin'), async (req, res) =>
       return res.status(400).json({ error: 'Opérateur requis.' });
     }
 
-    const current = await prisma.killSwitch.findUnique({ where: { operator } });
+    let current = await prisma.killSwitch.findUnique({ where: { operator } });
     if (!current) {
-      return res.status(404).json({ error: 'Opérateur introuvable dans le Kill-Switch.' });
+      const fallback = REQUIRED_KILL_SWITCHES.find(k => k.operator === operator);
+      if (fallback) {
+        current = await prisma.killSwitch.create({ data: fallback });
+      } else {
+        return res.status(404).json({ error: 'Opérateur introuvable dans le Kill-Switch.' });
+      }
     }
 
     const effectiveActorName = req.user?.name || 'Alexis D\'Alexis (Admin)';
