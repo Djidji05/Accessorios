@@ -29,6 +29,11 @@ async function main() {
   const deletedLogs = await prisma.auditLog.deleteMany();
   console.log(`✅ ${deletedLogs.count} journal/journaux d'audit supprimé(s).`);
 
+  // 2b. Suppression des dépôts d'agents
+  console.log('⏳ Suppression des versements et dépôts d\'agents...');
+  const deletedDeposits = await prisma.agentDeposit.deleteMany();
+  console.log(`✅ ${deletedDeposits.count} dépôt(s) d'agent supprimé(s).`);
+
   // 3. Remise à zéro des soldes de caisse et flottes
   console.log('⏳ Réinitialisation des soldes de trésorerie à 0.00...');
   const updatedBalances = await prisma.accountBalance.updateMany({

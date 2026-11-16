@@ -12,6 +12,7 @@ import {
   ServiceType,
   ChannelType,
   WeeklySettlement,
+  WeeklyDepositRecord,
   ServiceCommissionConfig,
   OperatorCommissionConfig
 } from '../types';
@@ -119,8 +120,9 @@ interface AppContextType {
   toggleKillSwitch: (operator: OperatorCode, reason?: string) => void;
   updateUserPermissions: (userId: string, newPermissions: Partial<UserPermissionMatrix>) => void;
   rechargeAccount: (accountId: string, amount: number, note?: string) => Promise<{ success: boolean; message: string }>;
-  recordAgentDeposit: (settlementId: string, amount: number, note: string, settlementData?: Partial<WeeklySettlement>) => { success: boolean; message: string };
-  clearSettlements: () => void;
+  recordAgentDeposit: (settlementId: string, amount: number, note: string, settlementData?: Partial<WeeklySettlement>) => Promise<{ success: boolean; message: string }>;
+  clearSettlements: () => Promise<void>;
+  dbDeposits: WeeklyDepositRecord[];
   
   // Receipt Modal State
   selectedReceiptTx: Transaction | null;
@@ -683,12 +685,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [transactions.length, settlements.length]);
 
-  const clearSettlements = useCallback(() => {
+  const [dbDeposits, setDbDeposits] = useState<WeeklyDepositRecord[]>([]);
+
+  const clearSettlements = useCallback(async () => {
+    try {
+      await api.settlements.clearDeposits();
+    } catch (err) {
+      console.error('Erreur suppression dépôts serveur:', err);
+    }
+    setDbDeposits([]);
     setSettlements([]);
     try {
       localStorage.removeItem('dalexis_settlements');
     } catch {}
-  }, []);
+    showToast('Historique des dépôts réinitialisé avec succès.', 'info');
+  }, [showToast]);
 
   // Notifications Tracking (Persist read notifications in localStorage)
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
@@ -783,12 +794,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Commissions de l'opérateur ${operator.toUpperCase()} mises à jour avec succès.`, 'success');
   };
   
-  const recordAgentDeposit = (
+  const recordAgentDeposit = async (
     settlementId: string, 
     amount: number, 
     note: string, 
     settlementData?: Partial<WeeklySettlement>
   ) => {
+    const agentId = settlementData?.agentId || currentUser.id;
+    const agentName = settlementData?.agentName || currentUser.name;
+    const weekLabel = settlementData?.weekLabel || 'Semaine En Cours';
+
+    // 1. Enregistrement direct dans la base de données MySQL
+    try {
+      const res = await api.settlements.recordDeposit({
+        agentId,
+        agentName,
+        weekLabel,
+        amount,
+        note: note || 'Versement enregistré',
+        currency: settlementData?.currency || 'DOP',
+      });
+      if (res?.deposit) {
+        const newDbDep: WeeklyDepositRecord = {
+          id: res.deposit.id,
+          amount: res.deposit.amount,
+          date: new Date(res.deposit.createdAt || Date.now()).toLocaleDateString() + ' ' + new Date(res.deposit.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          note: res.deposit.note || note || 'Versement enregistré',
+          recordedBy: res.deposit.recordedBy || currentUser.name,
+          agentId,
+          agentName,
+          weekLabel,
+          currency: res.deposit.currency || 'DOP',
+          createdAt: res.deposit.createdAt,
+        };
+        setDbDeposits((prev) => [newDbDep, ...prev.filter((d) => d.id !== newDbDep.id)]);
+      }
+    } catch (apiErr) {
+      console.error('Erreur enregistrement dépôt MySQL:', apiErr);
+    }
+
     setSettlements((prev) => {
       let found = false;
       const updated = prev.map((s) => {
@@ -1013,15 +1057,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         // 3. Données privées authentifiées optimisées
-        const [txs, bals, ks, usersData, logsData] = await Promise.all([
+        const [txs, bals, ks, usersData, logsData, depositsData] = await Promise.all([
           api.transactions.getAll().catch(() => null),
           isFullSync ? api.treasury.getBalances().catch(() => null) : Promise.resolve(null),
           isFullSync ? api.killSwitch.getAll().catch(() => null) : Promise.resolve(null),
           isFullSync ? api.users.getAll().catch(() => null) : Promise.resolve(null),
           isFullSync ? api.audit.getLogs().catch(() => null) : Promise.resolve(null),
+          isFullSync ? api.settlements.getDeposits().catch(() => null) : Promise.resolve(null),
         ]);
 
         if (!isMounted) return;
+
+        // Mise à jour des dépôts MySQL
+        if (Array.isArray(depositsData)) {
+          const formatted = depositsData.map((d: any) => ({
+            id: d.id,
+            amount: d.amount,
+            date: new Date(d.createdAt || Date.now()).toLocaleDateString() + ' ' + new Date(d.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            note: d.note || 'Versement enregistré',
+            recordedBy: d.recordedBy || 'Admin',
+            agentId: d.agentId,
+            agentName: d.agentName,
+            weekLabel: d.weekLabel,
+            currency: d.currency || 'DOP',
+            createdAt: d.createdAt,
+          }));
+          setDbDeposits(formatted);
+        }
 
         // Mise à jour silencieuse des transactions sans perturber l'interface et en préservant les preuves photo en mémoire
         if (Array.isArray(txs)) {
@@ -1346,6 +1408,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setAccountBalances(bals);
             }
           }).catch(() => null);
+        });
+
+        // 8. Réception d'un versement / dépôt agent enregistré en direct
+        eventSource.addEventListener('AGENT_DEPOSIT_RECORDED', (e: MessageEvent) => {
+          try {
+            const rawDep = JSON.parse(e.data);
+            const dep: WeeklyDepositRecord = {
+              id: rawDep.id,
+              amount: rawDep.amount,
+              date: new Date(rawDep.createdAt || Date.now()).toLocaleDateString() + ' ' + new Date(rawDep.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              note: rawDep.note || 'Versement enregistré',
+              recordedBy: rawDep.recordedBy || 'Admin',
+              agentId: rawDep.agentId,
+              agentName: rawDep.agentName,
+              weekLabel: rawDep.weekLabel,
+              currency: rawDep.currency || 'DOP',
+              createdAt: rawDep.createdAt,
+            };
+            setDbDeposits((prev) => [dep, ...prev.filter((d) => d.id !== dep.id)]);
+          } catch (err) {
+            console.error('Erreur parsing AGENT_DEPOSIT_RECORDED SSE:', err);
+          }
+        });
+
+        // 9. Réinitialisation des dépôts en direct
+        eventSource.addEventListener('AGENT_DEPOSITS_CLEARED', () => {
+          setDbDeposits([]);
+          setSettlements([]);
+          try {
+            localStorage.removeItem('dalexis_settlements');
+          } catch {}
         });
 
         eventSource.onerror = () => {
@@ -2450,6 +2543,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateOperatorCommission,
         recordAgentDeposit,
         clearSettlements,
+        dbDeposits,
         createTransaction,
         validateZelleTransaction,
         validateHaitiInboundTransaction,

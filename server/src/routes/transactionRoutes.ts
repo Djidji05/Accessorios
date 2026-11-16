@@ -487,6 +487,9 @@ router.post('/purge-test-data', authMiddleware, requireRole('admin'), async (req
     // 2. Supprimer les logs d'audit de test
     const deletedLogs = await prisma.auditLog.deleteMany();
 
+    // 2b. Supprimer tous les versements et dépôts d'agents
+    const deletedDeposits = await prisma.agentDeposit.deleteMany();
+
     // 3. Remettre les soldes de trésorerie à 0
     await prisma.accountBalance.updateMany({
       data: {

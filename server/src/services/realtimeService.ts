@@ -18,6 +18,8 @@ export type RealtimeEventType =
   | 'KILL_SWITCH_UPDATED'
   | 'RATE_UPDATED'
   | 'USER_STATUS_CHANGED'
+  | 'AGENT_DEPOSIT_RECORDED'
+  | 'AGENT_DEPOSITS_CLEARED'
   | 'SYSTEM_ALERT';
 
 class RealtimeService {

@@ -30,7 +30,7 @@ import { WeeklySettlement } from '../types';
 import { Pagination } from '../components/Pagination';
 
 export const WeeklySettlementsView: React.FC = () => {
-  const { settlements, transactions, currentUser, recordAgentDeposit, clearSettlements, availableUsers, serviceCommissionRates, t, currentLang } = useApp();
+  const { settlements, transactions, currentUser, recordAgentDeposit, clearSettlements, availableUsers, serviceCommissionRates, dbDeposits, t, currentLang } = useApp();
 
   const isAdmin = currentUser.role === 'admin';
   const isGestionnaire = currentUser.role === 'gestionnaire';
@@ -267,8 +267,31 @@ export const WeeklySettlementsView: React.FC = () => {
       }
     }
 
-    return list;
-  }, [settlements, transactions, isAgentRD, currentUser]);
+    // Attacher et consolider avec les dépôts réels de la base de données MySQL
+    return list.map((s) => {
+      const matchedDbDeposits = (dbDeposits || []).filter((d) => {
+        const matchesAgent =
+          (d.agentId && (d.agentId === s.agentId || d.agentId === s.agentName)) ||
+          (d.agentName && d.agentName.toLowerCase() === s.agentName.toLowerCase());
+        const matchesWeek = !d.weekLabel || d.weekLabel === s.weekLabel;
+        return matchesAgent && matchesWeek;
+      });
+
+      const effectiveDeposits = matchedDbDeposits.length > 0 ? matchedDbDeposits : (s.deposits || []);
+      const totalDeposited = effectiveDeposits.reduce((acc, d) => acc + (d.amount || 0), 0);
+      const remaining = Math.max(0, s.netAmountToPay - totalDeposited);
+      const status: 'paid' | 'partial' | 'pending' =
+        remaining === 0 ? 'paid' : totalDeposited > 0 ? 'partial' : 'pending';
+
+      return {
+        ...s,
+        amountDeposited: totalDeposited,
+        remainingBalance: remaining,
+        status,
+        deposits: effectiveDeposits,
+      };
+    });
+  }, [settlements, transactions, isAgentRD, currentUser, dbDeposits, availableUsers]);
 
   // Filter settlements based on user role (Agent Haïti is excluded as Admin pays them directly outside the app)
   const roleScopedSettlements = allSettlementsWithLiveTx.filter((s) => {
@@ -395,7 +418,7 @@ export const WeeklySettlementsView: React.FC = () => {
     .filter((s) => s.currency === 'HTG')
     .reduce((acc, s) => acc + s.totalCollected, 0);
 
-  const handleDepositSubmit = (e: React.FormEvent) => {
+  const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSettlementForDeposit) return;
 
@@ -405,7 +428,7 @@ export const WeeklySettlementsView: React.FC = () => {
       return;
     }
 
-    const res = recordAgentDeposit(
+    const res = await recordAgentDeposit(
       selectedSettlementForDeposit.id, 
       amount, 
       'Versement en espèces / virement',

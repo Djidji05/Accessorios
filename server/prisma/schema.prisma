@@ -144,3 +144,18 @@ model AuditLog {
   @@index([targetType, timestamp])
   @@index([actorRole, timestamp])
 }
+
+model AgentDeposit {
+  id          String   @id @default(cuid())
+  agentId     String
+  agentName   String
+  weekLabel   String   // Ex: "Semaine 46 (10/11 - 16/11)"
+  amount      Float
+  currency    String   @default("DOP")
+  note        String?  @db.Text
+  recordedBy  String   // Nom de l'admin / gestionnaire
+  createdAt   DateTime @default(now())
+
+  @@index([agentId, weekLabel])
+  @@index([createdAt])
+}

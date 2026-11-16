@@ -151,6 +151,11 @@ export interface WeeklyDepositRecord {
   date: string;
   note: string;
   recordedBy: string;
+  agentId?: string;
+  agentName?: string;
+  weekLabel?: string;
+  currency?: string;
+  createdAt?: string;
 }
 
 export interface WeeklySettlement {

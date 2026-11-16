@@ -6,7 +6,8 @@ import {
   UserPermissionMatrix, 
   AuditLog, 
   OperatorCode, 
-  ServiceType 
+  ServiceType,
+  WeeklyDepositRecord 
 } from '../types';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || '/api';
@@ -342,6 +343,27 @@ export const api = {
     triggerSlaCheck: () => request<{ success: boolean; message: string; details: any }>('/email/sla-check', {
       method: 'POST',
     }),
+  },
+
+  // 10. Versements & Dépôts hebdomadaires des agents (Base de données MySQL)
+  settlements: {
+    getDeposits: (agentId?: string, weekLabel?: string) => {
+      const query = new URLSearchParams();
+      if (agentId) query.append('agentId', agentId);
+      if (weekLabel && weekLabel !== 'all') query.append('weekLabel', weekLabel);
+      const qs = query.toString();
+      return request<WeeklyDepositRecord[]>(`/settlements/deposits${qs ? `?${qs}` : ''}`).catch(() => []);
+    },
+    recordDeposit: (data: { agentId: string; agentName: string; weekLabel: string; amount: number; note?: string; currency?: string }) =>
+      request<{ success: boolean; message: string; deposit: WeeklyDepositRecord }>('/settlements/deposits', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    clearDeposits: (agentId?: string, weekLabel?: string) =>
+      request<{ success: boolean; message: string; count: number }>('/settlements/deposits/clear', {
+        method: 'POST',
+        body: JSON.stringify({ agentId, weekLabel }),
+      }),
   },
 };
 
