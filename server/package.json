@@ -12,7 +12,9 @@
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:clean-tests": "ts-node src/scripts/cleanTestData.ts",
-    "db:clean-tests:prod": "node dist/scripts/cleanTestData.js"
+    "db:clean-tests:prod": "node dist/scripts/cleanTestData.js",
+    "db:reset-admin-only": "ts-node src/scripts/resetToAdminOnly.ts",
+    "db:reset-admin-only:prod": "node dist/scripts/resetToAdminOnly.js"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
