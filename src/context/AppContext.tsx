@@ -120,6 +120,7 @@ interface AppContextType {
   updateUserPermissions: (userId: string, newPermissions: Partial<UserPermissionMatrix>) => void;
   rechargeAccount: (accountId: string, amount: number, note?: string) => Promise<{ success: boolean; message: string }>;
   recordAgentDeposit: (settlementId: string, amount: number, note: string, settlementData?: Partial<WeeklySettlement>) => { success: boolean; message: string };
+  clearSettlements: () => void;
   
   // Receipt Modal State
   selectedReceiptTx: Transaction | null;
@@ -660,8 +661,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err) {
         console.error('Erreur écriture dalexis_settlements:', err);
       }
+    } else {
+      try {
+        localStorage.removeItem('dalexis_settlements');
+      } catch {}
     }
   }, [settlements]);
+
+  // Réinitialisation automatique des règlements locaux lorsque la base de données ne contient aucune transaction
+  useEffect(() => {
+    if (transactions.length === 0) {
+      try {
+        localStorage.removeItem('dalexis_transactions');
+      } catch {}
+      if (settlements.length > 0) {
+        setSettlements([]);
+        try {
+          localStorage.removeItem('dalexis_settlements');
+        } catch {}
+      }
+    }
+  }, [transactions.length, settlements.length]);
+
+  const clearSettlements = useCallback(() => {
+    setSettlements([]);
+    try {
+      localStorage.removeItem('dalexis_settlements');
+    } catch {}
+  }, []);
 
   // Notifications Tracking (Persist read notifications in localStorage)
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
@@ -2422,6 +2449,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         operatorCommissions,
         updateOperatorCommission,
         recordAgentDeposit,
+        clearSettlements,
         createTransaction,
         validateZelleTransaction,
         validateHaitiInboundTransaction,

@@ -30,7 +30,7 @@ import { WeeklySettlement } from '../types';
 import { Pagination } from '../components/Pagination';
 
 export const WeeklySettlementsView: React.FC = () => {
-  const { settlements, transactions, currentUser, recordAgentDeposit, serviceCommissionRates, t, currentLang } = useApp();
+  const { settlements, transactions, currentUser, recordAgentDeposit, clearSettlements, availableUsers, serviceCommissionRates, t, currentLang } = useApp();
 
   const isAdmin = currentUser.role === 'admin';
   const isGestionnaire = currentUser.role === 'gestionnaire';
@@ -132,7 +132,22 @@ export const WeeklySettlementsView: React.FC = () => {
 
   // Merge recorded settlements with live transactions to ensure every week with activity is present
   const allSettlementsWithLiveTx = React.useMemo(() => {
-    const list = [...settlements];
+    // Si aucune transaction n'existe dans le système et que l'utilisateur n'est pas un agent RD, vider l'affichage
+    if (transactions.length === 0 && !isAgentRD) {
+      return [];
+    }
+
+    // Filtrer les règlements locaux pour ne conserver que les agents existants dans le système
+    const validUserIds = new Set((availableUsers || []).map((u) => u.id));
+    const validUserNames = new Set((availableUsers || []).map((u) => u.name.toLowerCase()));
+
+    const list = transactions.length === 0 ? [] : [...settlements].filter((s) => {
+      return (
+        validUserIds.has(s.agentId) ||
+        validUserNames.has(s.agentName.toLowerCase()) ||
+        (currentUser && (s.agentId === currentUser.id || s.agentName.toLowerCase() === currentUser.name.toLowerCase()))
+      );
+    });
 
     // Find all agent RD transactions
     const relevantTx = transactions.filter((t) => {
@@ -446,13 +461,30 @@ export const WeeklySettlementsView: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={openModalForNewDeposit}
-            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer self-start sm:self-auto"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>{t('record_deposit', 'Enregistrer un Dépôt Agent')}</span>
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {settlements.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(t('confirm_clear_settlements', 'Voulez-vous réinitialiser l\'historique des dépôts enregistrés ?'))) {
+                    clearSettlements();
+                  }
+                }}
+                className="px-4 py-3 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 rounded-2xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                title={t('clear_deposits', 'Réinitialiser l\'historique')}
+              >
+                <History className="w-4 h-4" />
+                <span>{t('reset', 'Réinitialiser')}</span>
+              </button>
+            )}
+            <button
+              onClick={openModalForNewDeposit}
+              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>{t('record_deposit', 'Enregistrer un Dépôt Agent')}</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between gap-4">
