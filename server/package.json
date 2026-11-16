@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "db:clean-tests": "ts-node src/scripts/cleanTestData.ts"
+    "db:clean-tests": "ts-node src/scripts/cleanTestData.ts",
+    "db:clean-tests:prod": "node dist/scripts/cleanTestData.js"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
