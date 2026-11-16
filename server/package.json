@@ -10,7 +10,8 @@
     "test": "ts-node src/system_test_runner.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "db:clean-tests": "ts-node src/scripts/cleanTestData.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

@@ -475,4 +475,53 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   }
 });
 
+// 6. Nettoyage administratif sécurisé des données de test (Admin uniquement)
+router.post('/purge-test-data', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const actorName = req.user?.name || "Alexis D'Alexis (Admin)";
+    const nodeId = req.user?.nodeId || 'node-admin-01';
+
+    // 1. Supprimer toutes les transactions
+    const deletedTxs = await prisma.transaction.deleteMany();
+
+    // 2. Supprimer les logs d'audit de test
+    const deletedLogs = await prisma.auditLog.deleteMany();
+
+    // 3. Remettre les soldes de trésorerie à 0
+    await prisma.accountBalance.updateMany({
+      data: {
+        balance: 0,
+        status: 'optimal',
+        lastUpdated: new Date(),
+      },
+    });
+
+    // 4. Trace d'audit certifiée
+    await prisma.auditLog.create({
+      data: {
+        nodeId,
+        actorName,
+        actorRole: 'admin',
+        action: 'SYSTEM_CLEANUP',
+        targetType: 'system',
+        details: `Nettoyage de production effectué par ${actorName} : ${deletedTxs.count} transaction(s) purgée(s), soldes réinitialisés à 0.`,
+        nodeStatus: 'SYNCED',
+        priority: 'Critical',
+      },
+    });
+
+    // 5. Notification temps réel
+    realtimeService.broadcast('TRANSACTION_UPDATED', { purgeAll: true });
+
+    return res.json({
+      success: true,
+      message: `Nettoyage terminé avec succès : ${deletedTxs.count} transaction(s) supprimée(s). Les utilisateurs et configurations sont intacts.`,
+      deletedTransactions: deletedTxs.count,
+      deletedLogs: deletedLogs.count,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Erreur lors du nettoyage de la base de données.' });
+  }
+});
+
 export default router;
