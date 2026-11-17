@@ -181,7 +181,8 @@ interface AppContextType {
   canInstallPWA: boolean;
   showPWAInstallPrompt: boolean;
   setShowPWAInstallPrompt: (show: boolean) => void;
-  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed'>;
+  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed' | 'guide_needed'>;
+  downloadDesktopShortcut: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -382,7 +383,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed'> => {
+  const downloadDesktopShortcut = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const origin = window.location.origin || 'https://alexistransferencia.app';
+      const content = `[InternetShortcut]\r\nURL=${origin}/\r\nIconIndex=0\r\nIconFile=${origin}/favicon.png\r\nHotKey=0\r\n[{000214A0-0000-0000-C000-000000000046}]\r\nProp3=19,11\r\n`;
+      const blob = new Blob([content], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Alexis-Transferencia.url';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Erreur téléchargement lanceur app:', e);
+    }
+  }, []);
+
+  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed' | 'guide_needed'> => {
     if (isPWAInstalled) {
       return 'already_installed';
     }
@@ -408,55 +428,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // 2. Détection iOS (iPhone / iPad) : Déclencher directement l'installation native du profil WebClip Apple (.mobileconfig)
+    // 2. Détection de la plateforme (Mobile / Tablette / Desktop)
     const isIOS = typeof navigator !== 'undefined' && (
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     );
+    const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    if (isIOS) {
-      try {
-        const origin = window.location.origin || 'https://alexistransferencia.app';
-        const profileUrl = `${origin}/AlexisTransferencia.mobileconfig`;
-        
-        // Téléchargement / déclenchement immédiat du profil sous iOS
-        const a = document.createElement('a');
-        a.href = profileUrl;
-        a.download = 'AlexisTransferencia.mobileconfig';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        setShowPWAInstallPrompt(false);
-        return 'ios_profile';
-      } catch (e) {
-        console.error('Erreur lancement profil iOS:', e);
-      }
+    // Sur mobile (Android ou iOS) où l'invite native directe n'est pas encore armée par le navigateur :
+    // On oriente l'utilisateur vers le guide visuel interactif au lieu d'un fichier .url incompatible
+    if (isMobile || isIOS) {
+      return 'guide_needed';
     }
 
-    // 3. Déclencher le téléchargement du raccourci applicatif uniquement pour bureau Windows/Mac
-    if (typeof window !== 'undefined' && !isIOS) {
-      try {
-        const origin = window.location.origin || 'https://alexistransferencia.app';
-        const content = `[InternetShortcut]\r\nURL=${origin}/\r\nIconIndex=0\r\nIconFile=${origin}/favicon.png\r\nHotKey=0\r\n[{000214A0-0000-0000-C000-000000000046}]\r\nProp3=19,11\r\n`;
-        const blob = new Blob([content], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Alexis-Transferencia.url';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setShowPWAInstallPrompt(false);
-        return 'downloaded';
-      } catch (e) {
-        console.error('Erreur téléchargement lanceur app:', e);
-      }
+    // 3. Sur PC / Bureau sans prompt direct :
+    // Télécharger le raccourci applicatif bureau
+    if (typeof window !== 'undefined') {
+      downloadDesktopShortcut();
+      setShowPWAInstallPrompt(false);
+      return 'downloaded';
     }
 
     return 'unavailable';
-  }, [deferredPWAPrompt, isPWAInstalled]);
+  }, [deferredPWAPrompt, isPWAInstalled, downloadDesktopShortcut]);
 
   // i18n Language State & Helper
   const [currentLang, setCurrentLangState] = useState<Language>(() => {
@@ -2591,6 +2585,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showPWAInstallPrompt,
         setShowPWAInstallPrompt,
         installPWA,
+        downloadDesktopShortcut,
       }}
     >
       {children}
