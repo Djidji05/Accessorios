@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Wallet, 
   ArrowUpRight, 
@@ -36,20 +36,13 @@ import { getOperatorLogo } from '../utils/operatorLogos';
 import { exportTreasuryReportToCSV, exportTreasuryReportToPDF } from '../utils/exportUtils';
 import { Pagination } from '../components/Pagination';
 
-// Mock recent treasury operations log
-const initialTreasuryLogs = [
-  { id: 'TR-9081', type: 'recharge_float', operator: 'moncash', account: 'Flotte Principal MonCash', amount: 250000, currency: 'HTG', status: 'completed', date: 'Aujourd\'hui 11:42', author: 'Admin' },
-  { id: 'TR-9080', type: 'bank_deposit', operator: 'bank_rd', account: 'Banreservas RD #882', amount: 500000, currency: 'DOP', status: 'completed', date: 'Aujourd\'hui 10:15', author: 'Jean-Marc (Caissier)' },
-  { id: 'TR-9079', type: 'recharge_float', operator: 'natcash', account: 'Natcash Business Float', amount: 150000, currency: 'HTG', status: 'completed', date: 'Hier 16:30', author: 'Admin' },
-  { id: 'TR-9078', type: 'cash_transfer', operator: 'cash_haiti', account: 'Caisse Agence Cap-Haïtien', amount: 100000, currency: 'HTG', status: 'completed', date: 'Hier 14:10', author: 'Pierre (Agent Cap-Haïtien)' },
-];
-
 export const TreasuryView: React.FC = () => {
   const { 
     accountBalances, 
     currentUser, 
     rechargeAccount, 
     transactions,
+    auditLogs,
     dopToHtgRate,
     usdToHtgRate,
     serviceFeeRates,
@@ -58,7 +51,46 @@ export const TreasuryView: React.FC = () => {
     t,
     currentLang
   } = useApp();
-  const [logs, setLogs] = useState(initialTreasuryLogs);
+
+  const [localRecharges, setLocalRecharges] = useState<any[]>([]);
+
+  // Extraire les opérations réelles de trésorerie depuis les logs d'audit MySQL
+  const logs = useMemo(() => {
+    const serverLogs = (auditLogs || [])
+      .filter((l) => l.targetType === 'treasury')
+      .map((l) => {
+        const match = l.details.match(/([0-9\s,\.]+)\s*(HTG|DOP|USD)/i);
+        const parsedAmount = match ? parseFloat(match[1].replace(/[\s,]/g, '')) : 0;
+        const currency = match ? match[2].toUpperCase() : 'DOP';
+
+        const d = new Date(l.timestamp);
+        const dateFormatted = !isNaN(d.getTime()) 
+          ? d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'Récemment';
+
+        let accountName = 'Compte Trésorerie';
+        if (l.details.includes('compte ')) {
+          accountName = l.details.split('compte ')[1]?.split('.')[0] || 'Compte Flotte';
+        } else if (l.details.includes('agent ')) {
+          accountName = l.details.split('agent ')[1]?.split(' (')[0] || 'Agent';
+        }
+
+        return {
+          id: `TR-${l.id.slice(-4).toUpperCase()}`,
+          type: l.action.toLowerCase(),
+          account: accountName,
+          amount: parsedAmount,
+          currency,
+          status: 'completed',
+          date: dateFormatted,
+          author: l.actorName || 'Admin',
+        };
+      });
+
+    const combined = [...localRecharges, ...serverLogs];
+    return Array.from(new Map(combined.map((item) => [item.id, item])).values());
+  }, [auditLogs, localRecharges]);
+
   const [logPage, setLogPage] = useState<number>(1);
   const LOG_PAGE_SIZE = 10;
   const logTotalPages = Math.ceil(logs.length / LOG_PAGE_SIZE) || 1;
@@ -126,12 +158,10 @@ export const TreasuryView: React.FC = () => {
     return isTxInDateRange(t, selectedDateRange);
   });
 
-  const hasSystemHistory = transactions.length > 0;
-
-  // Transactions Zelle & Calculs dédiés en USD sur la période
+  // Transactions Zelle & Calculs dédiés en USD sur la période (Données réelles)
   const zelleTxs = validPeriodTxs.filter(t => t.operator === 'zelle');
   const liveZelleUSD = zelleTxs.reduce((sum, t) => sum + (t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0)), 0);
-  const totalZelleVolumeUSD = (liveZelleUSD > 0 || hasSystemHistory) ? liveZelleUSD : 5300;
+  const totalZelleVolumeUSD = liveZelleUSD;
   const totalZelleCommissionUSD = Math.round(totalZelleVolumeUSD * (zelleCommRate / 100) * 100) / 100;
   const totalZelleCommissionDOP = Math.round(totalZelleCommissionUSD * usdToDopRate);
   const totalZelleVolumeDOP = Math.round(totalZelleVolumeUSD * usdToDopRate);
@@ -183,7 +213,7 @@ export const TreasuryView: React.FC = () => {
     { code: 'zelle', name: 'Zelle', symbol: 'ZEL', badgeBg: 'bg-slate-100 text-slate-800 border border-slate-300', badgeText: 'US', currencyPrimary: 'USD' },
   ];
 
-  // Dynamic calculation for volume transited per operator during selected date period
+  // Dynamic calculation for volume transited per operator during selected date period (100% réel)
   const getOperatorVolumeData = (opCode: OperatorCode) => {
     const opTxs = validPeriodTxs.filter((t) => t.operator === opCode);
     const liveHTG = opTxs.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
@@ -191,36 +221,11 @@ export const TreasuryView: React.FC = () => {
     const liveUSD = opTxs.reduce((sum, t) => sum + (t.amountUSD || (t.amountDOP ? Math.round(t.amountDOP / usdToDopRate) : 0)), 0);
     const liveCount = opTxs.length;
 
-    if (hasSystemHistory) {
-      return {
-        htg: liveHTG,
-        dop: liveDOP,
-        usd: liveUSD,
-        count: liveCount,
-      };
-    }
-
-    const mult = 
-      selectedDateRange.preset === 'today' ? 1 :
-      selectedDateRange.preset === 'yesterday' ? 0.85 :
-      selectedDateRange.preset === 'last_30_days' || selectedDateRange.preset === 'this_month' ? 4.2 : 2.5;
-
-    const mockBaselines: Record<OperatorCode, { htg: number; dop: number; usd: number; count: number }> = {
-      natcash: { htg: Math.round(620000 * mult), dop: Math.round(263000 * mult), usd: 0, count: Math.round(18 * mult) },
-      moncash: { htg: Math.round(1450000 * mult), dop: Math.round(617000 * mult), usd: 0, count: Math.round(42 * mult) },
-      natcom: { htg: Math.round(380000 * mult), dop: Math.round(161000 * mult), usd: 0, count: Math.round(12 * mult) },
-      claro: { htg: Math.round(290000 * mult), dop: Math.round(123000 * mult), usd: 0, count: Math.round(15 * mult) },
-      altice: { htg: Math.round(210000 * mult), dop: Math.round(89000 * mult), usd: 0, count: Math.round(9 * mult) },
-      digicel: { htg: Math.round(890000 * mult), dop: Math.round(378000 * mult), usd: 0, count: Math.round(28 * mult) },
-      zelle: { htg: Math.round(750000 * mult), dop: Math.round(319000 * mult), usd: Math.round(5300 * mult), count: Math.round(7 * mult) },
-    };
-
-    const base = mockBaselines[opCode] || { htg: 0, dop: 0, usd: 0, count: 0 };
     return {
-      htg: base.htg,
-      dop: base.dop,
-      usd: base.usd,
-      count: base.count,
+      htg: liveHTG,
+      dop: liveDOP,
+      usd: liveUSD,
+      count: liveCount,
     };
   };
 
@@ -283,7 +288,7 @@ export const TreasuryView: React.FC = () => {
       author: `${currentUser.name} (${currentUser.role})`
     };
 
-    setLogs([newLog, ...logs]);
+    setLocalRecharges((prev) => [newLog, ...prev]);
     setFeedback(result.message || `Flotte ${acc.name} réapprovisionnée avec succès (+${rechargeAmount.toLocaleString()} ${acc.currency}) !`);
     setShowRechargeModal(false);
     setRechargeAmount(100000);
@@ -831,34 +836,47 @@ export const TreasuryView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
-              {paginatedLogs.map((op) => (
-                <tr key={op.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">{op.id}</td>
-                  <td className="py-3.5 px-4">
-                    <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      {op.type.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">{op.account}</td>
-                  <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    +{op.amount.toLocaleString()} {op.currency === 'DOP' ? 'Pesos' : op.currency}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">{op.author}</td>
-                  <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-mono">{op.date}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full text-[10px] font-bold">
-                      {t('validated', 'Validé')}
-                    </span>
+              {paginatedLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium text-xs">
+                    {t('no_treasury_operations', 'Aucune opération de trésorerie enregistrée pour le moment.')}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedLogs.map((op) => (
+                  <tr key={op.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">{op.id}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {op.type.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">{op.account}</td>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      +{op.amount.toLocaleString()} {op.currency === 'DOP' ? 'Pesos' : op.currency}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">{op.author}</td>
+                    <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-mono">{op.date}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full text-[10px] font-bold">
+                        {t('validated', 'Validé')}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* 2. VUE MOBILE : CARTES EMPILÉES TRÈS RESPONSIVES (< md) */}
         <div className="md:hidden space-y-2.5">
-          {paginatedLogs.map((op) => (
+          {paginatedLogs.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 font-medium text-xs bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-800">
+              {t('no_treasury_operations', 'Aucune opération de trésorerie enregistrée pour le moment.')}
+            </div>
+          ) : (
+            paginatedLogs.map((op) => (
             <div
               key={op.id}
               className="p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-2.5"
@@ -892,7 +910,7 @@ export const TreasuryView: React.FC = () => {
                 <span className="font-mono">{op.date}</span>
               </div>
             </div>
-          ))}
+          )))}
         </div>
 
         {/* Treasury Logs Pagination */}
