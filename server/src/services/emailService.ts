@@ -305,92 +305,131 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
 }
 
 /**
- * Dictionnaire multilingue pour les e-mails
+ * Dictionnaire multilingue soigné, humain et professionnel pour les e-mails de notification
  */
 export const EMAIL_TRANSLATIONS = {
   FR: {
-    slaAlertSubject: (ref: string, timeText: string | number) => `🚨 [ALERTE SLA 24H] Transaction #${ref} en attente depuis ${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)}h` : timeText} (seuil 24h dépassé)`,
-    slaAlertTitle: 'Alerte Dépassement SLA - Transaction en Attente (24h+)',
-    slaAlertWarning: (timeText: string | number) => `Cette transaction est en attente d'exécution ou de validation depuis plus de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} heures` : timeText}</strong> sans avoir été clôturée (seuil SLA de 24h dépassé).`,
-    actionRequired: 'Action Requise Immédiatement',
-    txDetailsTitle: 'Détails de l\'Opération',
+    newTxSubject: (ref: string) => `D'Alexis Transferencia - Confirmation de transaction #${ref}`,
+    newTxBadge: 'Transaction Enregistrée',
+    newTxGreeting: (name: string) => `Bonjour ${name},`,
+    newTxIntro: (ref: string) => `Votre transaction sous la référence <strong>#${ref}</strong> a bien été enregistrée dans notre système. En voici le récapitulatif détaillé :`,
+
+    completedTxSubject: (ref: string) => `D'Alexis Transferencia - Transaction #${ref} finalisée avec succès`,
+    completedTxBadge: 'Transaction Validée',
+    completedTxGreeting: (name: string) => `Bonjour ${name},`,
+    completedTxIntro: (ref: string) => `Nous vous confirmons que la transaction portant la référence <strong>#${ref}</strong> a été exécutée et clôturée avec succès. Les fonds ont été délivrés au bénéficiaire.`,
+
+    cancelledTxSubject: (ref: string) => `D'Alexis Transferencia - Avis d'annulation de transaction #${ref}`,
+    cancelledTxBadge: 'Transaction Annulée',
+    cancelledTxGreeting: (name: string) => `Bonjour ${name},`,
+    cancelledTxIntro: (ref: string) => `Nous vous informons que la transaction portant la référence <strong>#${ref}</strong> a été annulée.`,
+    cancellationReasonLabel: 'Motif d\'annulation :',
+    cancellationRefundNote: 'Le solde correspondant a été restitué conformément aux procédures de gestion.',
+
+    slaAlertSubject: (ref: string, timeText: string | number) => `D'Alexis Transferencia - Suivi de dossier : Transaction #${ref} en attente`,
+    slaAlertBadge: 'Dossier en Attente',
+    slaAlertTitle: 'Suivi de dossier - Transaction en attente (24h+)',
+    slaAlertGreeting: (name: string) => `Bonjour ${name},`,
+    slaAlertIntro: (timeText: string | number) => `La transaction ci-dessous est en attente de traitement depuis plus de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} heures` : timeText}</strong>. Merci de bien vouloir vérifier son état.`,
+    slaAlertWarning: (timeText: string | number) => `Cette transaction est en attente de traitement depuis plus de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} heures` : timeText}</strong>.`,
+
+    txDetailsTitle: 'Détails de l\'opération',
     reference: 'Référence',
-    operator: 'Opérateur',
-    amountDOP: 'Montant Encaissé (DOP)',
-    amountHTG: 'Montant à Décaisser (HTG)',
+    operator: 'Service / Opérateur',
+    amountDOP: 'Montant encaissé (DOP)',
+    amountHTG: 'Montant à décaisser (HTG)',
     sender: 'Expéditeur',
     receiver: 'Bénéficiaire',
-    receiverPhone: 'Téléphone Bénéficiaire',
-    assignedTo: 'Responsable Assigné',
-    createdAt: 'Date d\'Émission',
-    elapsedTime: 'Temps d\'Attente Total',
-    openTxButton: 'Accéder à la Transaction',
-    footerNote: 'Ce message d\'alerte automatique est renvoyé toutes les 24 heures jusqu\'à ce que la transaction soit validée ou traitée.',
-    newTxSubject: (ref: string) => `📋 [NOUVELLE TRANSACTION] Réf #${ref} à traiter`,
-    newTxTitle: 'Nouvelle Transaction Enregistrée',
-    newTxSubtitle: 'Une nouvelle opération est en attente de décaissement ou traitement',
-    completedTxSubject: (ref: string) => `✅ [VALIDÉE] Transaction #${ref} clôturée avec succès`,
-    completedTxTitle: 'Transaction Clôturée avec Succès',
-    completedTxSubtitle: 'Le versement ou la recharge a été effectué(e) avec succès',
-    cancelledTxSubject: (ref: string) => `⚠️ [ANNULÉE] Transaction #${ref} annulée`,
-    cancelledTxTitle: 'Transaction Annulée & Fonds Restitués',
-    cancellationReason: 'Motif d\'annulation',
+    receiverPhone: 'Téléphone du bénéficiaire',
+    assignedTo: 'Responsable assigné',
+    createdAt: 'Date d\'émission',
+    openTxButton: 'Consulter dans l\'application',
+    supportContact: 'Pour toute question ou assistance opérationnelle, notre service d\'assistance reste à votre disposition.',
+    signoff: 'Cordialement,<br><strong>Service des Opérations</strong><br>D\'Alexis Transferencia y Accesorio',
+    footerRights: 'Tous droits réservés.',
+    footerNotice: 'Ce message a été adressé automatiquement à l\'agent ayant effectué cette transaction.',
   },
   HT: {
-    slaAlertSubject: (ref: string, timeText: string | number) => `🚨 [ALÈT SLA 24H] Tranzaksyon #${ref} ap tann depi ${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} èdtan` : timeText} san trete`,
-    slaAlertTitle: 'Alèt Depasman SLA - Tranzaksyon ap Tann (24h+)',
-    slaAlertWarning: (timeText: string | number) => `Tranzaksyon sa a ap tann pou egzekite oswa valide depi plis pase <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} èdtan` : timeText}</strong> san li pa finalize (delè 24h depase).`,
-    actionRequired: 'Aksyon Egzije Touswit',
-    txDetailsTitle: 'Detay sou Operasyon an',
+    newTxSubject: (ref: string) => `D'Alexis Transferencia - Konfimasyon tranzaksyon #${ref}`,
+    newTxBadge: 'Tranzaksyon Anrejistre',
+    newTxGreeting: (name: string) => `Bonjou ${name},`,
+    newTxIntro: (ref: string) => `Tranzaksyon ou a ki pote referans <strong>#${ref}</strong> anrejistre avèk siksè nan sistèm nan. Men detay operasyon an :`,
+
+    completedTxSubject: (ref: string) => `D'Alexis Transferencia - Tranzaksyon #${ref} finalize avèk siksè`,
+    completedTxBadge: 'Tranzaksyon Finalize',
+    completedTxGreeting: (name: string) => `Bonjou ${name},`,
+    completedTxIntro: (ref: string) => `Nou konfime ou tranzaksyon ki gen referans <strong>#${ref}</strong> an finalize avèk siksè epi lajan an fin delivre bay benefisyè a.`,
+
+    cancelledTxSubject: (ref: string) => `D'Alexis Transferencia - Avi anilasyon tranzaksyon #${ref}`,
+    cancelledTxBadge: 'Tranzaksyon Anile',
+    cancelledTxGreeting: (name: string) => `Bonjou ${name},`,
+    cancelledTxIntro: (ref: string) => `Nou enfòme ou tranzaksyon ki gen referans <strong>#${ref}</strong> an te anile.`,
+    cancellationReasonLabel: 'Rezon anilasyon :',
+    cancellationRefundNote: 'Balans lan te reajiste selon règleman nòmal yo.',
+
+    slaAlertSubject: (ref: string, timeText: string | number) => `D'Alexis Transferencia - Rapèl swivi tranzaksyon #${ref} ap tann`,
+    slaAlertBadge: 'Dosye Ap Tann',
+    slaAlertTitle: 'Swivi dosye - Tranzaksyon ap tann (24h+)',
+    slaAlertGreeting: (name: string) => `Bonjou ${name},`,
+    slaAlertIntro: (timeText: string | number) => `Tranzaksyon ki anba a ap tann pou trete depi plis pase <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} èdtan` : timeText}</strong>. Tanpri verifye dosye sa a.`,
+    slaAlertWarning: (timeText: string | number) => `Tranzaksyon sa a ap tann pou trete depi plis pase <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} èdtan` : timeText}</strong>.`,
+
+    txDetailsTitle: 'Detay Operasyon an',
     reference: 'Referans',
-    operator: 'Operatè',
+    operator: 'Sèvis / Operatè',
     amountDOP: 'Montan Resevwa (DOP)',
     amountHTG: 'Montan pou Peye (HTG)',
     sender: 'Moun ki Voye a',
-    receiver: 'Moun k ap Resevwa a',
-    receiverPhone: 'Nimewo Telefòn Moun k ap Resevwa a',
-    assignedTo: 'Responsab Ki Resevwa l',
+    receiver: 'Benefisyè',
+    receiverPhone: 'Nimewo Telefòn Benefisyè a',
+    assignedTo: 'Responsab Asiye',
     createdAt: 'Dat Li Fèt',
-    elapsedTime: 'Tan Li Genyen Ap Tann',
-    openTxButton: 'Louvri Tranzaksyon an',
-    footerNote: 'Mesaj alèt otomatik sa a ap voye chak 24 èdtan jiskaske tranzaksyon an valide oswa trete nèt.',
-    newTxSubject: (ref: string) => `📋 [NOUVO TRANZAKSYON] Referans #${ref} pou trete`,
-    newTxTitle: 'Nouvo Tranzaksyon Anrejistre',
-    newTxSubtitle: 'Yon nouvo operasyon ap tann pou peye oswa trete',
-    completedTxSubject: (ref: string) => `✅ [VALIDE] Tranzaksyon #${ref} finalize ak siksè`,
-    completedTxTitle: 'Tranzaksyon Finalize ak Siksè',
-    completedTxSubtitle: 'Kòb la fin delivre bay kliyan an ak siksè',
-    cancelledTxSubject: (ref: string) => `⚠️ [ANILE] Tranzaksyon #${ref} anile`,
-    cancelledTxTitle: 'Tranzaksyon Anile & Lajan Retounen',
-    cancellationReason: 'Rezon anilasyon an',
+    openTxButton: 'Gade nan Aplikasyon an',
+    supportContact: 'Pou nenpòt kesyon oswa sipò sou operasyon sa a, ekip sipò a toujou disponib pou ede w.',
+    signoff: 'Sensèman,<br><strong>Sèvis Operasyon</strong><br>D\'Alexis Transferencia y Accesorio',
+    footerRights: 'Tout dwa rezève.',
+    footerNotice: 'Mesaj sa a voye otomatikman bay ajan ki te fè tranzaksyon an.',
   },
   ES: {
-    slaAlertSubject: (ref: string, timeText: string | number) => `🚨 [ALERTA SLA 24H] Transacción #${ref} en espera desde hace ${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)}h` : timeText} (límite 24h superado)`,
-    slaAlertTitle: 'Alerta de Tiempo SLA - Transacción en Espera (24h+)',
-    slaAlertWarning: (timeText: string | number) => `Esta transacción lleva en espera de procesamiento o validación más de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} horas` : timeText}</strong> sin haber sido completada (límite SLA de 24h superado).`,
-    actionRequired: 'Acción Requerida Inmediatamente',
+    newTxSubject: (ref: string) => `D'Alexis Transferencia - Confirmación de transacción #${ref}`,
+    newTxBadge: 'Transacción Registrada',
+    newTxGreeting: (name: string) => `Estimado/a ${name},`,
+    newTxIntro: (ref: string) => `Su transacción con el número de referencia <strong>#${ref}</strong> ha sido registrada exitosamente en nuestro sistema. A continuación los detalles de la operación:`,
+
+    completedTxSubject: (ref: string) => `D'Alexis Transferencia - Transacción #${ref} completada con éxito`,
+    completedTxBadge: 'Transacción Completada',
+    completedTxGreeting: (name: string) => `Estimado/a ${name},`,
+    completedTxIntro: (ref: string) => `Le confirmamos que la transacción con número de referencia <strong>#${ref}</strong> ha sido procesada y completada satisfactoriamente. Los fondos han sido entregados al beneficiario.`,
+
+    cancelledTxSubject: (ref: string) => `D'Alexis Transferencia - Notificación de anulación #${ref}`,
+    cancelledTxBadge: 'Transacción Anulada',
+    cancelledTxGreeting: (name: string) => `Estimado/a ${name},`,
+    cancelledTxIntro: (ref: string) => `Le informamos que la transacción con número de referencia <strong>#${ref}</strong> ha sido cancelada.`,
+    cancellationReasonLabel: 'Motivo de la anulación:',
+    cancellationRefundNote: 'El balance correspondiente ha sido restituido conforme a nuestras normas operativas.',
+
+    slaAlertSubject: (ref: string, timeText: string | number) => `D'Alexis Transferencia - Seguimiento de transacción #${ref} en espera`,
+    slaAlertBadge: 'Seguimiento Requerido',
+    slaAlertTitle: 'Seguimiento de caso - Transacción en espera (24h+)',
+    slaAlertGreeting: (name: string) => `Estimado/a ${name},`,
+    slaAlertIntro: (timeText: string | number) => `La transacción indicada a continuación se encuentra pendiente de procesamiento desde hace más de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} horas` : timeText}</strong>. Por favor, revise el estado del caso.`,
+    slaAlertWarning: (timeText: string | number) => `Esta transacción se encuentra en espera de procesamiento desde hace más de <strong>${typeof timeText === 'number' && timeText >= 60 ? `${Math.floor(timeText / 60)} horas` : timeText}</strong>.`,
+
     txDetailsTitle: 'Detalles de la Operación',
     reference: 'Referencia',
-    operator: 'Operador',
+    operator: 'Servicio / Operador',
     amountDOP: 'Monto Cobrado (DOP)',
-    amountHTG: 'Monto a Pagar (HTG)',
+    amountHTG: 'Monto a Entregar (HTG)',
     sender: 'Remitente',
     receiver: 'Beneficiario',
-    receiverPhone: 'Teléfono Beneficiario',
+    receiverPhone: 'Teléfono del Beneficiario',
     assignedTo: 'Responsable Asignado',
     createdAt: 'Fecha de Emisión',
-    elapsedTime: 'Tiempo de Espera Total',
-    openTxButton: 'Ver Transacción en el Sistema',
-    footerNote: 'Este mensaje de alerta automática se reenvía cada 24 horas hasta que la transacción sea validada o procesada.',
-    newTxSubject: (ref: string) => `📋 [NUEVA TRANSACCIÓN] Ref #${ref} por procesar`,
-    newTxTitle: 'Nueva Transacción Registrada',
-    newTxSubtitle: 'Una nueva operación está en cola de desembolso o recarga',
-    completedTxSubject: (ref: string) => `✅ [COMPLETADA] Transacción #${ref} validada con éxito`,
-    completedTxTitle: 'Transacción Completa con Éxito',
-    completedTxSubtitle: 'El desembolso o servicio ha sido completado con éxito',
-    cancelledTxSubject: (ref: string) => `⚠️ [CANCELADA] Transacción #${ref} cancelada`,
-    cancelledTxTitle: 'Transacción Cancelada y Fondos Restituidos',
-    cancellationReason: 'Motivo de cancelación',
+    openTxButton: 'Ver en la Aplicación',
+    supportContact: 'Para cualquier consulta o asistencia con esta transacción, comuníquese con el departamento operativo.',
+    signoff: 'Atentamente,<br><strong>Departamento de Operaciones</strong><br>D\'Alexis Transferencia y Accesorio',
+    footerRights: 'Todos los derechos reservados.',
+    footerNotice: 'Este mensaje fue enviado automáticamente al usuario que ejecutó la operación.',
   },
 };
 
@@ -411,189 +450,320 @@ export function resolveLanguage(lang?: string | null, operator?: string, role?: 
 }
 
 /**
- * Template de base uniforme et élégant
+ * Gabarit de présentation corporate pour les e-mails de transaction
  */
-function wrapEmailHtml(contentHtml: string, title: string, subtitle: string, badgeText: string, badgeBg: string = '#2563eb', lang: SupportedLanguage = 'FR'): string {
+function wrapEmailHtml(
+  contentHtml: string,
+  badgeText: string,
+  badgeBg: string = '#e0f2fe',
+  badgeColor: string = '#0369a1',
+  lang: SupportedLanguage = 'FR'
+): string {
   const currentYear = new Date().getFullYear();
+  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+
   return `
 <!DOCTYPE html>
 <html lang="${lang.toLowerCase()}">
 <head>
   <meta charset="utf-8">
-  <title>${title}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; color: #1e293b; margin: 0; padding: 24px; }
-    .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-    .header { background: linear-gradient(135deg, #090d16 0%, #1e293b 100%); color: #ffffff; padding: 28px 24px; text-align: center; }
-    .badge { display: inline-block; background: ${badgeBg}; color: #ffffff; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 5px 14px; border-radius: 9999px; margin-bottom: 12px; }
-    .title { font-size: 20px; font-weight: 900; margin: 0 0 6px 0; letter-spacing: -0.5px; color: #ffffff; }
-    .subtitle { font-size: 13px; color: #94a3b8; margin: 0; }
-    .body { padding: 26px 24px; background: #ffffff; }
-    .footer { background: #f8fafc; padding: 18px 24px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.6; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D'Alexis Transferencia y Accesorio</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="badge">${badgeText}</div>
-      <h1 class="title">${title}</h1>
-      <p class="subtitle">${subtitle}</p>
-    </div>
-    <div class="body">
-      ${contentHtml}
-    </div>
-    <div class="footer">
-      D'Alexis Transferencia y Accesorio • Système Opérationnel Sécurisé<br>
-      © ${currentYear} Tous droits réservés.
-    </div>
-  </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 28px 14px; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 580px; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);">
+          <!-- Header Institutionnel -->
+          <tr>
+            <td style="background-color: #0f172a; padding: 26px 28px; text-align: left; border-bottom: 3px solid #0284c7;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <div style="font-size: 16px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase;">
+                      D'Alexis Transferencia y Accesorio
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">
+                      Services Financiers & Transferts Internationaux
+                    </div>
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="display: inline-block; background-color: ${badgeBg}; color: ${badgeColor}; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.4px;">
+                      ${badgeText}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Corps du message -->
+          <tr>
+            <td style="padding: 28px 28px 20px 28px; background-color: #ffffff;">
+              ${contentHtml}
+            </td>
+          </tr>
+
+          <!-- Pied de page -->
+          <tr>
+            <td style="background-color: #f8fafc; padding: 18px 28px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.6;">
+              <strong style="color: #475569;">D'Alexis Transferencia y Accesorio</strong><br>
+              ${t.footerNotice}<br>
+              © ${currentYear} D'Alexis Transferencia y Accesorio. ${t.footerRights}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   `.trim();
 }
 
 /**
- * Génère le tableau des détails de transaction
+ * Tableau de détails financiers soigné et lisible
  */
 function buildTxTableHtml(tx: any, t: any): string {
   const operatorUpper = (tx.operator || '').toUpperCase();
   return `
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; margin-bottom: 22px;">
-      <h3 style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-top: 0; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-        ${t.txDetailsTitle}
-      </h3>
-      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.reference} :</td>
-          <td style="padding: 6px 0; text-align: right; font-family: monospace; font-weight: 800; color: #0f172a;">${tx.referenceNumber}</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.operator} :</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 800; color: #0f172a;">${operatorUpper}</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.amountHTG} :</td>
-          <td style="padding: 6px 0; text-align: right; color: #059669; font-weight: 900; font-family: monospace; font-size: 15px;">${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.amountDOP} :</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 700; color: #334155; font-family: monospace;">${Number(tx.amountDOP || 0).toLocaleString('fr-FR')} DOP</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.receiver} :</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 700; color: #0f172a;">${tx.receiverName} (${tx.receiverPhone})</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.sender} :</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #334155;">${tx.senderName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.assignedTo} :</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 700; color: #2563eb;">${tx.assignedToName || tx.assignedToRole}</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; font-weight: 600;">${t.createdAt} :</td>
-          <td style="padding: 6px 0; text-align: right; color: #64748b; font-size: 12px;">${new Date(tx.createdAt || Date.now()).toLocaleString('fr-FR')}</td>
-        </tr>
-      </table>
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 18px; margin-bottom: 22px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; font-size: 13px;">
+      <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+        <td colspan="2" style="padding: 10px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">
+          ${t.txDetailsTitle}
+        </td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500; width: 42%;">${t.reference} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px; font-weight: 700; color: #0f172a;">${tx.referenceNumber}</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9; background-color: #fafbfc;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.operator} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-weight: 600; color: #0f172a;">${operatorUpper}</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.amountDOP} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 14px; font-weight: 700; color: #0f172a;">${Number(tx.amountDOP || 0).toLocaleString('fr-FR')} DOP</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9; background-color: #fafbfc;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.amountHTG} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 15px; font-weight: 700; color: #059669;">${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.receiver} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-weight: 600; color: #0f172a;">${tx.receiverName || '—'}</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9; background-color: #fafbfc;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.receiverPhone} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-family: 'SFMono-Regular', Consolas, monospace; font-weight: 600; color: #0f172a;">${tx.receiverPhone || '—'}</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.sender} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-weight: 500; color: #334155;">${tx.senderName || '—'}</td>
+      </tr>
+      <tr style="border-bottom: 1px solid #f1f5f9; background-color: #fafbfc;">
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.assignedTo} :</td>
+        <td style="padding: 9px 16px; text-align: right; font-weight: 600; color: #0284c7;">${tx.assignedToName || tx.assignedToRole || '—'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 9px 16px; color: #64748b; font-weight: 500;">${t.createdAt} :</td>
+        <td style="padding: 9px 16px; text-align: right; color: #64748b; font-size: 12px;">${new Date(tx.createdAt || Date.now()).toLocaleString('fr-FR')}</td>
+      </tr>
+    </table>
   `;
 }
 
 /**
- * Template SLA 24h+
+ * Template Nouvelle Transaction (Agent ayant effectué la transaction)
+ */
+export function buildNewTxEmailHtml(tx: any, agentName: string = 'Agent', lang: SupportedLanguage = 'FR'): string {
+  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+
+  const content = `
+    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 12px;">
+      ${t.newTxGreeting(agentName)}
+    </div>
+    <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+      ${t.newTxIntro(tx.referenceNumber)}
+    </div>
+
+    ${buildTxTableHtml(tx, t)}
+
+    <div style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+      ${t.supportContact}
+    </div>
+    <div style="font-size: 13px; color: #334155; margin-top: 14px; line-height: 1.6;">
+      ${t.signoff}
+    </div>
+  `;
+
+  return wrapEmailHtml(content, t.newTxBadge, '#e0f2fe', '#0369a1', lang);
+}
+
+/**
+ * Template Clôture / Validation (Agent ayant effectué la transaction)
+ */
+export function buildCompletedTxEmailHtml(tx: any, agentName: string = 'Agent', lang: SupportedLanguage = 'FR'): string {
+  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+
+  const proofHtml = tx.proofNotes
+    ? `
+      <div style="background-color: #f0fdf4; border-left: 3px solid #16a34a; padding: 12px 14px; border-radius: 6px; margin: 18px 0; font-size: 13px; color: #166534;">
+        <strong>Validation de décaissement :</strong> ${tx.proofNotes}
+      </div>
+    `
+    : '';
+
+  const content = `
+    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 12px;">
+      ${t.completedTxGreeting(agentName)}
+    </div>
+    <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+      ${t.completedTxIntro(tx.referenceNumber)}
+    </div>
+
+    ${proofHtml}
+    ${buildTxTableHtml(tx, t)}
+
+    <div style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+      ${t.supportContact}
+    </div>
+    <div style="font-size: 13px; color: #334155; margin-top: 14px; line-height: 1.6;">
+      ${t.signoff}
+    </div>
+  `;
+
+  return wrapEmailHtml(content, t.completedTxBadge, '#dcfce7', '#15803d', lang);
+}
+
+/**
+ * Template Annulation (Agent ayant effectué la transaction)
+ */
+export function buildCancelledTxEmailHtml(tx: any, reason: string, agentName: string = 'Agent', lang: SupportedLanguage = 'FR'): string {
+  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+
+  const content = `
+    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 12px;">
+      ${t.cancelledTxGreeting(agentName)}
+    </div>
+    <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+      ${t.cancelledTxIntro(tx.referenceNumber)}
+    </div>
+
+    <div style="background-color: #fef2f2; border-left: 3px solid #dc2626; padding: 12px 14px; border-radius: 6px; margin: 16px 0 20px 0; font-size: 13px; color: #991b1b; line-height: 1.5;">
+      <strong>${t.cancellationReasonLabel}</strong> ${reason || 'Non spécifié'}<br>
+      <span style="font-size: 12px; color: #b91c1c; margin-top: 3px; display: inline-block;">${t.cancellationRefundNote}</span>
+    </div>
+
+    ${buildTxTableHtml(tx, t)}
+
+    <div style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+      ${t.supportContact}
+    </div>
+    <div style="font-size: 13px; color: #334155; margin-top: 14px; line-height: 1.6;">
+      ${t.signoff}
+    </div>
+  `;
+
+  return wrapEmailHtml(content, t.cancelledTxBadge, '#fee2e2', '#b91c1c', lang);
+}
+
+/**
+ * Template Rappel SLA 24h+ (Supervision interne)
  */
 export function buildSlaAlertEmailHtml(tx: any, elapsedMinutes: number, lang: SupportedLanguage = 'FR'): string {
   const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-  const txUrl = `${emailConfig.frontendUrl}/#tasks`;
   const elapsedHours = Math.floor(elapsedMinutes / 60);
   const timeFormatted = elapsedHours >= 24 ? `${elapsedHours} heures` : `${elapsedMinutes} min`;
 
   const content = `
-    <div style="background-color: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #e11d48; padding: 14px 16px; border-radius: 12px; margin-bottom: 22px; color: #9f1239; font-size: 13px; line-height: 1.5;">
-      ⚠️ <strong>${t.actionRequired} :</strong> ${t.slaAlertWarning(timeFormatted)}
+    <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+      ${t.slaAlertIntro(timeFormatted)}
     </div>
+
     ${buildTxTableHtml(tx, t)}
-    <div style="text-align: center; margin: 26px 0 10px 0;">
-      <a href="${txUrl}" style="display: inline-block; background: #e11d48; color: #ffffff !important; text-decoration: none; font-size: 13px; font-weight: 800; padding: 12px 28px; border-radius: 14px; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35); text-align: center;">
-        ${t.openTxButton} ➔
-      </a>
+
+    <div style="font-size: 13px; color: #334155; margin-top: 18px; line-height: 1.6;">
+      ${t.signoff}
     </div>
   `;
 
-  return wrapEmailHtml(content, t.slaAlertTitle, "Alerte de dépassement SLA de traitement (24h+)", "SLA CRITIQUE (24H+)", "#e11d48", lang);
+  return wrapEmailHtml(content, t.slaAlertBadge, '#fef3c7', '#b45309', lang);
 }
 
 /**
- * Template Nouvelle Transaction
+ * Récupère l'agent ou l'utilisateur qui a réellement effectué / créé la transaction.
+ * Permet d'envoyer la notification exclusivement à l'intervenant direct sans spammer les administrateurs.
  */
-export function buildNewTxEmailHtml(tx: any, lang: SupportedLanguage = 'FR'): string {
-  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-  const txUrl = `${emailConfig.frontendUrl}/#tasks`;
+export async function getTransactionAgent(tx: any): Promise<{ email: string; role: string; name: string } | null> {
+  try {
+    // 1. Recherche par nom d'affichage ou username de l'émetteur
+    if (tx.createdByName) {
+      const creator = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { name: tx.createdByName },
+            { name: { contains: tx.createdByName } },
+            { username: tx.createdByName },
+          ],
+        },
+        select: { email: true, role: true, name: true },
+      });
+      if (creator && creator.email && creator.email.trim() !== '') {
+        return {
+          email: creator.email.trim(),
+          role: creator.role,
+          name: creator.name || tx.createdByName,
+        };
+      }
+    }
 
-  const content = `
-    <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; padding: 14px 16px; border-radius: 12px; margin-bottom: 22px; color: #1e40af; font-size: 13px; line-height: 1.5;">
-      📋 <strong>${t.newTxTitle} :</strong> ${t.newTxSubtitle}
-    </div>
-    ${buildTxTableHtml(tx, t)}
-    <div style="text-align: center; margin: 26px 0 10px 0;">
-      <a href="${txUrl}" style="display: inline-block; background: #2563eb; color: #ffffff !important; text-decoration: none; font-size: 13px; font-weight: 800; padding: 12px 28px; border-radius: 14px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35); text-align: center;">
-        ${t.openTxButton} ➔
-      </a>
-    </div>
-  `;
+    // 2. Recherche par nodeId
+    if (tx.createdByNode) {
+      const creatorByNode = await prisma.user.findFirst({
+        where: { nodeId: tx.createdByNode },
+        select: { email: true, role: true, name: true },
+      });
+      if (creatorByNode && creatorByNode.email && creatorByNode.email.trim() !== '') {
+        return {
+          email: creatorByNode.email.trim(),
+          role: creatorByNode.role,
+          name: creatorByNode.name || tx.createdByName || 'Agent',
+        };
+      }
+    }
 
-  return wrapEmailHtml(content, t.newTxTitle, t.newTxSubtitle, "NOUVELLE TRANSACTION", "#2563eb", lang);
+    // 3. Fallback ciblé par rôle de création (ex: agent_rd)
+    if (tx.createdByRole) {
+      const creatorByRole = await prisma.user.findFirst({
+        where: { role: tx.createdByRole },
+        select: { email: true, role: true, name: true },
+      });
+      if (creatorByRole && creatorByRole.email && creatorByRole.email.trim() !== '') {
+        return {
+          email: creatorByRole.email.trim(),
+          role: creatorByRole.role,
+          name: creatorByRole.name || 'Agent Guichet',
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Erreur getTransactionAgent:', error);
+  }
+
+  return null;
 }
 
 /**
- * Template Clôture / Validation
- */
-export function buildCompletedTxEmailHtml(tx: any, lang: SupportedLanguage = 'FR'): string {
-  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-  const txUrl = `${emailConfig.frontendUrl}/#history`;
-
-  const content = `
-    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 14px 16px; border-radius: 12px; margin-bottom: 22px; color: #166534; font-size: 13px; line-height: 1.5;">
-      ✅ <strong>${t.completedTxTitle} :</strong> ${t.completedTxSubtitle}
-      ${tx.proofNotes ? `<br><span style="font-size: 12px; margin-top: 4px; display: inline-block;">Note: <em>${tx.proofNotes}</em></span>` : ''}
-    </div>
-    ${buildTxTableHtml(tx, t)}
-    <div style="text-align: center; margin: 26px 0 10px 0;">
-      <a href="${txUrl}" style="display: inline-block; background: #16a34a; color: #ffffff !important; text-decoration: none; font-size: 13px; font-weight: 800; padding: 12px 28px; border-radius: 14px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35); text-align: center;">
-        Voir l'historique ➔
-      </a>
-    </div>
-  `;
-
-  return wrapEmailHtml(content, t.completedTxTitle, t.completedTxSubtitle, "TRANSACTION VALIDÉE", "#16a34a", lang);
-}
-
-/**
- * Template Annulation
- */
-export function buildCancelledTxEmailHtml(tx: any, reason: string, lang: SupportedLanguage = 'FR'): string {
-  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-
-  const content = `
-    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #dc2626; padding: 14px 16px; border-radius: 12px; margin-bottom: 22px; color: #991b1b; font-size: 13px; line-height: 1.5;">
-      ⚠️ <strong>${t.cancelledTxTitle} :</strong> ${reason || 'Annulé par l\'administrateur'}
-    </div>
-    ${buildTxTableHtml(tx, t)}
-  `;
-
-  return wrapEmailHtml(content, t.cancelledTxTitle, "Annulation et restitution du solde", "ANNULÉE", "#dc2626", lang);
-}
-
-/**
- * Récupère tous les emails des personnes concernées par une transaction
+ * Récupère les emails des superviseurs / administrateurs pour les alertes système d'exception (ex: SLA 24h)
  */
 export async function getConcernedStakeholderEmails(tx: any): Promise<{ email: string; role: string; name: string }[]> {
   const result: { email: string; role: string; name: string }[] = [];
   const seenEmails = new Set<string>();
 
   try {
-    // 1. Tous les admins et gestionnaires
+    // Admins et gestionnaires enregistrés en base
     const supervisors = await prisma.user.findMany({
       where: {
         role: { in: ['admin', 'gestionnaire'] },
@@ -608,40 +778,7 @@ export async function getConcernedStakeholderEmails(tx: any): Promise<{ email: s
       }
     }
 
-    // 2. L'agent créateur de la transaction
-    if (tx.createdByName) {
-      const creator = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { name: { contains: tx.createdByName } },
-            { username: tx.createdByName },
-          ],
-        },
-        select: { email: true, role: true, name: true },
-      });
-      if (creator && creator.email && !seenEmails.has(creator.email.toLowerCase())) {
-        seenEmails.add(creator.email.toLowerCase());
-        result.push(creator);
-      }
-    }
-
-    // 3. L'agent assigné à la transaction
-    if (tx.assignedToRole) {
-      const assignedUsers = await prisma.user.findMany({
-        where: {
-          role: tx.assignedToRole,
-        },
-        select: { email: true, role: true, name: true },
-      });
-      for (const u of assignedUsers) {
-        if (u.email && !seenEmails.has(u.email.toLowerCase())) {
-          seenEmails.add(u.email.toLowerCase());
-          result.push(u);
-        }
-      }
-    }
-
-    // 4. Emails d'administration statiques configurés
+    // Emails d'administration statiques configurés
     for (const email of emailConfig.adminNotificationEmails) {
       if (!seenEmails.has(email.toLowerCase())) {
         seenEmails.add(email.toLowerCase());
@@ -656,7 +793,121 @@ export async function getConcernedStakeholderEmails(tx: any): Promise<{ email: s
 }
 
 /**
- * Envoie l'alerte SLA 24h+
+ * Envoie une notification lors de la création d'une transaction.
+ * Envoyée UNIQUEMENT à l'agent ayant effectué la transaction (ex: Agent RD au guichet).
+ */
+export async function sendNewTransactionNotification(tx: any): Promise<{ sentCount: number }> {
+  try {
+    const agent = await getTransactionAgent(tx);
+    if (!agent || !agent.email) {
+      console.log(`ℹ️ [EMAIL] Aucun courriel trouvé pour l'agent créateur de la transaction #${tx.referenceNumber}`);
+      return { sentCount: 0 };
+    }
+
+    const lang = resolveLanguage(null, tx.operator, agent.role);
+    const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+    const subject = t.newTxSubject(tx.referenceNumber);
+    const html = buildNewTxEmailHtml(tx, agent.name, lang);
+    const text = `${t.newTxGreeting(agent.name)}\n\n` +
+      `Votre transaction #${tx.referenceNumber} (${(tx.operator || '').toUpperCase()}) a bien été enregistrée.\n` +
+      `Montant encaissé : ${Number(tx.amountDOP || 0).toLocaleString('fr-FR')} DOP\n` +
+      `Montant à décaisser : ${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG\n` +
+      `Bénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\n` +
+      `Expéditeur : ${tx.senderName}\n\n` +
+      `${t.supportContact}\n\nD'Alexis Transferencia y Accesorio`;
+
+    await sendEmail({
+      to: agent.email,
+      subject,
+      html,
+      text,
+    });
+
+    console.log(`📧 [EMAIL CONFIRMATION TRANSACTION] Reçu #${tx.referenceNumber} transmis à l'agent ${agent.name} <${agent.email}> [${lang}]`);
+    return { sentCount: 1 };
+  } catch (err) {
+    console.error('Erreur sendNewTransactionNotification:', err);
+    return { sentCount: 0 };
+  }
+}
+
+/**
+ * Envoie une notification lors de la clôture/décaissement réussi.
+ * Envoyée UNIQUEMENT à l'agent ayant initié la transaction pour confirmer l'exécution.
+ */
+export async function sendTransactionCompletedNotification(tx: any): Promise<{ sentCount: number }> {
+  try {
+    const agent = await getTransactionAgent(tx);
+    if (!agent || !agent.email) {
+      console.log(`ℹ️ [EMAIL] Aucun courriel trouvé pour l'agent créateur de la transaction #${tx.referenceNumber}`);
+      return { sentCount: 0 };
+    }
+
+    const lang = resolveLanguage(null, tx.operator, agent.role);
+    const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+    const subject = t.completedTxSubject(tx.referenceNumber);
+    const html = buildCompletedTxEmailHtml(tx, agent.name, lang);
+    const text = `${t.completedTxGreeting(agent.name)}\n\n` +
+      `La transaction #${tx.referenceNumber} a été validée et décaissée avec succès.\n` +
+      `Montant remis : ${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG\n` +
+      `Bénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\n` +
+      (tx.proofNotes ? `Note : ${tx.proofNotes}\n\n` : '\n') +
+      `${t.supportContact}\n\nD'Alexis Transferencia y Accesorio`;
+
+    await sendEmail({
+      to: agent.email,
+      subject,
+      html,
+      text,
+    });
+
+    console.log(`📧 [EMAIL FINALISATION TRANSACTION] Avis #${tx.referenceNumber} transmis à l'agent ${agent.name} <${agent.email}> [${lang}]`);
+    return { sentCount: 1 };
+  } catch (err) {
+    console.error('Erreur sendTransactionCompletedNotification:', err);
+    return { sentCount: 0 };
+  }
+}
+
+/**
+ * Envoie une notification lors de l'annulation d'une transaction.
+ * Envoyée UNIQUEMENT à l'agent ayant initié la transaction pour l'avertir du statut et de la restitution.
+ */
+export async function sendTransactionCancelledNotification(tx: any, reason: string): Promise<{ sentCount: number }> {
+  try {
+    const agent = await getTransactionAgent(tx);
+    if (!agent || !agent.email) {
+      console.log(`ℹ️ [EMAIL] Aucun courriel trouvé pour l'agent créateur de la transaction #${tx.referenceNumber}`);
+      return { sentCount: 0 };
+    }
+
+    const lang = resolveLanguage(null, tx.operator, agent.role);
+    const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+    const subject = t.cancelledTxSubject(tx.referenceNumber);
+    const html = buildCancelledTxEmailHtml(tx, reason, agent.name, lang);
+    const text = `${t.cancelledTxGreeting(agent.name)}\n\n` +
+      `La transaction #${tx.referenceNumber} a été annulée.\n` +
+      `Motif : ${reason || 'Non spécifié'}\n` +
+      `${t.cancellationRefundNote}\n\n` +
+      `${t.supportContact}\n\nD'Alexis Transferencia y Accesorio`;
+
+    await sendEmail({
+      to: agent.email,
+      subject,
+      html,
+      text,
+    });
+
+    console.log(`📧 [EMAIL ANNULATION TRANSACTION] Avis #${tx.referenceNumber} transmis à l'agent ${agent.name} <${agent.email}> [${lang}]`);
+    return { sentCount: 1 };
+  } catch (err) {
+    console.error('Erreur sendTransactionCancelledNotification:', err);
+    return { sentCount: 0 };
+  }
+}
+
+/**
+ * Envoie l'alerte SLA 24h+ aux superviseurs et gestionnaires uniquement si une transaction tarde à être exécutée.
  */
 export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number): Promise<{ sentCount: number; recipients: string[] }> {
   const stakeholders = await getConcernedStakeholderEmails(tx);
@@ -673,7 +924,12 @@ export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number
 
     const subject = t.slaAlertSubject(tx.referenceNumber, elapsedHours);
     const html = buildSlaAlertEmailHtml(tx, elapsedMinutes, lang);
-    const text = `${t.slaAlertTitle}\n\nTransaction #${tx.referenceNumber} (${tx.operator.toUpperCase()})\nTemps d'attente : ${elapsedHours} heures sans traitement (seuil 24h dépassé).\nBénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\nMontant : ${tx.amountHTG} HTG / ${tx.amountDOP} DOP.\nResponsable : ${tx.assignedToName || tx.assignedToRole}.\n\nLien : ${emailConfig.frontendUrl}/#tasks`;
+    const text = `Suivi de dossier - Transaction #${tx.referenceNumber} (${(tx.operator || '').toUpperCase()})\n` +
+      `En attente depuis ${elapsedHours} heures.\n` +
+      `Bénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\n` +
+      `Montant : ${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG / ${Number(tx.amountDOP || 0).toLocaleString('fr-FR')} DOP\n` +
+      `Responsable : ${tx.assignedToName || tx.assignedToRole}\n\n` +
+      `D'Alexis Transferencia y Accesorio`;
 
     await sendEmail({
       to: person.email,
@@ -685,97 +941,7 @@ export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number
     recipientsSent.push(`${person.name} <${person.email}> [${lang}]`);
   }
 
-  console.log(`🚨 [ALERTE SLA 24h+] Transaction #${tx.referenceNumber} (${elapsedHours}h en attente) envoyée à ${recipientsSent.length} destinataire(s): ${recipientsSent.join(', ')}`);
+  console.log(`📋 [SUIVI SLA 24h+] Transaction #${tx.referenceNumber} (${elapsedHours}h en attente) transmise à la supervision (${recipientsSent.length} destinataire(s))`);
 
   return { sentCount: recipientsSent.length, recipients: recipientsSent };
-}
-
-/**
- * Envoie une notification lors de la création d'une transaction
- */
-export async function sendNewTransactionNotification(tx: any): Promise<{ sentCount: number }> {
-  try {
-    const stakeholders = await getConcernedStakeholderEmails(tx);
-    if (stakeholders.length === 0) return { sentCount: 0 };
-
-    for (const person of stakeholders) {
-      const lang = resolveLanguage(null, tx.operator, person.role);
-      const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-      const subject = t.newTxSubject(tx.referenceNumber);
-      const html = buildNewTxEmailHtml(tx, lang);
-      const text = `${t.newTxTitle} : #${tx.referenceNumber}\nMontant : ${tx.amountHTG} HTG (${tx.amountDOP} DOP)\nBénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\nLien : ${emailConfig.frontendUrl}/#tasks`;
-
-      await sendEmail({
-        to: person.email,
-        subject,
-        html,
-        text,
-      });
-    }
-
-    return { sentCount: stakeholders.length };
-  } catch (err) {
-    console.error('Erreur sendNewTransactionNotification:', err);
-    return { sentCount: 0 };
-  }
-}
-
-/**
- * Envoie une notification lors de la clôture/décaissement réussi
- */
-export async function sendTransactionCompletedNotification(tx: any): Promise<{ sentCount: number }> {
-  try {
-    const stakeholders = await getConcernedStakeholderEmails(tx);
-    if (stakeholders.length === 0) return { sentCount: 0 };
-
-    for (const person of stakeholders) {
-      const lang = resolveLanguage(null, tx.operator, person.role);
-      const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-      const subject = t.completedTxSubject(tx.referenceNumber);
-      const html = buildCompletedTxEmailHtml(tx, lang);
-      const text = `${t.completedTxTitle} : #${tx.referenceNumber}\nBénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\nMontant : ${tx.amountHTG} HTG payé avec succès.\nNote : ${tx.proofNotes || 'SMS validé'}`;
-
-      await sendEmail({
-        to: person.email,
-        subject,
-        html,
-        text,
-      });
-    }
-
-    return { sentCount: stakeholders.length };
-  } catch (err) {
-    console.error('Erreur sendTransactionCompletedNotification:', err);
-    return { sentCount: 0 };
-  }
-}
-
-/**
- * Envoie une notification lors de l'annulation d'une transaction
- */
-export async function sendTransactionCancelledNotification(tx: any, reason: string): Promise<{ sentCount: number }> {
-  try {
-    const stakeholders = await getConcernedStakeholderEmails(tx);
-    if (stakeholders.length === 0) return { sentCount: 0 };
-
-    for (const person of stakeholders) {
-      const lang = resolveLanguage(null, tx.operator, person.role);
-      const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
-      const subject = t.cancelledTxSubject(tx.referenceNumber);
-      const html = buildCancelledTxEmailHtml(tx, reason, lang);
-      const text = `${t.cancelledTxTitle} : #${tx.referenceNumber}\nMotif : ${reason}\nMontant restitué au compte flotte.`;
-
-      await sendEmail({
-        to: person.email,
-        subject,
-        html,
-        text,
-      });
-    }
-
-    return { sentCount: stakeholders.length };
-  } catch (err) {
-    console.error('Erreur sendTransactionCancelledNotification:', err);
-    return { sentCount: 0 };
-  }
 }
