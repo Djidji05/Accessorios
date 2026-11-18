@@ -319,7 +319,7 @@ export const UserManagementView: React.FC = () => {
     });
 
     const netExpected = Math.max(0, volumeDOP - commissionDOP);
-    const dueDOP = Math.max(0, netExpected - depositedDOP);
+    const dueDOP = user.role === 'agent_haiti' ? 0 : Math.max(0, netExpected - depositedDOP);
 
     return {
       volumeDOP,
@@ -779,7 +779,7 @@ export const UserManagementView: React.FC = () => {
       const boxes = [
         { title: "VOLUME TOTAL TRAITÉ", val: `${periodVolumeDOP.toLocaleString()} DOP`, sub: `${periodTxCount} transactions`, fill: [239, 246, 255], border: [147, 197, 253], textCol: [30, 58, 138] },
         { title: "DÉPOSÉ À L'ADMIN", val: `${periodDepositedToAdmin.toLocaleString()} DOP`, sub: "Versements confirmés", fill: [236, 253, 245], border: [110, 231, 183], textCol: [6, 95, 70] },
-        { title: "MONTANT DÛ ADMIN", val: `${periodDueToAdmin.toLocaleString()} DOP`, sub: periodDueToAdmin > 0 ? "🔴 Reste à reverser" : "🟢 Tout Payé (0 DOP)", fill: [255, 241, 242], border: [254, 205, 211], textCol: [159, 18, 57] },
+        { title: "MONTANT DÛ ADMIN", val: inspectedUser.role === 'agent_haiti' ? '—' : `${periodDueToAdmin.toLocaleString()} DOP`, sub: inspectedUser.role === 'agent_haiti' ? 'Non applicable (Agent Haïti)' : periodDueToAdmin > 0 ? "🔴 Reste à reverser" : "🟢 Tout Payé (0 DOP)", fill: [255, 241, 242], border: [254, 205, 211], textCol: [159, 18, 57] },
         { title: "COMMISSIONS AGENT", val: `+${periodCommissionDOP.toLocaleString()} DOP`, sub: "Gains de l'employé", fill: [245, 243, 255], border: [216, 180, 254], textCol: [91, 33, 182] },
       ];
 
@@ -1440,40 +1440,50 @@ export const UserManagementView: React.FC = () => {
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       </div>
                       <p className="text-xl font-black text-emerald-700 font-mono">
-                        {periodDepositedToAdmin.toLocaleString()} DOP
+                        {inspectedUser.role === 'agent_haiti' ? '—' : `${periodDepositedToAdmin.toLocaleString()} DOP`}
                       </p>
                       <p className="text-[10px] text-emerald-600 font-bold">
-                        {periodDepositsList.length} versements enregistrés
+                        {inspectedUser.role === 'agent_haiti' ? 'Non applicable (Agent Haïti)' : `${periodDepositsList.length} versements enregistrés`}
                       </p>
                     </div>
 
                     {/* 3. Montant Dû à l'Admin (Dette) */}
                     <div className={`p-4 rounded-2xl border space-y-1 ${
-                      periodDueToAdmin > 0
+                      inspectedUser.role === 'agent_haiti'
+                        ? 'bg-slate-50 border-slate-200/80'
+                        : periodDueToAdmin > 0
                         ? 'bg-rose-50/80 border-rose-200/80'
                         : 'bg-emerald-50/60 border-emerald-200/70'
                     }`}>
                       <div className="flex items-center justify-between">
                         <span className={`text-[10px] font-black uppercase tracking-wider ${
-                          periodDueToAdmin > 0 ? 'text-rose-700' : 'text-emerald-700'
+                          inspectedUser.role === 'agent_haiti'
+                            ? 'text-slate-500'
+                            : periodDueToAdmin > 0 ? 'text-rose-700' : 'text-emerald-700'
                         }`}>
                           Dû à l'Admin
                         </span>
-                        {periodDueToAdmin > 0 ? (
+                        {inspectedUser.role === 'agent_haiti' ? (
+                          <span className="text-xs text-slate-400 font-bold">—</span>
+                        ) : periodDueToAdmin > 0 ? (
                           <AlertCircle className="w-4 h-4 text-rose-600" />
                         ) : (
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         )}
                       </div>
                       <p className={`text-xl font-black font-mono ${
-                        periodDueToAdmin > 0 ? 'text-rose-700' : 'text-emerald-700'
+                        inspectedUser.role === 'agent_haiti'
+                          ? 'text-slate-400'
+                          : periodDueToAdmin > 0 ? 'text-rose-700' : 'text-emerald-700'
                       }`}>
-                        {periodDueToAdmin.toLocaleString()} DOP
+                        {inspectedUser.role === 'agent_haiti' ? '—' : `${periodDueToAdmin.toLocaleString()} DOP`}
                       </p>
                       <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                        periodDueToAdmin > 0 ? 'bg-rose-200/70 text-rose-900' : 'bg-emerald-200/70 text-emerald-900'
+                        inspectedUser.role === 'agent_haiti'
+                          ? 'bg-slate-200/70 text-slate-600'
+                          : periodDueToAdmin > 0 ? 'bg-rose-200/70 text-rose-900' : 'bg-emerald-200/70 text-emerald-900'
                       }`}>
-                        {periodDueToAdmin > 0 ? '🔴 Reste à reverser' : '🟢 Tout Réglé (0 DOP)'}
+                        {inspectedUser.role === 'agent_haiti' ? '— (Non applicable)' : periodDueToAdmin > 0 ? '🔴 Reste à reverser' : '🟢 Tout Réglé (0 DOP)'}
                       </span>
                     </div>
 
@@ -1590,12 +1600,16 @@ export const UserManagementView: React.FC = () => {
 
                   {/* Situation Cumulée Globale (All-Time) */}
                   <div className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-sans ${
-                    cumulativeDebtAllTime > 0
+                    inspectedUser.role === 'agent_haiti'
+                      ? 'bg-slate-50 border-slate-200 text-slate-600'
+                      : cumulativeDebtAllTime > 0
                       ? 'bg-rose-50/70 border-rose-200 text-rose-900'
                       : 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
                   }`}>
                     <div className="flex items-center gap-2 font-bold">
-                      {cumulativeDebtAllTime > 0 ? (
+                      {inspectedUser.role === 'agent_haiti' ? (
+                        <span className="text-slate-400 font-mono font-bold">—</span>
+                      ) : cumulativeDebtAllTime > 0 ? (
                         <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                       ) : (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
@@ -1605,9 +1619,11 @@ export const UserManagementView: React.FC = () => {
                       </span>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-black font-mono self-start sm:self-auto ${
-                      cumulativeDebtAllTime > 0 ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+                      inspectedUser.role === 'agent_haiti'
+                        ? 'bg-slate-200 text-slate-700'
+                        : cumulativeDebtAllTime > 0 ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
                     }`}>
-                      {cumulativeDebtAllTime > 0 ? `🔴 DETTE GLOBALE : ${cumulativeDebtAllTime.toLocaleString()} DOP` : '🟢 AUCUNE DETTE EN COURS'}
+                      {inspectedUser.role === 'agent_haiti' ? '— NON APPLICABLE (AGENT HAÏTI)' : cumulativeDebtAllTime > 0 ? `🔴 DETTE GLOBALE : ${cumulativeDebtAllTime.toLocaleString()} DOP` : '🟢 AUCUNE DETTE EN COURS'}
                     </span>
                   </div>
 
@@ -2143,9 +2159,15 @@ export const UserManagementView: React.FC = () => {
                       <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">
                         Dû Admin
                       </span>
-                      <span className={`font-black font-mono text-sm ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {userStats.dueDOP.toLocaleString()} DOP
-                      </span>
+                      {user.role === 'agent_haiti' ? (
+                        <span className="font-black font-mono text-sm text-slate-400">
+                          —
+                        </span>
+                      ) : (
+                        <span className={`font-black font-mono text-sm ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          {userStats.dueDOP.toLocaleString()} DOP
+                        </span>
+                      )}
                       <span className="text-[10px] text-purple-700 font-bold block">
                         +{userStats.commissionDOP.toLocaleString()} DOP com.
                       </span>
@@ -2312,12 +2334,18 @@ export const UserManagementView: React.FC = () => {
                         <div className="col-span-2">
                           <div className="flex items-center gap-1">
                             <span className="text-[10px] text-slate-400 font-bold">{t('due_colon', 'Dû:')}</span>
-                            <span className={`font-mono font-extrabold text-xs ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                              {userStats.dueDOP.toLocaleString()} DOP
-                            </span>
+                            {user.role === 'agent_haiti' ? (
+                              <span className="font-mono font-extrabold text-xs text-slate-400">
+                                —
+                              </span>
+                            ) : (
+                              <span className={`font-mono font-extrabold text-xs ${userStats.dueDOP > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {userStats.dueDOP.toLocaleString()} DOP
+                              </span>
+                            )}
                           </div>
                           <p className="text-[10px] text-slate-400 font-medium">
-                            {t('deposited_colon', 'Déposé:')} {userStats.depositedDOP.toLocaleString()} DOP
+                            {user.role === 'agent_haiti' ? '—' : `${t('deposited_colon', 'Déposé:')} ${userStats.depositedDOP.toLocaleString()} DOP`}
                           </p>
                         </div>
 
