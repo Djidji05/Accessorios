@@ -181,7 +181,8 @@ interface AppContextType {
   canInstallPWA: boolean;
   showPWAInstallPrompt: boolean;
   setShowPWAInstallPrompt: (show: boolean) => void;
-  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed' | 'guide_needed'>;
+  installPWA: () => Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed'>;
+  triggerDirectDownload: () => 'ios_profile' | 'downloaded' | 'failed';
   downloadDesktopShortcut: () => void;
 }
 
@@ -383,10 +384,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  const downloadDesktopShortcut = useCallback(() => {
-    if (typeof window === 'undefined') return;
+  const triggerDirectDownload = useCallback((): 'ios_profile' | 'downloaded' | 'failed' => {
+    if (typeof window === 'undefined') return 'failed';
     try {
       const origin = window.location.origin || 'https://alexistransferencia.app';
+      const ua = navigator.userAgent;
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+
+      if (isIOS) {
+        // Téléchargement automatique du profil Apple WebClip
+        const a = document.createElement('a');
+        a.href = `${origin}/AlexisTransferencia.mobileconfig`;
+        a.download = 'AlexisTransferencia.mobileconfig';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return 'ios_profile';
+      }
+
+      if (isAndroid) {
+        // Lanceur autonome pour Android
+        const htmlContent = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Alexis Transferencia</title>
+  <link rel="manifest" href="${origin}/manifest.json">
+  <link rel="icon" type="image/png" href="${origin}/favicon.png">
+  <meta name="theme-color" content="#0F172A">
+  <meta http-equiv="refresh" content="0; url=${origin}/">
+  <script>window.location.replace("${origin}/");</script>
+</head>
+<body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#0F172A;color:#fff;font-family:sans-serif;">
+  <h3>Ouverture d'Alexis Transferencia...</h3>
+</body>
+</html>`;
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'AlexisTransferencia.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return 'downloaded';
+      }
+
+      // Windows / Mac Desktop : Raccourci .url
       const content = `[InternetShortcut]\r\nURL=${origin}/\r\nIconIndex=0\r\nIconFile=${origin}/favicon.png\r\nHotKey=0\r\n[{000214A0-0000-0000-C000-000000000046}]\r\nProp3=19,11\r\n`;
       const blob = new Blob([content], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
@@ -397,12 +444,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      return 'downloaded';
     } catch (e) {
-      console.error('Erreur téléchargement lanceur app:', e);
+      console.error('Erreur téléchargement automatique direct:', e);
+      return 'failed';
     }
   }, []);
 
-  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed' | 'guide_needed'> => {
+  const downloadDesktopShortcut = useCallback(() => {
+    triggerDirectDownload();
+  }, [triggerDirectDownload]);
+
+  const installPWA = useCallback(async (): Promise<'accepted' | 'dismissed' | 'downloaded' | 'ios_profile' | 'unavailable' | 'already_installed'> => {
     if (isPWAInstalled) {
       return 'already_installed';
     }
@@ -428,29 +481,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // 2. Détection de la plateforme (Mobile / Tablette / Desktop)
-    const isIOS = typeof navigator !== 'undefined' && (
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-    );
-    const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    // Sur mobile (Android ou iOS) où l'invite native directe n'est pas encore armée par le navigateur :
-    // On oriente l'utilisateur vers le guide visuel interactif au lieu d'un fichier .url incompatible
-    if (isMobile || isIOS) {
-      return 'guide_needed';
-    }
-
-    // 3. Sur PC / Bureau sans prompt direct :
-    // Télécharger le raccourci applicatif bureau
-    if (typeof window !== 'undefined') {
-      downloadDesktopShortcut();
-      setShowPWAInstallPrompt(false);
-      return 'downloaded';
-    }
+    // 2. Déclencher automatiquement le téléchargement du fichier installateur / lanceur d'application selon la plateforme
+    const dlResult = triggerDirectDownload();
+    setShowPWAInstallPrompt(false);
+    if (dlResult === 'ios_profile') return 'ios_profile';
+    if (dlResult === 'downloaded') return 'downloaded';
 
     return 'unavailable';
-  }, [deferredPWAPrompt, isPWAInstalled, downloadDesktopShortcut]);
+  }, [deferredPWAPrompt, isPWAInstalled, triggerDirectDownload]);
 
   // i18n Language State & Helper
   const [currentLang, setCurrentLangState] = useState<Language>(() => {
@@ -2585,6 +2623,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showPWAInstallPrompt,
         setShowPWAInstallPrompt,
         installPWA,
+        triggerDirectDownload,
         downloadDesktopShortcut,
       }}
     >

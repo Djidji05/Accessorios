@@ -27,7 +27,7 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
   compact = false, 
   className = '' 
 }) => {
-  const { isPWAInstalled, installPWA, downloadDesktopShortcut, t } = useApp();
+  const { isPWAInstalled, installPWA, triggerDirectDownload, downloadDesktopShortcut, t } = useApp();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -62,18 +62,24 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
         setFeedback(t('Installation réussie ! L\'application est désormais sur votre appareil.', 'Installation réussie ! L\'application est désormais sur votre appareil.'));
       } else if (outcome === 'already_installed') {
         setFeedback(t('L\'application est déjà installée sur cet appareil.', 'L\'application est déjà installée sur cet appareil.'));
-      } else if (outcome === 'guide_needed') {
-        setShowGuideModal(true);
+      } else if (outcome === 'ios_profile') {
+        setFeedback(t('Profil de configuration téléchargé ! Ouvrez Réglages sur votre iPhone pour finaliser.', 'Profil de configuration téléchargé ! Ouvrez Réglages sur votre iPhone pour finaliser.'));
       } else if (outcome === 'downloaded') {
-        setFeedback(t('Raccourci de bureau téléchargé avec succès ! Retrouvez Alexis Transferencia sur votre écran.', 'Raccourci de bureau téléchargé avec succès ! Retrouvez Alexis Transferencia sur votre écran.'));
+        setFeedback(t('Application téléchargée automatiquement avec succès ! Retrouvez le fichier dans vos Téléchargements.', 'Application téléchargée automatiquement avec succès ! Retrouvez le fichier dans vos Téléchargements.'));
       } else if (outcome === 'dismissed') {
         setFeedback(t('Installation annulée.', 'Installation annulée.'));
       } else {
-        setShowGuideModal(true);
+        const dl = triggerDirectDownload();
+        if (dl === 'ios_profile') {
+          setFeedback(t('Profil de configuration téléchargé ! Rendez-vous dans Réglages.', 'Profil de configuration téléchargé ! Rendez-vous dans Réglages.'));
+        } else {
+          setFeedback(t('Application téléchargée automatiquement avec succès dans vos Téléchargements !', 'Application téléchargée automatiquement avec succès dans vos Téléchargements !'));
+        }
       }
     } catch (err) {
       console.error(err);
-      setShowGuideModal(true);
+      triggerDirectDownload();
+      setFeedback(t('Application téléchargée automatiquement avec succès dans vos Téléchargements !', 'Application téléchargée automatiquement avec succès dans vos Téléchargements !'));
     } finally {
       setIsInstalling(false);
     }
@@ -144,7 +150,7 @@ export const PWAInstallCard: React.FC<PWAInstallCardProps> = ({
                   className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
                 >
                   <Download className="w-4 h-4 text-emerald-400" />
-                  <span>{isInstalling ? t('Installation...') : t('Installer l\'Application')}</span>
+                  <span>{isInstalling ? t('Téléchargement...') : t('Télécharger l\'Application')}</span>
                 </button>
 
                 <button
