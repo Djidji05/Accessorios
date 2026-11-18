@@ -23,14 +23,22 @@ router.get('/', authMiddleware, async (req, res) => {
       where.operator = String(operator);
     }
     if (search) {
-      const q = String(search);
-      where.OR = [
+      const q = String(search).trim();
+      const qDigits = q.replace(/\D/g, '');
+      const searchConditions: any[] = [
         { referenceNumber: { contains: q } },
         { senderName: { contains: q } },
         { receiverName: { contains: q } },
         { senderPhone: { contains: q } },
         { receiverPhone: { contains: q } },
       ];
+      if (qDigits && qDigits.length >= 3) {
+        searchConditions.push(
+          { senderPhone: { contains: qDigits } },
+          { receiverPhone: { contains: qDigits } }
+        );
+      }
+      where.OR = searchConditions;
     }
 
     // Pagination haute performance : supporte limit et page
@@ -446,7 +454,19 @@ router.patch('/:id/cancel', authMiddleware, requireRole('admin'), async (req, re
 router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { senderName, senderPhone, receiverName, receiverPhone, operator, status, notes } = req.body;
+    const { 
+      senderName, 
+      senderPhone, 
+      receiverName, 
+      receiverPhone, 
+      operator, 
+      status, 
+      notes, 
+      proofNotes,
+      amountDOP,
+      amountHTG,
+      amountUSD
+    } = req.body;
 
     const existing = await prisma.transaction.findUnique({ where: { id } });
     if (!existing) {
@@ -461,16 +481,43 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
     if (typeof operator === 'string') allowedUpdates.operator = operator.trim();
     if (typeof status === 'string') allowedUpdates.status = status.trim();
     if (typeof notes === 'string') allowedUpdates.proofNotes = notes.trim();
+    if (typeof proofNotes === 'string') allowedUpdates.proofNotes = proofNotes.trim();
+    if (typeof amountDOP === 'number' && !isNaN(amountDOP)) {
+      allowedUpdates.amountDOP = amountDOP;
+      const rate = existing.exchangeRate || 2.35;
+      allowedUpdates.amountHTG = Math.round(amountDOP * rate);
+    }
+    if (typeof amountHTG === 'number' && !isNaN(amountHTG)) {
+      allowedUpdates.amountHTG = amountHTG;
+    }
+    if (typeof amountUSD === 'number' && !isNaN(amountUSD)) {
+      allowedUpdates.amountUSD = amountUSD;
+    }
 
     const updated = await prisma.transaction.update({
       where: { id },
       data: allowedUpdates,
     });
 
+    const actorName = req.user?.name || 'Administrateur';
+    await prisma.auditLog.create({
+      data: {
+        nodeId: req.user?.nodeId || 'admin-node',
+        actorName,
+        actorRole: 'admin',
+        action: 'TRANSACTION_UPDATED',
+        targetType: 'transaction',
+        details: `Modification administrative de la transaction ${existing.referenceNumber} par ${actorName}.`,
+        nodeStatus: 'SYNCED',
+        priority: 'Normal',
+      },
+    }).catch((err) => console.warn('Avertissement audit log modification tx:', err));
+
     realtimeService.broadcast('TRANSACTION_UPDATED', updated);
 
-    return res.json({ success: true, message: 'Transaction mise à jour.', transaction: updated });
+    return res.json({ success: true, message: 'Transaction mise à jour avec succès.', transaction: updated });
   } catch (error) {
+    console.error('Erreur modification transaction:', error);
     return res.status(500).json({ error: 'Erreur lors de la mise à jour.' });
   }
 });

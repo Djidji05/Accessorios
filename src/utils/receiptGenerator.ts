@@ -58,10 +58,10 @@ export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): strin
   const commPct = isHaitiInbound ? 0 : (tx.amountDOP > 0 && calcCommDOP > 0 ? (Math.round((calcCommDOP / tx.amountDOP) * 1000) / 10) : 1.0);
 
   const financialLines = isHaitiInbound
-    ? `💰 *Somme Reçue (Dépôt) :* ${tx.amountHTG.toLocaleString()} HTG\n🎁 *Frais sur Dépôt :* 0 DOP (Aucun frais)\n📊 *Taux :* 100 DOP = ${Math.round(appliedRate * 100)} HTG\n💵 *Montant Converti (RD) :* ${tx.amountDOP.toLocaleString()} DOP`
+    ? `💰 *Somme Reçue (Dépôt) :* ${tx.amountHTG.toLocaleString()} HTG\n📊 *Taux :* 100 DOP = ${Math.round(appliedRate * 100)} HTG\n💵 *Montant Converti (RD) :* ${tx.amountDOP.toLocaleString()} DOP`
     : isZelle
-    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP\n💼 *Commission (${commPct}%) :* -${calcCommDOP} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
-    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n📉 *Frais (${feePct}%) :* -${calcFeeDOP} DOP\n💼 *Commission (${commPct}%) :* -${calcCommDOP} DOP\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
+    ? `💰 *Montant Zelle :* $${(tx.amountUSD || 0).toFixed(2)} USD (${tx.amountDOP.toLocaleString()} DOP)\n📊 *Taux :* 1 USD = ${(tx.zelleExchangeRate || appliedRate).toFixed(2)} DOP\n💵 *Montant Net (RD) :* ${(tx.netPayoutAmount || calcNetDOP).toLocaleString()} ${tx.netPayoutCurrency || 'DOP'}`
+    : `${amountPaidLabel} ${tx.amountDOP.toLocaleString()} DOP\n🔄 *Montant Net Converti :* ${calcNetDOP.toLocaleString()} DOP\n${rateLabel} 100 DOP = ${Math.round(appliedRate * 100)} HTG\n${amountRcvLabel} ${calcNetHTG.toLocaleString()} HTG`;
 
   return `${headerTitle}
 ${subTitle}
@@ -90,7 +90,7 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   const isES = lang === 'ES';
   const isHT = lang === 'HT';
   canvas.width = 650;
-  canvas.height = (hasProof ? 1240 : 1000) + (isCancelled ? 90 : 0);
+  canvas.height = (hasProof ? 1200 : 960) + (isCancelled ? 90 : 0);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Impossible d\'initialiser le contexte canvas 2D');
 
@@ -271,13 +271,13 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   currentY += 25;
   ctx.fillStyle = '#F0FDF4';
   ctx.beginPath();
-  ctx.roundRect(40, currentY, 570, 240, 20);
+  ctx.roundRect(40, currentY, 570, 200, 20);
   ctx.fill();
   ctx.strokeStyle = '#BBF7D0';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  let finY = currentY + 32;
+  let finY = currentY + 34;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#475569';
   ctx.font = '600 14px sans-serif';
@@ -303,33 +303,7 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
     finY
   );
 
-  finY += 28;
-  const canvasFeePct = isHaitiInboundCanvas ? 0 : (tx.amountDOP > 0 && calcFeeDOPCanvas > 0 ? (Math.round((calcFeeDOPCanvas / tx.amountDOP) * 1000) / 10) : 0.5);
-  const canvasCommPct = isHaitiInboundCanvas ? 0 : (tx.amountDOP > 0 && calcCommDOPCanvas > 0 ? (Math.round((calcCommDOPCanvas / tx.amountDOP) * 1000) / 10) : 1.0);
-
-  ctx.textAlign = 'left';
-  ctx.fillStyle = isHaitiInboundCanvas ? '#15803D' : '#B45309';
-  ctx.font = '600 14px sans-serif';
-  ctx.fillText(
-    isHaitiInboundCanvas
-      ? 'Frais & Commission sur Dépôt :'
-      : (isES ? `Cargo de Servicio (${canvasFeePct}%) deducido :` : isHT ? `Frè Sèvis (${canvasFeePct}%) dedwi :` : `Frais de Service (${canvasFeePct}%) déduits :`),
-    65,
-    finY
-  );
-  ctx.textAlign = 'right';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText(
-    isHaitiInboundCanvas
-      ? '0 DOP (Aucun frais)'
-      : isZelleCanvas
-      ? `-${calcFeeDOPCanvas.toLocaleString()} DOP`
-      : `-${calcFeeDOPCanvas.toLocaleString()} DOP (-${calcFeeHTGCanvas.toLocaleString()} HTG)`,
-    585,
-    finY
-  );
-
-  finY += 28;
+  finY += 30;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#475569';
   ctx.font = '600 14px sans-serif';
@@ -345,20 +319,20 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   ctx.font = 'bold 14px sans-serif';
   ctx.fillText(`${calcNetDOPCanvas.toLocaleString()} DOP`, 585, finY);
 
-  finY += 28;
+  finY += 30;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#475569';
   ctx.font = '600 14px sans-serif';
-  ctx.fillText(isES ? `Tasa / Comisión (${canvasCommPct}%) :` : isHT ? `To / Komisyon (${canvasCommPct}%) :` : `Taux Appliqué / Commission (${canvasCommPct}%) :`, 65, finY);
+  ctx.fillText(isES ? 'Tasa Aplicada :' : isHT ? 'To Aplike :' : 'Taux Appliqué :', 65, finY);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#1D4ED8';
   ctx.font = 'bold 14px sans-serif';
   ctx.fillText(
     isHaitiInboundCanvas
-      ? `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG (Comm: 0 DOP)`
+      ? `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG`
       : isZelleCanvas
-      ? `1 USD = ${(tx.zelleExchangeRate || appliedRateCanvas).toFixed(2)} DOP | Comm: -${calcCommDOPCanvas} DOP`
-      : `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG | Comm: -${calcCommDOPCanvas} DOP`,
+      ? `1 USD = ${(tx.zelleExchangeRate || appliedRateCanvas).toFixed(2)} DOP`
+      : `100 DOP = ${Math.round(appliedRateCanvas * 100)} HTG`,
     585,
     finY
   );
@@ -500,10 +474,9 @@ export async function downloadReceiptPDF(tx: Transaction, lang: string = 'FR'): 
 }
 
 /**
- * Partage le reçu PDF via l'API Web Share native (WhatsApp, SMS, Email, etc.) ou fallback WhatsApp
+ * Partage le reçu PDF via l'API Web Share native (WhatsApp, etc.) - Envoi UNIQUE du fichier PDF sans texte superflu
  */
 export async function shareReceiptPDF(tx: Transaction, lang: string = 'FR'): Promise<boolean> {
-  const shareText = getReceiptShareText(tx, lang);
   const cleanRef = tx.referenceNumber.replace(/[^a-zA-Z0-9-]/g, '_');
 
   try {
@@ -511,38 +484,27 @@ export async function shareReceiptPDF(tx: Transaction, lang: string = 'FR'): Pro
     const pdfBlob = doc.output('blob');
 
     if (pdfBlob && typeof navigator !== 'undefined' && navigator.canShare) {
-      const file = new File([pdfBlob], `Recu_${cleanRef}.pdf`, { type: 'application/pdf' });
+      const file = new File([pdfBlob], `Facture_${cleanRef}.pdf`, { type: 'application/pdf' });
       if (navigator.canShare({ files: [file] })) {
+        // Envoi STRICTEMENT du fichier PDF (sans message texte d'accompagnement sur WhatsApp)
         await navigator.share({
-          title: `Reçu ${tx.referenceNumber} - D'Alexis`,
-          text: shareText,
           files: [file],
         });
         return true;
       }
     }
 
-    if (navigator.share) {
-      await navigator.share({
-        title: `Reçu ${tx.referenceNumber} - D'Alexis`,
-        text: shareText,
-      });
-      return true;
-    }
-  } catch (err: any) {
-    if (err?.name === 'AbortError') return true;
-  }
-
-  // Fallback : ouverture WhatsApp avec texte récapitulatif + téléchargement direct du PDF
-  try {
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-    window.open(whatsappUrl, '_blank');
+    // Si le partage de fichier n'est pas supporté (ex: navigateur PC classique), téléchargement direct du PDF
     await downloadReceiptPDF(tx, lang);
     return true;
-  } catch {
-    navigator.clipboard.writeText(shareText);
-    await downloadReceiptPDF(tx, lang);
-    return false;
+  } catch (err: any) {
+    if (err?.name === 'AbortError') return true;
+    try {
+      await downloadReceiptPDF(tx, lang);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -149,16 +149,25 @@ export const CommandPalette: React.FC = () => {
     return true;
   });
 
+  const queryDigits = cleanQuery.replace(/\D/g, '');
+
   const filteredTransactions = cleanQuery
     ? scopedTransactions
-        .filter(t => 
-          t.referenceNumber.toLowerCase().includes(cleanQuery) ||
-          t.senderName.toLowerCase().includes(cleanQuery) ||
-          t.receiverName.toLowerCase().includes(cleanQuery) ||
-          t.operator.toLowerCase().includes(cleanQuery) ||
-          t.amountDOP.toString().includes(cleanQuery)
-        )
-        .slice(0, 5)
+        .filter(t => {
+          const rDigits = (t.receiverPhone || '').replace(/\D/g, '');
+          const sDigits = (t.senderPhone || '').replace(/\D/g, '');
+          return (
+            t.referenceNumber.toLowerCase().includes(cleanQuery) ||
+            t.senderName.toLowerCase().includes(cleanQuery) ||
+            t.receiverName.toLowerCase().includes(cleanQuery) ||
+            (t.receiverPhone && t.receiverPhone.toLowerCase().includes(cleanQuery)) ||
+            (t.senderPhone && t.senderPhone.toLowerCase().includes(cleanQuery)) ||
+            (queryDigits.length >= 3 && (rDigits.includes(queryDigits) || sDigits.includes(queryDigits))) ||
+            t.operator.toLowerCase().includes(cleanQuery) ||
+            t.amountDOP.toString().includes(cleanQuery)
+          );
+        })
+        .slice(0, 8)
     : [];
 
   // Annuaire des utilisateurs disponible UNIQUEMENT pour les administrateurs

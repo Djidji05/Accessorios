@@ -21,12 +21,20 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
   }, [searchQuery, statusFilter, dateRange]);
 
   const filteredTransactions = transactions.filter((tx) => {
+    const q = searchQuery.trim().toLowerCase();
+    const qDigits = searchQuery.replace(/\D/g, '');
+    const rDigits = (tx.receiverPhone || '').replace(/\D/g, '');
+    const sDigits = (tx.senderPhone || '').replace(/\D/g, '');
+
     const matchesSearch = 
-      tx.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.receiverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.receiverPhone.includes(searchQuery) ||
-      tx.operator.toLowerCase().includes(searchQuery.toLowerCase());
+      !q ||
+      (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(q)) ||
+      (tx.senderName && tx.senderName.toLowerCase().includes(q)) ||
+      (tx.receiverName && tx.receiverName.toLowerCase().includes(q)) ||
+      (tx.receiverPhone && tx.receiverPhone.toLowerCase().includes(q)) ||
+      (tx.senderPhone && tx.senderPhone.toLowerCase().includes(q)) ||
+      (qDigits.length >= 3 && (rDigits.includes(qDigits) || sDigits.includes(qDigits))) ||
+      (tx.operator && tx.operator.toLowerCase().includes(q));
 
     const matchesStatus = statusFilter === 'all' || tx.status === statusFilter;
 

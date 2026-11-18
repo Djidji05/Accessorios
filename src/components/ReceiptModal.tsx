@@ -216,9 +216,7 @@ export const ReceiptModal: React.FC = () => {
               const zFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : (serviceFeeRates['zelle'] ?? 0.5);
               const zCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates['zelle'] ?? 1.0);
               const zFeeDOP = (tx.feeDOP && tx.feeDOP > 0) ? tx.feeDOP : Math.max(1, Math.round(zUSD * (zFeePct / 100) * zRate));
-              const zFeeUSD = (tx.zelleFeeUSD && tx.zelleFeeUSD > 0) ? tx.zelleFeeUSD : (zRate > 0 ? Math.round((zFeeDOP / zRate) * 100) / 100 : Math.round(zUSD * (zFeePct / 100) * 100) / 100);
               const zCommDOP = (tx.commissionDOP && tx.commissionDOP > 0) ? tx.commissionDOP : Math.max(1, Math.round(zUSD * (zCommPct / 100) * zRate));
-              const zCommUSD = (tx.zelleCommissionUSD && tx.zelleCommissionUSD > 0) ? tx.zelleCommissionUSD : (zRate > 0 ? Math.round((zCommDOP / zRate) * 100) / 100 : Math.round(zUSD * (zCommPct / 100) * 100) / 100);
               const zNetDOP = tx.netPayoutAmount || Math.max(0, tx.amountDOP - zFeeDOP - zCommDOP);
               return (
                 <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
@@ -226,17 +224,9 @@ export const ReceiptModal: React.FC = () => {
                     <span>{t("Montant Brut Zelle:")}</span>
                     <span className="font-bold font-mono text-slate-900">${zUSD.toFixed(2)} USD ({tx.amountDOP.toLocaleString()} DOP)</span>
                   </div>
-                  <div className="flex justify-between text-amber-700">
-                    <span>{t("Frais de Service")} ({zFeePct}%) {t("déduits")}:</span>
-                    <span className="font-bold font-mono">-${zFeeUSD.toFixed(2)} USD (-{zFeeDOP} DOP)</span>
-                  </div>
                   <div className="flex justify-between text-slate-600">
                     <span>{t("Taux Appliqué:")}</span>
                     <span className="font-semibold font-mono text-slate-700">1 USD = {zRate.toFixed(2)} DOP</span>
-                  </div>
-                  <div className="flex justify-between text-slate-600">
-                    <span>{t("Commission")} ({zCommPct}%):</span>
-                    <span className="font-bold font-mono text-blue-600">-${zCommUSD.toFixed(2)} USD (-{zCommDOP} DOP)</span>
                   </div>
                   <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
                     <span className="font-bold text-slate-900">{t("Montant Net à Décaissement:")}</span>
@@ -252,7 +242,6 @@ export const ReceiptModal: React.FC = () => {
             const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * (opFeePct / 100)));
             const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (opCommPct / 100)));
             const calcNetDOP = Math.max(0, tx.amountDOP - calcFeeDOP - calcCommDOP);
-            const calcFeeHTG = Math.round(calcFeeDOP * appliedRate);
             const calcNetHTG = Math.round(calcNetDOP * appliedRate);
 
             return (
@@ -260,14 +249,6 @@ export const ReceiptModal: React.FC = () => {
                 <div className="flex justify-between text-slate-600">
                   <span>{t("Montant Brut Encaissé (RD):")}</span>
                   <span className="font-bold font-mono text-slate-900">{tx.amountDOP.toLocaleString()} {t("Pesos")}</span>
-                </div>
-                <div className="flex justify-between text-amber-700">
-                  <span>{t("Frais de Service")} ({opFeePct}%) {t("déduits")}:</span>
-                  <span className="font-bold font-mono">-{calcFeeDOP.toLocaleString()} DOP (-{calcFeeHTG.toLocaleString()} HTG)</span>
-                </div>
-                <div className="flex justify-between text-blue-700">
-                  <span>{t("Commission")} ({opCommPct}%) {t("déduite", "déduite")}:</span>
-                  <span className="font-bold font-mono">-{calcCommDOP.toLocaleString()} {t("Pesos")}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 font-semibold">
                   <span>{t("Montant Net Converti:")}</span>

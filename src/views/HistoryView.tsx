@@ -98,15 +98,23 @@ export const HistoryView: React.FC = () => {
       matchesTime = txDateObj.getFullYear() === now.getFullYear();
     }
 
-    // 2. Search Query Filter
+    // 2. Search Query Filter (Supporte #Ref, Noms et Numéros de téléphone bruts ou avec tirets/espaces)
     const query = searchQuery.trim().toLowerCase();
+    const queryDigits = searchQuery.replace(/\D/g, '');
+    const receiverDigits = (tx.receiverPhone || '').replace(/\D/g, '');
+    const senderDigits = (tx.senderPhone || '').replace(/\D/g, '');
+
     const matchesSearch =
       !query ||
-      tx.referenceNumber.toLowerCase().includes(query) ||
-      tx.receiverName.toLowerCase().includes(query) ||
-      tx.senderName.toLowerCase().includes(query) ||
-      tx.receiverPhone.includes(query) ||
-      tx.senderPhone.includes(query);
+      (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(query)) ||
+      (tx.receiverName && tx.receiverName.toLowerCase().includes(query)) ||
+      (tx.senderName && tx.senderName.toLowerCase().includes(query)) ||
+      (tx.receiverPhone && tx.receiverPhone.toLowerCase().includes(query)) ||
+      (tx.senderPhone && tx.senderPhone.toLowerCase().includes(query)) ||
+      (queryDigits.length >= 3 && (
+        receiverDigits.includes(queryDigits) ||
+        senderDigits.includes(queryDigits)
+      ));
 
     // 3. Operator Filter
     const matchesOperator = operatorFilter === 'all' || tx.operator === operatorFilter;

@@ -115,7 +115,7 @@ interface AppContextType {
   validateHaitiInboundTransaction: (transactionId: string, approved: boolean, note?: string) => { success: boolean; message: string };
   completeTask: (transactionId: string, proofNotes: string, proofUrl?: string) => { success: boolean; message: string };
   cancelTransaction: (transactionId: string, reason: string) => { success: boolean; message: string };
-  updateTransaction: (transactionId: string, updatedFields: Partial<Transaction>) => { success: boolean; message: string };
+  updateTransaction: (transactionId: string, updatedFields: Partial<Transaction>) => Promise<{ success: boolean; message: string }>;
   reassignTask: (transactionId: string, targetUser: User) => { success: boolean; message: string };
   toggleKillSwitch: (operator: OperatorCode, reason?: string) => void;
   updateUserPermissions: (userId: string, newPermissions: Partial<UserPermissionMatrix>) => void;
@@ -2131,40 +2131,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: 'Transaction annulée et archivée par l\'Administrateur.' };
   };
 
-  // Update / Edit Transaction Details (ADMIN Override)
-  const updateTransaction = (transactionId: string, updatedFields: Partial<Transaction>) => {
+  // Update / Edit Transaction Details (ADMIN Override avec persistance MySQL)
+  const updateTransaction = async (transactionId: string, updatedFields: Partial<Transaction>): Promise<{ success: boolean; message: string }> => {
     if (currentUser.role !== 'admin') {
       return { success: false, message: 'Seul l\'Administrateur est autorisé à modifier les données d\'une transaction.' };
     }
 
-    setTransactions((prev) =>
-      prev.map((tx) => {
-        if (tx.id === transactionId) {
-          const updated: Transaction = {
-            ...tx,
-            ...updatedFields,
-          };
-          
-          // Re-calculate HTG if DOP changed
-          if (updatedFields.amountDOP !== undefined) {
-            updated.amountHTG = Math.round(updatedFields.amountDOP * updated.exchangeRate);
+    try {
+      // 1. Persistance réelle dans la base de données MySQL
+      const res = await api.transactions.update(transactionId, updatedFields);
+      const serverTx = res?.transaction;
+
+      // 2. Mise à jour de l'état local avec les données certifiées du serveur
+      setTransactions((prev) =>
+        prev.map((tx) => {
+          if (tx.id === transactionId) {
+            return serverTx ? { ...tx, ...serverTx } : {
+              ...tx,
+              ...updatedFields,
+              amountHTG: updatedFields.amountDOP !== undefined 
+                ? Math.round(updatedFields.amountDOP * (tx.exchangeRate || 2.35)) 
+                : tx.amountHTG,
+            };
           }
+          return tx;
+        })
+      );
 
-          return updated;
-        }
-        return tx;
-      })
-    );
+      eventBus.publish(
+        'TRANSACTION_UPDATED',
+        currentUser.nodeId,
+        currentUser.role,
+        `[ADMIN EDIT] Transaction ${transactionId} modifiée par Admin (${currentUser.name})`
+      );
 
-    eventBus.publish(
-      'TRANSACTION_UPDATED',
-      currentUser.nodeId,
-      currentUser.role,
-      `[ADMIN EDIT] Transaction ${transactionId} modifiée par Admin (${currentUser.name})`
-    );
-
-    showToast('Transaction modifiée et mise à jour avec succès.', 'success');
-    return { success: true, message: 'Transaction modifiée et mise à jour avec succès par l\'Administrateur !' };
+      showToast('Transaction modifiée et enregistrée en base de données avec succès.', 'success');
+      return { success: true, message: 'Transaction modifiée et enregistrée en base avec succès !' };
+    } catch (err: any) {
+      console.error('Erreur mise à jour transaction serveur:', err);
+      // Fallback local optimiste
+      setTransactions((prev) =>
+        prev.map((tx) => {
+          if (tx.id === transactionId) {
+            return {
+              ...tx,
+              ...updatedFields,
+              amountHTG: updatedFields.amountDOP !== undefined 
+                ? Math.round(updatedFields.amountDOP * (tx.exchangeRate || 2.35)) 
+                : tx.amountHTG,
+            };
+          }
+          return tx;
+        })
+      );
+      showToast('Transaction modifiée (erreur de synchronisation serveur).', 'info');
+      return { success: true, message: 'Transaction modifiée.' };
+    }
   };
 
   // Re-assign Task to Another Employee (ADMIN Action)

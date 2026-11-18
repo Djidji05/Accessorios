@@ -305,11 +305,11 @@ export const TaskQueueView: React.FC = () => {
     setIsEditingAdmin(true);
   };
 
-  const handleAdminSaveEdit = (e: React.FormEvent) => {
+  const handleAdminSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTxForDetails) return;
 
-    const res = updateTransaction(selectedTxForDetails.id, {
+    const res = await updateTransaction(selectedTxForDetails.id, {
       senderName: editData.senderName,
       senderPhone: editData.senderPhone,
       receiverName: editData.receiverName,
@@ -376,14 +376,19 @@ export const TaskQueueView: React.FC = () => {
     if (selectedOperatorFilter !== 'all' && tx.operator !== selectedOperatorFilter) return false;
 
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.trim().toLowerCase();
+      const qDigits = searchQuery.replace(/\D/g, '');
+      const rDigits = (tx.receiverPhone || '').replace(/\D/g, '');
+      const sDigits = (tx.senderPhone || '').replace(/\D/g, '');
       return (
-        tx.referenceNumber.toLowerCase().includes(q) ||
-        tx.senderName.toLowerCase().includes(q) ||
-        tx.receiverName.toLowerCase().includes(q) ||
-        tx.receiverPhone.includes(q) ||
-        tx.operator.toLowerCase().includes(q) ||
-        tx.assignedToName.toLowerCase().includes(q)
+        (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(q)) ||
+        (tx.senderName && tx.senderName.toLowerCase().includes(q)) ||
+        (tx.receiverName && tx.receiverName.toLowerCase().includes(q)) ||
+        (tx.receiverPhone && tx.receiverPhone.toLowerCase().includes(q)) ||
+        (tx.senderPhone && tx.senderPhone.toLowerCase().includes(q)) ||
+        (qDigits.length >= 3 && (rDigits.includes(qDigits) || sDigits.includes(qDigits))) ||
+        (tx.operator && tx.operator.toLowerCase().includes(q)) ||
+        (tx.assignedToName && tx.assignedToName.toLowerCase().includes(q))
       );
     }
 
@@ -1573,13 +1578,17 @@ export const TaskQueueView: React.FC = () => {
       if (rdStatusFilter !== 'all' && t.status !== rdStatusFilter) return false;
       if (rdOperatorFilter !== 'all' && t.operator !== rdOperatorFilter) return false;
       if (rdSearchQuery) {
-        const q = rdSearchQuery.toLowerCase();
+        const q = rdSearchQuery.trim().toLowerCase();
+        const qDigits = rdSearchQuery.replace(/\D/g, '');
+        const rDigits = (t.receiverPhone || '').replace(/\D/g, '');
+        const sDigits = (t.senderPhone || '').replace(/\D/g, '');
         return (
           t.referenceNumber.toLowerCase().includes(q) ||
           t.receiverName.toLowerCase().includes(q) ||
-          t.receiverPhone.includes(q) ||
+          (t.receiverPhone && t.receiverPhone.toLowerCase().includes(q)) ||
+          (t.senderPhone && t.senderPhone.toLowerCase().includes(q)) ||
+          (qDigits.length >= 3 && (rDigits.includes(qDigits) || sDigits.includes(qDigits))) ||
           t.senderName.toLowerCase().includes(q) ||
-          t.senderPhone.includes(q) ||
           t.operator.toLowerCase().includes(q)
         );
       }
@@ -3598,15 +3607,20 @@ Précisez l'erreur constatée (ex: mauvais numéro récepteur, montant erroné s
         matchesStatus = tx.status === 'completed';
       }
 
-      // 3. Recherche
+      // 3. Recherche (Supporte Référence, Noms et Téléphones formatés/bruts)
       const query = gestionnaireSearchQuery.trim().toLowerCase();
+      const qDigits = gestionnaireSearchQuery.replace(/\D/g, '');
+      const rDigits = (tx.receiverPhone || '').replace(/\D/g, '');
+      const sDigits = (tx.senderPhone || '').replace(/\D/g, '');
+
       const matchesSearch =
         !query ||
-        tx.referenceNumber.toLowerCase().includes(query) ||
-        tx.receiverName.toLowerCase().includes(query) ||
-        tx.senderName.toLowerCase().includes(query) ||
-        tx.receiverPhone.includes(query) ||
-        tx.senderPhone.includes(query);
+        (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(query)) ||
+        (tx.receiverName && tx.receiverName.toLowerCase().includes(query)) ||
+        (tx.senderName && tx.senderName.toLowerCase().includes(query)) ||
+        (tx.receiverPhone && tx.receiverPhone.toLowerCase().includes(query)) ||
+        (tx.senderPhone && tx.senderPhone.toLowerCase().includes(query)) ||
+        (qDigits.length >= 3 && (rDigits.includes(qDigits) || sDigits.includes(qDigits)));
 
       // 4. Filtre Opérateur
       const matchesOperator =
