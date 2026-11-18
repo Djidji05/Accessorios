@@ -259,7 +259,7 @@ export const UserManagementView: React.FC = () => {
   // Compute effective commission rate for a specific transaction date
   const getEffectiveRateForDate = (txDateStr: string, user: User): number => {
     const history = commissionHistoryMap[user.id];
-    const defaultRate = user.commissionRate !== undefined ? user.commissionRate : 1.0;
+    const defaultRate = (user.commissionRate !== undefined && user.commissionRate !== null) ? user.commissionRate : 1.0;
     if (!history || history.length === 0) {
       return defaultRate;
     }
@@ -295,8 +295,9 @@ export const UserManagementView: React.FC = () => {
     const txCount = periodTx.length;
     // Calculate commission with time-aware effective rate for each transaction
     const commissionDOP = periodTx.reduce((sum, t) => {
-      if (t.commissionDOP && t.commissionDOP > 0) return sum + t.commissionDOP;
+      if (t.serviceType === 'haiti_inbound_cash') return sum;
       const rateForTx = getEffectiveRateForDate(t.createdAt, user);
+      if (rateForTx <= 0) return sum;
       return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
     }, 0);
 
@@ -635,8 +636,9 @@ export const UserManagementView: React.FC = () => {
 
     // Commission agent on period (time-aware using historical commission rates)
     const periodCommissionDOP = periodTx.reduce((sum, t) => {
-      if (t.commissionDOP && t.commissionDOP > 0) return sum + t.commissionDOP;
+      if (t.serviceType === 'haiti_inbound_cash') return sum;
       const rateForTx = getEffectiveRateForDate(t.createdAt, inspectedUser);
+      if (rateForTx <= 0) return sum;
       return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
     }, 0);
 
@@ -656,8 +658,9 @@ export const UserManagementView: React.FC = () => {
       const count = txs.length;
       const volumeDOP = txs.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
       const commDOP = txs.reduce((sum, t) => {
-        if (t.commissionDOP && t.commissionDOP > 0) return sum + t.commissionDOP;
+        if (t.serviceType === 'haiti_inbound_cash') return sum;
         const rateForTx = getEffectiveRateForDate(t.createdAt, inspectedUser);
+        if (rateForTx <= 0) return sum;
         return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
       }, 0);
       const percentage = periodVolumeDOP > 0 ? Math.round((volumeDOP / periodVolumeDOP) * 100) : 0;
@@ -698,7 +701,12 @@ export const UserManagementView: React.FC = () => {
     // Cumulative totals
     const totalCollectedAllTime = userTx.reduce((sum, t) => sum + (t.amountDOP || 0), 0);
     const totalDepositedAllTime = userSettlements.reduce((sum, s) => sum + s.amountDeposited, 0);
-    const totalCommissionsAllTime = userTx.reduce((sum, t) => sum + (t.commissionDOP || 0), 0);
+    const totalCommissionsAllTime = userTx.reduce((sum, t) => {
+      if (t.serviceType === 'haiti_inbound_cash') return sum;
+      const rateForTx = getEffectiveRateForDate(t.createdAt, inspectedUser);
+      if (rateForTx <= 0) return sum;
+      return sum + Math.round((t.amountDOP || 0) * (rateForTx / 100));
+    }, 0);
     const cumulativeDebtAllTime = userSettlements.length > 0 
       ? userSettlements.reduce((sum, s) => sum + s.remainingBalance, 0)
       : Math.max(0, (totalCollectedAllTime - totalCommissionsAllTime) - totalDepositedAllTime);

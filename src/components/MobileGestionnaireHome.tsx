@@ -253,8 +253,8 @@ export const MobileGestionnaireHome: React.FC = () => {
 
     const activeFeeRate = (serviceFeeRates[directOperator] ?? 0.5) / 100;
     const activeCommRate = (serviceCommissionRates[directOperator] ?? 1.0) / 100;
-    const feeDOP = Math.round(numAmount * activeFeeRate);
-    const commDOP = Math.round(numAmount * activeCommRate);
+    const feeDOP = activeFeeRate > 0 ? Math.round(numAmount * activeFeeRate) : 0;
+    const commDOP = activeCommRate > 0 ? Math.round(numAmount * activeCommRate) : 0;
 
     const finalReceiverName = isNoBeneficiaryOperator
       ? (directReceiverName.trim() || `Recharge ${directOperator.toUpperCase()}`)

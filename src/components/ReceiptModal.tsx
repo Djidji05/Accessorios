@@ -213,10 +213,10 @@ export const ReceiptModal: React.FC = () => {
             if (isZelle) {
               const zRate = (tx.zelleExchangeRate && tx.zelleExchangeRate > 10) ? tx.zelleExchangeRate : (tx.exchangeRate && tx.exchangeRate > 10 ? tx.exchangeRate : 58);
               const zUSD = tx.amountUSD || Math.round((tx.amountDOP / zRate) * 100) / 100;
-              const zFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : (serviceFeeRates['zelle'] ?? 0.5);
-              const zCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates['zelle'] ?? 1.0);
-              const zFeeDOP = (tx.feeDOP && tx.feeDOP > 0) ? tx.feeDOP : Math.max(1, Math.round(zUSD * (zFeePct / 100) * zRate));
-              const zCommDOP = (tx.commissionDOP && tx.commissionDOP > 0) ? tx.commissionDOP : Math.max(1, Math.round(zUSD * (zCommPct / 100) * zRate));
+              const zFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP !== undefined && tx.feeDOP !== null) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : (serviceFeeRates['zelle'] ?? 0.5);
+              const zCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates['zelle'] ?? 1.0);
+              const zFeeDOP = (tx.feeDOP !== undefined && tx.feeDOP !== null) ? tx.feeDOP : (zFeePct > 0 ? Math.max(1, Math.round(zUSD * (zFeePct / 100) * zRate)) : 0);
+              const zCommDOP = (tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? tx.commissionDOP : (zCommPct > 0 ? Math.max(1, Math.round(zUSD * (zCommPct / 100) * zRate)) : 0);
               const zNetDOP = tx.netPayoutAmount || Math.max(0, tx.amountDOP - zFeeDOP - zCommDOP);
               return (
                 <div className="space-y-2 text-left text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
@@ -237,10 +237,10 @@ export const ReceiptModal: React.FC = () => {
             }
 
             const appliedRate = tx.exchangeRate || 2.35;
-            const opFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : (serviceFeeRates[tx.operator] ?? 0.5);
-            const opCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? 1.0);
-            const calcFeeDOP = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * (opFeePct / 100)));
-            const calcCommDOP = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (opCommPct / 100)));
+            const opFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP !== undefined && tx.feeDOP !== null) ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10 : (serviceFeeRates[tx.operator] ?? 0.5);
+            const opCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? 1.0);
+            const calcFeeDOP = (tx.feeDOP !== undefined && tx.feeDOP !== null) ? tx.feeDOP : (opFeePct > 0 ? Math.max(1, Math.round(tx.amountDOP * (opFeePct / 100))) : 0);
+            const calcCommDOP = (tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? tx.commissionDOP : (opCommPct > 0 ? Math.max(1, Math.round(tx.amountDOP * (opCommPct / 100))) : 0);
             const calcNetDOP = Math.max(0, tx.amountDOP - calcFeeDOP - calcCommDOP);
             const calcNetHTG = Math.round(calcNetDOP * appliedRate);
 

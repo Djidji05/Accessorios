@@ -172,8 +172,16 @@ export const WeeklySettlementsView: React.FC = () => {
       const key = `${tx.createdByName || 'agent'}_${wInfo.weekLabel}`;
       const existing = weekGroups.get(key);
       const isInbound = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
-      const commRate = (serviceCommissionRates[tx.operator] ?? 1.0) / 100;
-      const comm = isInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round((tx.amountDOP || 0) * commRate)));
+      const creatorUser = availableUsers?.find(u => 
+        (u.name && tx.createdByName && u.name.toLowerCase() === tx.createdByName.toLowerCase()) ||
+        (u.nodeId && tx.createdByNode && u.nodeId === tx.createdByNode) ||
+        (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
+      );
+      const userCommRate = (creatorUser?.commissionRate !== undefined && creatorUser?.commissionRate !== null)
+        ? creatorUser.commissionRate
+        : undefined;
+      const effectiveRate = userCommRate !== undefined ? userCommRate : (serviceCommissionRates[tx.operator] ?? 1.0);
+      const comm = isInbound || effectiveRate <= 0 ? 0 : Math.max(1, Math.round((tx.amountDOP || 0) * (effectiveRate / 100)));
       if (!existing) {
         weekGroups.set(key, {
           agentId: tx.createdByNode || 'agent_node',

@@ -1642,20 +1642,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const zelleFeeRate = isZelle ? serviceFeePct : 0.5;
     const zelleCommRate = isZelle ? serviceCommPct : 1.0;
-    const zelleFeeUSD = isZelle ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
-    const zelleCommissionUSD = isZelle ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
+    const zelleFeeUSD = isZelle && zelleFeeRate > 0 ? Math.round(finalAmountUSD * (zelleFeeRate / 100) * 100) / 100 : 0;
+    const zelleCommissionUSD = isZelle && zelleCommRate > 0 ? Math.round(finalAmountUSD * (zelleCommRate / 100) * 100) / 100 : 0;
 
-    const finalFeeDOP = isHaitiInbound
-      ? 0
-      : isZelle
-      ? Math.max(1, Math.round(zelleFeeUSD * usdToDop))
-      : Math.max(1, Math.round(finalAmountDOP * (serviceFeePct / 100)));
+    const explicitCommDOP = (data.commissionDOP !== undefined && data.commissionDOP !== null) ? data.commissionDOP : undefined;
+    const explicitFeeDOP = (data.feeDOP !== undefined && data.feeDOP !== null) ? data.feeDOP : undefined;
 
-    const finalCommDOP = isHaitiInbound
+    const finalFeeDOP = isHaitiInbound || serviceFeePct <= 0
       ? 0
-      : isZelle
-      ? Math.max(1, Math.round(zelleCommissionUSD * usdToDop))
-      : Math.max(1, Math.round(finalAmountDOP * (serviceCommPct / 100)));
+      : (explicitFeeDOP !== undefined
+        ? explicitFeeDOP
+        : (isZelle
+          ? (zelleFeeUSD > 0 ? Math.max(1, Math.round(zelleFeeUSD * usdToDop)) : 0)
+          : (finalAmountDOP > 0 ? Math.max(1, Math.round(finalAmountDOP * (serviceFeePct / 100))) : 0)));
+
+    const finalCommDOP = isHaitiInbound || serviceCommPct <= 0
+      ? 0
+      : (explicitCommDOP !== undefined
+        ? explicitCommDOP
+        : (isZelle
+          ? (zelleCommissionUSD > 0 ? Math.max(1, Math.round(zelleCommissionUSD * usdToDop)) : 0)
+          : (finalAmountDOP > 0 ? Math.max(1, Math.round(finalAmountDOP * (serviceCommPct / 100))) : 0)));
 
     const netDOP = isHaitiInbound ? finalAmountDOP : Math.max(0, finalAmountDOP - finalFeeDOP - finalCommDOP);
     const finalAmountHTG = isHaitiInbound
@@ -1843,10 +1850,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const numUSD = tx.amountUSD || Math.round((tx.amountDOP / appliedRate) * 100) / 100;
       const zFeePct = serviceFeeRates['zelle'] ?? 0.5;
       const zCommPct = serviceCommissionRates['zelle'] ?? 1.0;
-      const finalFeeUSD = Math.round(numUSD * (zFeePct / 100) * 100) / 100;
-      const finalCommUSD = Math.round(numUSD * (zCommPct / 100) * 100) / 100;
-      const finalFeeDOP = Math.max(1, Math.round(finalFeeUSD * appliedRate));
-      const finalCommDOP = Math.max(1, Math.round(finalCommUSD * appliedRate));
+      const finalFeeUSD = zFeePct > 0 ? Math.round(numUSD * (zFeePct / 100) * 100) / 100 : 0;
+      const finalCommUSD = zCommPct > 0 ? Math.round(numUSD * (zCommPct / 100) * 100) / 100 : 0;
+      const finalFeeDOP = zFeePct > 0 && finalFeeUSD > 0 ? Math.max(1, Math.round(finalFeeUSD * appliedRate)) : 0;
+      const finalCommDOP = zCommPct > 0 && finalCommUSD > 0 ? Math.max(1, Math.round(finalCommUSD * appliedRate)) : 0;
       const grossDOP = Math.round(numUSD * appliedRate);
       const netUSD = Math.max(0, Math.round((numUSD - finalFeeUSD - finalCommUSD) * 100) / 100);
       const netDOP = Math.max(0, grossDOP - finalFeeDOP - finalCommDOP);

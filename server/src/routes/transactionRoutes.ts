@@ -198,9 +198,9 @@ router.post('/', authMiddleware, async (req, res) => {
     const channel = isHaitiCash ? 'haiti_cash' : 'digital_telecom';
     const targetRole = (isZelle || isHaitiInbound) ? 'admin' : (isHaitiCash ? 'agent_haiti' : 'gestionnaire');
 
-    // Calcul systématique des frais et commissions (Dépôt = strictement 0)
-    const expectedFeeDOP = Math.max(1, Math.round(amountDOP * (activeFeePercent / 100)));
-    const expectedCommDOP = Math.max(1, Math.round(amountDOP * (activeCommPercent / 100)));
+    // Calcul systématique des frais et commissions (Dépôt = strictement 0, ou si taux configuré à 0%)
+    const expectedFeeDOP = (activeFeePercent <= 0 || amountDOP <= 0) ? 0 : Math.max(1, Math.round(amountDOP * (activeFeePercent / 100)));
+    const expectedCommDOP = (activeCommPercent <= 0 || amountDOP <= 0) ? 0 : Math.max(1, Math.round(amountDOP * (activeCommPercent / 100)));
 
     const finalFeeDOP = isHaitiInbound ? 0 : expectedFeeDOP;
     const finalCommDOP = isHaitiInbound ? 0 : expectedCommDOP;
@@ -465,7 +465,9 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
       proofNotes,
       amountDOP,
       amountHTG,
-      amountUSD
+      amountUSD,
+      commissionDOP,
+      feeDOP
     } = req.body;
 
     const existing = await prisma.transaction.findUnique({ where: { id } });
@@ -492,6 +494,12 @@ router.patch('/:id', authMiddleware, requireRole('admin'), async (req, res) => {
     }
     if (typeof amountUSD === 'number' && !isNaN(amountUSD)) {
       allowedUpdates.amountUSD = amountUSD;
+    }
+    if (typeof commissionDOP === 'number' && !isNaN(commissionDOP) && commissionDOP >= 0) {
+      allowedUpdates.commissionDOP = commissionDOP;
+    }
+    if (typeof feeDOP === 'number' && !isNaN(feeDOP) && feeDOP >= 0) {
+      allowedUpdates.feeDOP = feeDOP;
     }
 
     const updated = await prisma.transaction.update({

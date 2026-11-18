@@ -63,19 +63,19 @@ export const ZellePayoutModal: React.FC<ZellePayoutModalProps> = ({
   const amountUSD = tx.amountUSD || Math.round((tx.amountDOP / usdToDop) * 100) / 100;
   const appliedRate = tx.zelleExchangeRate || usdToDop;
   const payoutCurrency = (tx.netPayoutCurrency === 'USD') ? 'USD' : 'DOP';
-  const zFeePct = (isApproved && tx.amountDOP && tx.feeDOP)
+  const zFeePct = (isApproved && tx.amountDOP && tx.feeDOP !== undefined && tx.feeDOP !== null)
     ? (Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10)
     : (serviceFeeRates['zelle'] ?? 0.5);
-  const zCommPct = (isApproved && tx.amountDOP && tx.commissionDOP)
+  const zCommPct = (isApproved && tx.amountDOP && tx.commissionDOP !== undefined && tx.commissionDOP !== null)
     ? (Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10)
     : (serviceCommissionRates['zelle'] ?? 1.0);
 
-  const feeUSD = Math.round(amountUSD * (zFeePct / 100) * 100) / 100;
-  const feeDOP = Math.max(1, Math.round(feeUSD * appliedRate));
+  const feeUSD = zFeePct > 0 ? Math.round(amountUSD * (zFeePct / 100) * 100) / 100 : 0;
+  const feeDOP = (tx.feeDOP !== undefined && tx.feeDOP !== null) ? tx.feeDOP : (zFeePct > 0 && feeUSD > 0 ? Math.max(1, Math.round(feeUSD * appliedRate)) : 0);
   const effectiveFeePct = zFeePct;
 
-  const commUSD = Math.round(amountUSD * (zCommPct / 100) * 100) / 100;
-  const commDOP = Math.max(1, Math.round(commUSD * appliedRate));
+  const commUSD = zCommPct > 0 ? Math.round(amountUSD * (zCommPct / 100) * 100) / 100 : 0;
+  const commDOP = (tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? tx.commissionDOP : (zCommPct > 0 && commUSD > 0 ? Math.max(1, Math.round(commUSD * appliedRate)) : 0);
   const effectiveCommPct = zCommPct;
 
   const netUSD = Math.max(0, Math.round((amountUSD - feeUSD - commUSD) * 100) / 100);

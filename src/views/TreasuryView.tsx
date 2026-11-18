@@ -170,25 +170,29 @@ export const TreasuryView: React.FC = () => {
   // --- CALCULS DU REVENU GLOBAL DE LA PLATEFORME SUR LA PÉRIODE SÉLECTIONNÉE ---
   const liveFeesDOP = validPeriodTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum; // Dépôt : 0 frais
+    if (t.feeDOP !== undefined && t.feeDOP !== null) return sum + t.feeDOP;
     const opFeeRate = (serviceFeeRates[t.operator] ?? 0.5) / 100;
+    if (opFeeRate <= 0) return sum;
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
       const feeUSD = amtUSD * opFeeRate;
-      return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(feeUSD * usdToDopRate)));
+      return sum + (feeUSD > 0 ? Math.max(1, Math.round(feeUSD * usdToDopRate)) : 0);
     }
-    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round(t.amountDOP * opFeeRate)));
+    return sum + Math.max(1, Math.round(t.amountDOP * opFeeRate));
   }, 0);
   const totalFeesDOP = liveFeesDOP;
 
   const liveAdminCommissionsDOP = validPeriodTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum; // Dépôt : 0 commission
+    if (t.commissionDOP !== undefined && t.commissionDOP !== null) return sum + t.commissionDOP;
     const opCommRate = (serviceCommissionRates[t.operator] ?? 1.0) / 100;
+    if (opCommRate <= 0) return sum;
     if (t.operator === 'zelle' || t.amountUSD) {
       const amtUSD = t.amountUSD || (t.amountDOP ? t.amountDOP / usdToDopRate : 0);
       const commUSD = amtUSD * opCommRate;
-      return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(commUSD * usdToDopRate)));
+      return sum + (commUSD > 0 ? Math.max(1, Math.round(commUSD * usdToDopRate)) : 0);
     }
-    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round(t.amountDOP * opCommRate)));
+    return sum + Math.max(1, Math.round(t.amountDOP * opCommRate));
   }, 0);
   const totalAdminCommissionsDOP = liveAdminCommissionsDOP;
 

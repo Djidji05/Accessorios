@@ -50,7 +50,7 @@ router.get('/', authMiddleware, async (_req, res) => {
 // 2. Créer un nouvel utilisateur avec Mot de passe et Username (Admin uniquement)
 router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
-    const { name, username, email, password, role, location, nodeId, avatar } = req.body;
+    const { name, username, email, password, role, location, nodeId, avatar, commissionRate } = req.body;
     if (!name || !email || !role) {
       return res.status(400).json({ error: 'Nom, courriel et rôle sont obligatoires.' });
     }
@@ -72,6 +72,10 @@ router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
     const finalPassword = (password && password.trim()) ? password.trim() : 'dalexis123';
     const passwordHash = bcrypt.hashSync(finalPassword, 10);
 
+    const parsedCommRate = (commissionRate !== undefined && commissionRate !== null && !isNaN(parseFloat(String(commissionRate))))
+      ? Math.max(0, parseFloat(String(commissionRate)))
+      : 1.0;
+
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
@@ -82,9 +86,20 @@ router.post('/', authMiddleware, requireRole('admin'), async (req, res) => {
         avatar: avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
         location: location || 'Agence RD',
         nodeId: nodeId || `node-${role}-01`,
+        commissionRate: parsedCommRate,
         status: 'online',
       },
     });
+
+    // Enregistrer l'historique initial de commission
+    await prisma.commissionRateHistory.create({
+      data: {
+        userId: newUser.id,
+        rate: parsedCommRate,
+        effectiveFrom: new Date(),
+        changedBy: req.user?.name || 'Admin',
+      },
+    }).catch((err) => console.warn('Avertissement initialisation historique commission:', err));
 
     // Création permissions par défaut
     const defaultServices = 

@@ -205,8 +205,8 @@ export const OperationsGuichetView: React.FC = () => {
   const numAmountDOP = parseFloat(amountDOP) || 0;
   const activeFeeRate = operator ? (serviceFeeRates[operator] ?? 0.5) : 0.5;
   const activeCommRate = operator ? (serviceCommissionRates[operator] ?? 1.0) : 1.0;
-  const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
-  const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
+  const feeDOP = numAmountDOP > 0 && activeFeeRate > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
+  const commissionDOP = numAmountDOP > 0 && activeCommRate > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
   const netDOP = Math.max(0, numAmountDOP - feeDOP - commissionDOP);
   const computedHTG = Math.round(netDOP * dopToHtgRate);
 

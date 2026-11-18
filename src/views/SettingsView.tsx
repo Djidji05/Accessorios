@@ -81,10 +81,10 @@ export const SettingsView: React.FC = () => {
   };
   
   // State pour le Taux de Commission Admin Global
-  const [adminCommissionInput, setAdminCommissionInput] = useState(() => (adminCommissionRate || 1.0).toString());
+  const [adminCommissionInput, setAdminCommissionInput] = useState(() => ((adminCommissionRate !== undefined && adminCommissionRate !== null) ? adminCommissionRate : 1.0).toString());
 
   useEffect(() => {
-    setAdminCommissionInput((adminCommissionRate || 1.0).toString());
+    setAdminCommissionInput(((adminCommissionRate !== undefined && adminCommissionRate !== null) ? adminCommissionRate : 1.0).toString());
   }, [adminCommissionRate]);
   
   // State pour Administrateur & Général (DOP et USD)
@@ -869,8 +869,8 @@ export const SettingsView: React.FC = () => {
             ].map((svc) => {
               const currentCommRate = svcRatesState[svc.key] ?? 1.0;
               const currentFeeRate = svcFeeRatesState[svc.key] ?? 0.5;
-              const exampleFee = Math.max(1, Math.round(1000 * (currentFeeRate / 100)));
-              const exampleComm = Math.max(1, Math.round(1000 * (currentCommRate / 100)));
+              const exampleFee = currentFeeRate > 0 ? Math.max(1, Math.round(1000 * (currentFeeRate / 100))) : 0;
+              const exampleComm = currentCommRate > 0 ? Math.max(1, Math.round(1000 * (currentCommRate / 100))) : 0;
 
               return (
                 <div 

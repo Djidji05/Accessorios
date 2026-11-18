@@ -50,8 +50,8 @@ export function getReceiptShareText(tx: Transaction, lang: string = 'FR'): strin
   const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
   const isZelle = tx.operator === 'zelle';
   const appliedRate = tx.exchangeRate || 2.35;
-  const calcFeeDOP = isHaitiInbound ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005)));
-  const calcCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
+  const calcFeeDOP = isHaitiInbound ? 0 : ((tx.feeDOP !== undefined && tx.feeDOP !== null) ? tx.feeDOP : Math.round(tx.amountDOP * 0.005));
+  const calcCommDOP = isHaitiInbound ? 0 : ((tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? tx.commissionDOP : Math.round(tx.amountDOP * 0.01));
   const calcNetDOP = isHaitiInbound ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOP - calcCommDOP);
   const calcNetHTG = isHaitiInbound ? tx.amountHTG : Math.round(calcNetDOP * appliedRate);
   const feePct = isHaitiInbound ? 0 : (tx.amountDOP > 0 && calcFeeDOP > 0 ? (Math.round((calcFeeDOP / tx.amountDOP) * 1000) / 10) : 0.5);
@@ -262,8 +262,8 @@ export async function generateReceiptCanvas(tx: Transaction, lang: string = 'FR'
   const isHaitiInboundCanvas = tx.serviceType === 'haiti_inbound_cash' || tx.senderName === 'Client Haïti' || Boolean(tx.referenceNumber?.startsWith('#INB-'));
   const isZelleCanvas = tx.operator === 'zelle';
   const appliedRateCanvas = tx.exchangeRate || 2.35;
-  const calcFeeDOPCanvas = isHaitiInboundCanvas ? 0 : (tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * 0.005)));
-  const calcCommDOPCanvas = isHaitiInboundCanvas ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * 0.01)));
+  const calcFeeDOPCanvas = isHaitiInboundCanvas ? 0 : ((tx.feeDOP !== undefined && tx.feeDOP !== null) ? tx.feeDOP : Math.round(tx.amountDOP * 0.005));
+  const calcCommDOPCanvas = isHaitiInboundCanvas ? 0 : ((tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? tx.commissionDOP : Math.round(tx.amountDOP * 0.01));
   const calcNetDOPCanvas = isHaitiInboundCanvas ? tx.amountDOP : Math.max(0, tx.amountDOP - calcFeeDOPCanvas - calcCommDOPCanvas);
   const calcFeeHTGCanvas = Math.round(calcFeeDOPCanvas * appliedRateCanvas);
   const calcNetHTGCanvas = isHaitiInboundCanvas ? tx.amountHTG : Math.round(calcNetDOPCanvas * appliedRateCanvas);

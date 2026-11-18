@@ -57,7 +57,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
   // Helper to determine time-aware commission rate for transaction creator
   const getAgentRateForTx = (txCreatedAt: string, user: typeof availableUsers[0] | undefined): number => {
     if (!user) return 1.0;
-    const defaultRate = user.commissionRate !== undefined ? user.commissionRate : 1.0;
+    const defaultRate = (user.commissionRate !== undefined && user.commissionRate !== null) ? user.commissionRate : 1.0;
     try {
       const raw = localStorage.getItem(`dalexis_commission_history_${user.id}`);
       if (raw) {
@@ -176,8 +176,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
           <tbody className="divide-y divide-slate-100 font-sans">
             {paginatedTransactions.map((tx) => {
               const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
-              const adminRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0));
-              const adminCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (adminRate / 100))));
+              const adminRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0));
+              const adminCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP !== undefined && tx.commissionDOP !== null ? tx.commissionDOP : (adminRate <= 0 ? 0 : Math.max(1, Math.round(tx.amountDOP * (adminRate / 100)))));
 
               const creatorUser = availableUsers?.find(u => 
                 (u.name && tx.createdByName && u.name.toLowerCase() === tx.createdByName.toLowerCase()) ||
@@ -185,7 +185,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
                 (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
               );
               const agentRate = isHaitiInbound ? 0 : getAgentRateForTx(tx.createdAt, creatorUser);
-              const agentCommDOP = isHaitiInbound ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
+              const agentCommDOP = isHaitiInbound || agentRate <= 0 ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
 
               return (
                 <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
@@ -265,8 +265,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
       <div className="md:hidden divide-y divide-slate-100">
         {paginatedTransactions.map((tx) => {
           const isHaitiInbound = tx.serviceType === 'haiti_inbound_cash';
-          const adminRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0));
-          const adminCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (adminRate / 100))));
+          const adminRate = isHaitiInbound ? 0 : ((tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10 : (serviceCommissionRates[tx.operator] ?? adminCommissionRate ?? 1.0));
+          const adminCommDOP = isHaitiInbound ? 0 : (tx.commissionDOP !== undefined && tx.commissionDOP !== null ? tx.commissionDOP : (adminRate <= 0 ? 0 : Math.max(1, Math.round(tx.amountDOP * (adminRate / 100)))));
 
           const creatorUser = availableUsers?.find(u => 
             (u.name && tx.createdByName && u.name.toLowerCase() === tx.createdByName.toLowerCase()) ||
@@ -274,7 +274,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ dateRange 
             (u.username && tx.createdByName && u.username.toLowerCase() === tx.createdByName.toLowerCase())
           );
           const agentRate = isHaitiInbound ? 0 : getAgentRateForTx(tx.createdAt, creatorUser);
-          const agentCommDOP = isHaitiInbound ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
+          const agentCommDOP = isHaitiInbound || agentRate <= 0 ? 0 : Math.max(1, Math.round(tx.amountDOP * (agentRate / 100)));
 
           return (
             <div

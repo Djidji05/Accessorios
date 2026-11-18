@@ -261,11 +261,11 @@ export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_
   const totalVolumeHTG = activeTxs.reduce((acc, t) => acc + (t.amountHTG || 0), 0);
   const totalCommissionsDOP = activeTxs.reduce((acc, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return acc;
-    return acc + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+    return acc + ((t.commissionDOP !== undefined && t.commissionDOP !== null) ? t.commissionDOP : Math.round((t.amountDOP || 0) * 0.01));
   }, 0);
   const totalFeesDOP = activeTxs.reduce((acc, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return acc;
-    return acc + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+    return acc + ((t.feeDOP !== undefined && t.feeDOP !== null) ? t.feeDOP : Math.round((t.amountDOP || 0) * 0.005));
   }, 0);
 
   const extraSummary = [
@@ -289,8 +289,8 @@ export function exportTransactionsToCSV(transactions: any[], filename = 'Alexis_
     { header: 'Bénéficiaire', accessor: (t) => t.receiverName },
     { header: 'Tél. Bénéficiaire', accessor: (t) => t.receiverPhone },
     { header: 'Montant Reçu (DOP)', accessor: (t) => t.amountDOP },
-    { header: 'Frais Collectés (DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.feeDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.005))) },
-    { header: 'Commission Admin (DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : (t.commissionDOP || Math.max(1, Math.round((t.amountDOP || 0) * 0.01))) },
+    { header: 'Frais Collectés (DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : ((t.feeDOP !== undefined && t.feeDOP !== null) ? t.feeDOP : Math.round((t.amountDOP || 0) * 0.005)) },
+    { header: 'Commission Admin (DOP)', accessor: (t) => t.serviceType === 'haiti_inbound_cash' ? 0 : ((t.commissionDOP !== undefined && t.commissionDOP !== null) ? t.commissionDOP : Math.round((t.amountDOP || 0) * 0.01)) },
     { header: 'Taux Change', accessor: (t) => t.exchangeRate },
     { header: 'Montant Livré (HTG)', accessor: (t) => t.amountHTG },
     { header: 'Montant (USD)', accessor: (t) => t.amountUSD || 0 },
@@ -307,7 +307,7 @@ export function exportTransactionsToPDF(transactions: any[], title = 'Rapport Fi
   const totalVolumeHTG = activeTxs.reduce((acc, t) => acc + (t.amountHTG || 0), 0);
   const totalCommissionsDOP = activeTxs.reduce((acc, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return acc;
-    return acc + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+    return acc + ((t.commissionDOP !== undefined && t.commissionDOP !== null) ? t.commissionDOP : Math.round((t.amountDOP || 0) * 0.01));
   }, 0);
 
   const summaryBoxes: SummaryBox[] = [
@@ -381,11 +381,11 @@ export function exportTreasuryReportToCSV(
   const totalVolumeHTG = activeTxs.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
   const totalFeesDOP = activeTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum;
-    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+    return sum + ((t.feeDOP !== undefined && t.feeDOP !== null) ? t.feeDOP : Math.round((t.amountDOP || 0) * 0.005));
   }, 0);
   const totalCommissionsDOP = activeTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum;
-    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+    return sum + ((t.commissionDOP !== undefined && t.commissionDOP !== null) ? t.commissionDOP : Math.round((t.amountDOP || 0) * 0.01));
   }, 0);
   const totalPlatformRevenueDOP = totalFeesDOP + totalCommissionsDOP;
 
@@ -455,11 +455,11 @@ export function exportTreasuryReportToPDF(
   const totalVolumeHTG = activeTxs.reduce((sum, t) => sum + (t.amountHTG || 0), 0);
   const totalFeesDOP = activeTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum;
-    return sum + (t.feeDOP && t.feeDOP > 0 ? t.feeDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.005)));
+    return sum + ((t.feeDOP !== undefined && t.feeDOP !== null) ? t.feeDOP : Math.round((t.amountDOP || 0) * 0.005));
   }, 0);
   const totalCommissionsDOP = activeTxs.reduce((sum, t) => {
     if (t.serviceType === 'haiti_inbound_cash') return sum;
-    return sum + (t.commissionDOP && t.commissionDOP > 0 ? t.commissionDOP : Math.max(1, Math.round((t.amountDOP || 0) * 0.01)));
+    return sum + ((t.commissionDOP !== undefined && t.commissionDOP !== null) ? t.commissionDOP : Math.round((t.amountDOP || 0) * 0.01));
   }, 0);
   const totalPlatformRevenueDOP = totalFeesDOP + totalCommissionsDOP;
 

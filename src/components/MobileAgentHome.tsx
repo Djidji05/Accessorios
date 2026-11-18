@@ -391,8 +391,8 @@ export const MobileAgentHome: React.FC = () => {
     const numAmountDOP = parseFloat(amountDOP) || 0;
     const activeFeeRate = serviceFeeRates[selectedService] ?? 0.5;
     const activeCommRate = serviceCommissionRates[selectedService] ?? 1.0;
-    const feeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
-    const commissionDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
+    const feeDOP = numAmountDOP > 0 && activeFeeRate > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
+    const commissionDOP = numAmountDOP > 0 && activeCommRate > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
 
     const isNoBeneficiaryOperator = ['digicel', 'claro', 'altice', 'natcom'].includes(selectedService);
     const defaultReceiver = isNoBeneficiaryOperator 
@@ -533,8 +533,8 @@ export const MobileAgentHome: React.FC = () => {
       serviceType: 'transfer',
       amountUSD: amountVal,
       amountDOP: Math.round(amountVal * usdToDop),
-      feeDOP: Math.round(amountVal * (zelleFeePct / 100) * usdToDop),
-      commissionDOP: Math.round(amountVal * (zelleCommPct / 100) * usdToDop),
+      feeDOP: zelleFeePct > 0 ? Math.round(amountVal * (zelleFeePct / 100) * usdToDop) : 0,
+      commissionDOP: zelleCommPct > 0 ? Math.round(amountVal * (zelleCommPct / 100) * usdToDop) : 0,
       proofUrl: zelleProofImage,
       zelleProofUrl: zelleProofImage,
       payoutCurrency: zellePayoutCurrency,
@@ -781,8 +781,8 @@ export const MobileAgentHome: React.FC = () => {
     const numAmountDOP = parseFloat(amountDOP) || 0;
     const activeFeeRate = serviceFeeRates[selectedService] ?? 0.5;
     const activeCommRate = serviceCommissionRates[selectedService] ?? 1.0;
-    const previewFeeDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
-    const previewCommDOP = numAmountDOP > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
+    const previewFeeDOP = numAmountDOP > 0 && activeFeeRate > 0 ? Math.max(1, Math.round(numAmountDOP * (activeFeeRate / 100))) : 0;
+    const previewCommDOP = numAmountDOP > 0 && activeCommRate > 0 ? Math.max(1, Math.round(numAmountDOP * (activeCommRate / 100))) : 0;
     const previewNetDOP = Math.max(0, numAmountDOP - previewFeeDOP - previewCommDOP);
     const computedHTG = Math.round(previewNetDOP * dopToHtgRate);
     const serviceInfo = SERVICES_LIST.find(s => s.id === selectedService);
@@ -796,8 +796,8 @@ export const MobileAgentHome: React.FC = () => {
       const numUSD = parseFloat(zelleAmountUSD) || 0;
       const zelleFeePct = serviceFeeRates['zelle'] ?? 0.5;
       const zelleCommPct = serviceCommissionRates['zelle'] ?? 1.0;
-      const feeUSD = Math.round(numUSD * (zelleFeePct / 100) * 100) / 100;
-      const commUSD = Math.round(numUSD * (zelleCommPct / 100) * 100) / 100;
+      const feeUSD = zelleFeePct > 0 ? Math.round(numUSD * (zelleFeePct / 100) * 100) / 100 : 0;
+      const commUSD = zelleCommPct > 0 ? Math.round(numUSD * (zelleCommPct / 100) * 100) / 100 : 0;
       const netUSD = Math.max(0, Math.round((numUSD - feeUSD - commUSD) * 100) / 100);
       const netPayoutDOP = Math.round(netUSD * usdToDop);
       const displayPayout = zellePayoutCurrency === 'DOP' ? `${netPayoutDOP.toLocaleString()} DOP` : `${netUSD.toFixed(2)} USD`;

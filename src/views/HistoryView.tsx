@@ -254,11 +254,11 @@ export const HistoryView: React.FC = () => {
               const txFeePct = (tx.amountDOP && tx.amountDOP > 0 && tx.feeDOP)
                 ? Math.round((tx.feeDOP / tx.amountDOP) * 1000) / 10
                 : (serviceFeeRates[tx.operator] ?? 0.5);
-              const txCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP)
+              const txCommPct = (tx.amountDOP && tx.amountDOP > 0 && tx.commissionDOP !== undefined && tx.commissionDOP !== null)
                 ? Math.round((tx.commissionDOP / tx.amountDOP) * 1000) / 10
                 : (serviceCommissionRates[tx.operator] ?? 1.0);
-              const calcFee = tx.feeDOP && tx.feeDOP > 0 ? tx.feeDOP : Math.max(1, Math.round(tx.amountDOP * (txFeePct / 100)));
-              const calcComm = tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * (txCommPct / 100)));
+              const calcFee = (tx.feeDOP !== undefined && tx.feeDOP !== null) ? tx.feeDOP : (txFeePct > 0 ? Math.max(1, Math.round(tx.amountDOP * (txFeePct / 100))) : 0);
+              const calcComm = (tx.commissionDOP !== undefined && tx.commissionDOP !== null) ? tx.commissionDOP : (txCommPct > 0 ? Math.max(1, Math.round(tx.amountDOP * (txCommPct / 100))) : 0);
               return (
                 <>
                   <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40">
@@ -705,7 +705,7 @@ export const HistoryView: React.FC = () => {
                       <td className="py-2.5 px-3 text-right font-black font-mono text-blue-600 dark:text-blue-400 text-xs whitespace-nowrap">
                         {tx.serviceType === 'haiti_inbound_cash'
                           ? '0 DOP'
-                          : `+${(tx.commissionDOP && tx.commissionDOP > 0 ? tx.commissionDOP : Math.max(1, Math.round(tx.amountDOP * ((serviceCommissionRates[tx.operator] ?? 1.0) / 100)))).toLocaleString()} DOP`}
+                          : `+${(tx.commissionDOP !== undefined && tx.commissionDOP !== null ? tx.commissionDOP : ((serviceCommissionRates[tx.operator] ?? 1.0) <= 0 ? 0 : Math.max(1, Math.round(tx.amountDOP * ((serviceCommissionRates[tx.operator] ?? 1.0) / 100))))).toLocaleString()} DOP`}
                       </td>
 
                       {/* Statut */}
