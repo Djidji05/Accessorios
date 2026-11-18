@@ -219,6 +219,9 @@ export interface Translations {
   connect: string;
   receipt_title: string;
   print_receipt: string;
+  night_banner_badge: string;
+  night_banner_text: string;
+  night_banner_schedule: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -441,6 +444,9 @@ export const translations: Record<Language, Translations> = {
     connect: "Se connecter",
     receipt_title: "Reçu Officiel de Transaction",
     print_receipt: "Télécharger Reçu (PDF)",
+    night_banner_badge: "HORAIRE DE NUIT (19H00 - 07H00)",
+    night_banner_text: "Information importante : Toute transaction effectuée après 19h00 (7:00 PM) sera traitée le lendemain matin à partir de 7h00 AM, car les agents ne sont pas encore disponibles.",
+    night_banner_schedule: "Traitement dès 7h00 AM demain",
   },
 
   HT: {
@@ -662,6 +668,9 @@ export const translations: Record<Language, Translations> = {
     connect: "Konekte",
     receipt_title: "Resi Ofisyèl Tranzaksyon",
     print_receipt: "Telechaje Resi (PDF)",
+    night_banner_badge: "ORÈ LANNWIT (7:00 PM - 7:00 AM)",
+    night_banner_text: "Enfòmasyon enpòtan : Nenpòt tranzaksyon ki fèt apre 7:00 PM ap fèt demen maten apati 7:00 AM, paske ajan yo poko disponib kounye a.",
+    night_banner_schedule: "Tretman kòmanse demen a 7:00 AM",
   },
 
   ES: {
@@ -883,6 +892,9 @@ export const translations: Record<Language, Translations> = {
     connect: "Iniciar sesión",
     receipt_title: "Recibo Oficial de Transacción",
     print_receipt: "Descargar Recibo (PDF)",
+    night_banner_badge: "HORARIO NOCTURNO (7:00 PM - 7:00 AM)",
+    night_banner_text: "Aviso importante: Cualquier transacción realizada después de las 7:00 PM será procesada al día siguiente a partir de las 7:00 AM, ya que los agentes aún no se encuentran disponibles.",
+    night_banner_schedule: "Procesamiento a partir de las 7:00 AM mañana",
   },
 };
 

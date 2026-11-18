@@ -19,6 +19,7 @@ import { LoginView } from './views/LoginView';
 import { BottomNavBar } from './components/BottomNavBar';
 import { GlobalToast } from './components/GlobalToast';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { NightServiceBanner } from './components/NightServiceBanner';
 
 const AppContent: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, isAuthenticated } = useApp();
@@ -90,6 +91,8 @@ const AppContent: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Banderole de service de nuit (19h00 - 07h00) */}
+        <NightServiceBanner />
         <Header />
         
         <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 pb-0">
