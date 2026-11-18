@@ -445,8 +445,8 @@ export const translations: Record<Language, Translations> = {
     receipt_title: "Reçu Officiel de Transaction",
     print_receipt: "Télécharger Reçu (PDF)",
     night_banner_badge: "HORAIRE DE NUIT (19H00 - 07H00)",
-    night_banner_text: "Information importante : Toute transaction effectuée après 19h00 (7:00 PM) sera traitée le lendemain matin à partir de 7h00 AM, car les agents ne sont pas encore disponibles.",
-    night_banner_schedule: "Traitement dès 7h00 AM demain",
+    night_banner_text: "Vous pouvez toujours effectuer vos transactions ! Cependant, la transaction sera validée et vous recevrez votre reçu officiel demain matin à partir de 7h00 AM, car les agents ne sont pas encore disponibles à cette heure.",
+    night_banner_schedule: "Validation & Reçu : Demain dès 7h00 AM",
   },
 
   HT: {
@@ -669,8 +669,8 @@ export const translations: Record<Language, Translations> = {
     receipt_title: "Resi Ofisyèl Tranzaksyon",
     print_receipt: "Telechaje Resi (PDF)",
     night_banner_badge: "ORÈ LANNWIT (7:00 PM - 7:00 AM)",
-    night_banner_text: "Enfòmasyon enpòtan : Nenpòt tranzaksyon ki fèt apre 7:00 PM ap fèt demen maten apati 7:00 AM, paske ajan yo poko disponib kounye a.",
-    night_banner_schedule: "Tretman kòmanse demen a 7:00 AM",
+    night_banner_text: "Ou ka toujou fè tranzaksyon w yo san pwoblèm ! Men tranzaksyon an ap valide epi w ap resevwa resi ofisyèl la demen maten apati 7:00 AM, paske ajan yo poko disponib nan lè sa a.",
+    night_banner_schedule: "Validasyon & Resi : Demen apati 7:00 AM",
   },
 
   ES: {
@@ -893,8 +893,8 @@ export const translations: Record<Language, Translations> = {
     receipt_title: "Recibo Oficial de Transacción",
     print_receipt: "Descargar Recibo (PDF)",
     night_banner_badge: "HORARIO NOCTURNO (7:00 PM - 7:00 AM)",
-    night_banner_text: "Aviso importante: Cualquier transacción realizada después de las 7:00 PM será procesada al día siguiente a partir de las 7:00 AM, ya que los agentes aún no se encuentran disponibles.",
-    night_banner_schedule: "Procesamiento a partir de las 7:00 AM mañana",
+    night_banner_text: "¡Puede seguir realizando sus transacciones normalmente! Sin embargo, la transacción será validada y recibirá su recibo oficial mañana a partir de las 7:00 AM, ya que los agentes no están disponibles a esta hora.",
+    night_banner_schedule: "Validación y Recibo: Mañana desde las 7:00 AM",
   },
 };
 

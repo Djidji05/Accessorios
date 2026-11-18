@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Language } from '../i18n/translations';
-import { NightServiceBanner } from '../components/NightServiceBanner';
 
 const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'FR', label: 'Français', flag: '🇫🇷' },
@@ -73,11 +72,7 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 text-slate-800 relative overflow-hidden font-sans flex flex-col transition-colors duration-300 selection:bg-blue-600 selection:text-white">
-      {/* Banderole de service de nuit (19h00 - 07h00) */}
-      <NightServiceBanner />
-
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12 relative">
+    <div className="min-h-screen w-full bg-slate-50 text-slate-800 relative overflow-hidden font-sans flex items-center justify-center p-4 sm:p-6 lg:p-12 transition-colors duration-300 selection:bg-blue-600 selection:text-white">
       
       {/* Top-Right Language Switcher with Submenu */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30">
@@ -300,8 +295,6 @@ export const LoginView: React.FC = () => {
 
           </div>
         </div>
-
-      </div>
 
       </div>
 
