@@ -105,7 +105,7 @@ export const MobileGestionnaireHome: React.FC = () => {
   const [directSenderPhone, setDirectSenderPhone] = useState<string>('');
   const [directReceiverName, setDirectReceiverName] = useState<string>('');
   const [directReceiverPhone, setDirectReceiverPhone] = useState<string>('');
-  const [directAmountDOP, setDirectAmountDOP] = useState<string>('5000');
+  const [directAmountDOP, setDirectAmountDOP] = useState<string>('');
   const [directProofImage, setDirectProofImage] = useState<string | null>(null);
   const [directProofNotes, setDirectProofNotes] = useState<string>('');
   const [directFormError, setDirectFormError] = useState<string | null>(null);
@@ -317,7 +317,7 @@ export const MobileGestionnaireHome: React.FC = () => {
       setDirectSenderPhone('');
       setDirectReceiverName('');
       setDirectReceiverPhone('');
-      setDirectAmountDOP('5000');
+      setDirectAmountDOP('');
       setDirectProofImage(null);
       setDirectProofNotes('');
       setIsSubmittingDirect(false);

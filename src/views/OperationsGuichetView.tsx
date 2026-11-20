@@ -640,7 +640,7 @@ export const OperationsGuichetView: React.FC = () => {
                   min="1"
                   value={inboundAmountUSD}
                   onChange={(e) => setInboundAmountUSD(e.target.value)}
-                  placeholder="Ex : 5000"
+                  placeholder=""
                   required
                   className="w-full pl-5 pr-28 py-4 text-2xl font-black font-mono text-slate-900 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-500/20"
                 />

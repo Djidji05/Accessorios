@@ -693,11 +693,18 @@ export function buildSlaAlertEmailHtml(tx: any, elapsedMinutes: number, lang: Su
 }
 
 /**
- * Récupère l'agent ou l'utilisateur qui a réellement effectué / créé la transaction.
- * Permet d'envoyer la notification exclusivement à l'intervenant direct sans spammer les administrateurs.
+ * Récupère l'agent RD qui a réellement effectué / créé la transaction.
+ * RÈGLE STRICTE : SEULS LES AGENTS RD DOIVENT RECEVOIR DES E-MAILS DE TRANSACTION.
+ * Les Administrateurs, les Agents Haïti et les Gestionnaires ne doivent en aucun cas recevoir d'e-mails.
  */
 export async function getTransactionAgent(tx: any): Promise<{ email: string; role: string; name: string } | null> {
   try {
+    // Si la transaction indique explicitement un rôle non agent_rd (ex: admin, agent_haiti, gestionnaire), bloquer immédiatement
+    if (tx.createdByRole && tx.createdByRole !== 'agent_rd') {
+      console.log(`ℹ️ [EMAIL FILTRÉ] Rôle créateur "${tx.createdByRole}" non éligible. Seuls les agents RD reçoivent des e-mails.`);
+      return null;
+    }
+
     // 1. Recherche par nom d'affichage ou username de l'émetteur
     if (tx.createdByName) {
       const creator = await prisma.user.findFirst({
@@ -711,6 +718,11 @@ export async function getTransactionAgent(tx: any): Promise<{ email: string; rol
         select: { email: true, role: true, name: true },
       });
       if (creator && creator.email && creator.email.trim() !== '') {
+        // Validation stricte du rôle : UNIQUEMENT agent_rd
+        if (creator.role !== 'agent_rd') {
+          console.log(`ℹ️ [EMAIL FILTRÉ] L'utilisateur "${creator.name}" a le rôle "${creator.role}". Les e-mails sont strictement réservés aux agents RD.`);
+          return null;
+        }
         return {
           email: creator.email.trim(),
           role: creator.role,
@@ -726,25 +738,29 @@ export async function getTransactionAgent(tx: any): Promise<{ email: string; rol
         select: { email: true, role: true, name: true },
       });
       if (creatorByNode && creatorByNode.email && creatorByNode.email.trim() !== '') {
+        if (creatorByNode.role !== 'agent_rd') {
+          console.log(`ℹ️ [EMAIL FILTRÉ] Le nœud "${tx.createdByNode}" appartient à un rôle "${creatorByNode.role}". E-mails réservés aux agents RD.`);
+          return null;
+        }
         return {
           email: creatorByNode.email.trim(),
           role: creatorByNode.role,
-          name: creatorByNode.name || tx.createdByName || 'Agent',
+          name: creatorByNode.name || tx.createdByName || 'Agent RD',
         };
       }
     }
 
-    // 3. Fallback ciblé par rôle de création (ex: agent_rd)
-    if (tx.createdByRole) {
+    // 3. Fallback ciblé par rôle de création (strictement agent_rd)
+    if (tx.createdByRole === 'agent_rd') {
       const creatorByRole = await prisma.user.findFirst({
-        where: { role: tx.createdByRole },
+        where: { role: 'agent_rd' },
         select: { email: true, role: true, name: true },
       });
       if (creatorByRole && creatorByRole.email && creatorByRole.email.trim() !== '') {
         return {
           email: creatorByRole.email.trim(),
           role: creatorByRole.role,
-          name: creatorByRole.name || 'Agent Guichet',
+          name: creatorByRole.name || 'Agent Guichet RD',
         };
       }
     }
@@ -794,13 +810,18 @@ export async function getConcernedStakeholderEmails(tx: any): Promise<{ email: s
 
 /**
  * Envoie une notification lors de la création d'une transaction.
- * Envoyée UNIQUEMENT à l'agent ayant effectué la transaction (ex: Agent RD au guichet).
+ * Envoyée STRICTEMENT ET UNIQUEMENT à l'Agent RD ayant effectué la transaction.
+ * Aucun email n'est envoyé à l'admin, à l'agent Haïti ou au gestionnaire.
  */
 export async function sendNewTransactionNotification(tx: any): Promise<{ sentCount: number }> {
   try {
+    if (tx.createdByRole && tx.createdByRole !== 'agent_rd') {
+      console.log(`ℹ️ [EMAIL FILTRÉ] Transaction #${tx.referenceNumber} créée par "${tx.createdByRole}". Aucun email envoyé.`);
+      return { sentCount: 0 };
+    }
+
     const agent = await getTransactionAgent(tx);
-    if (!agent || !agent.email) {
-      console.log(`ℹ️ [EMAIL] Aucun courriel trouvé pour l'agent créateur de la transaction #${tx.referenceNumber}`);
+    if (!agent || !agent.email || agent.role !== 'agent_rd') {
       return { sentCount: 0 };
     }
 
@@ -823,7 +844,7 @@ export async function sendNewTransactionNotification(tx: any): Promise<{ sentCou
       text,
     });
 
-    console.log(`📧 [EMAIL CONFIRMATION TRANSACTION] Reçu #${tx.referenceNumber} transmis à l'agent ${agent.name} <${agent.email}> [${lang}]`);
+    console.log(`📧 [EMAIL CONFIRMATION TRANSACTION] Reçu #${tx.referenceNumber} transmis à l'Agent RD ${agent.name} <${agent.email}> [${lang}]`);
     return { sentCount: 1 };
   } catch (err) {
     console.error('Erreur sendNewTransactionNotification:', err);
@@ -833,13 +854,17 @@ export async function sendNewTransactionNotification(tx: any): Promise<{ sentCou
 
 /**
  * Envoie une notification lors de la clôture/décaissement réussi.
- * Envoyée UNIQUEMENT à l'agent ayant initié la transaction pour confirmer l'exécution.
+ * Envoyée STRICTEMENT ET UNIQUEMENT à l'Agent RD ayant initié la transaction.
+ * Aucun email n'est envoyé à l'admin, à l'agent Haïti ou au gestionnaire.
  */
 export async function sendTransactionCompletedNotification(tx: any): Promise<{ sentCount: number }> {
   try {
+    if (tx.createdByRole && tx.createdByRole !== 'agent_rd') {
+      return { sentCount: 0 };
+    }
+
     const agent = await getTransactionAgent(tx);
-    if (!agent || !agent.email) {
-      console.log(`ℹ️ [EMAIL] Aucun courriel trouvé pour l'agent créateur de la transaction #${tx.referenceNumber}`);
+    if (!agent || !agent.email || agent.role !== 'agent_rd') {
       return { sentCount: 0 };
     }
 
@@ -861,7 +886,7 @@ export async function sendTransactionCompletedNotification(tx: any): Promise<{ s
       text,
     });
 
-    console.log(`📧 [EMAIL FINALISATION TRANSACTION] Avis #${tx.referenceNumber} transmis à l'agent ${agent.name} <${agent.email}> [${lang}]`);
+    console.log(`📧 [EMAIL FINALISATION TRANSACTION] Avis #${tx.referenceNumber} transmis à l'Agent RD ${agent.name} <${agent.email}> [${lang}]`);
     return { sentCount: 1 };
   } catch (err) {
     console.error('Erreur sendTransactionCompletedNotification:', err);
@@ -871,13 +896,17 @@ export async function sendTransactionCompletedNotification(tx: any): Promise<{ s
 
 /**
  * Envoie une notification lors de l'annulation d'une transaction.
- * Envoyée UNIQUEMENT à l'agent ayant initié la transaction pour l'avertir du statut et de la restitution.
+ * Envoyée STRICTEMENT ET UNIQUEMENT à l'Agent RD ayant initié la transaction.
+ * Aucun email n'est envoyé à l'admin, à l'agent Haïti ou au gestionnaire.
  */
 export async function sendTransactionCancelledNotification(tx: any, reason: string): Promise<{ sentCount: number }> {
   try {
+    if (tx.createdByRole && tx.createdByRole !== 'agent_rd') {
+      return { sentCount: 0 };
+    }
+
     const agent = await getTransactionAgent(tx);
-    if (!agent || !agent.email) {
-      console.log(`ℹ️ [EMAIL] Aucun courriel trouvé pour l'agent créateur de la transaction #${tx.referenceNumber}`);
+    if (!agent || !agent.email || agent.role !== 'agent_rd') {
       return { sentCount: 0 };
     }
 
@@ -898,7 +927,7 @@ export async function sendTransactionCancelledNotification(tx: any, reason: stri
       text,
     });
 
-    console.log(`📧 [EMAIL ANNULATION TRANSACTION] Avis #${tx.referenceNumber} transmis à l'agent ${agent.name} <${agent.email}> [${lang}]`);
+    console.log(`📧 [EMAIL ANNULATION TRANSACTION] Avis #${tx.referenceNumber} transmis à l'Agent RD ${agent.name} <${agent.email}> [${lang}]`);
     return { sentCount: 1 };
   } catch (err) {
     console.error('Erreur sendTransactionCancelledNotification:', err);
@@ -907,41 +936,35 @@ export async function sendTransactionCancelledNotification(tx: any, reason: stri
 }
 
 /**
- * Envoie l'alerte SLA 24h+ aux superviseurs et gestionnaires uniquement si une transaction tarde à être exécutée.
+ * Envoie l'alerte SLA 24h+ uniquement à l'Agent RD ayant initié la transaction si applicable.
+ * Aucun e-mail n'est envoyé à l'admin, à l'agent Haïti ou au gestionnaire.
  */
 export async function sendSlaAlertToStakeholders(tx: any, elapsedMinutes: number): Promise<{ sentCount: number; recipients: string[] }> {
-  const stakeholders = await getConcernedStakeholderEmails(tx);
-  if (stakeholders.length === 0) {
+  const agent = await getTransactionAgent(tx);
+  if (!agent || !agent.email || agent.role !== 'agent_rd') {
     return { sentCount: 0, recipients: [] };
   }
 
-  const recipientsSent: string[] = [];
+  const lang = resolveLanguage(null, tx.operator, agent.role);
+  const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
   const elapsedHours = Math.floor(elapsedMinutes / 60);
 
-  for (const person of stakeholders) {
-    const lang = resolveLanguage(null, tx.operator, person.role);
-    const t = EMAIL_TRANSLATIONS[lang] || EMAIL_TRANSLATIONS.FR;
+  const subject = t.slaAlertSubject(tx.referenceNumber, elapsedHours);
+  const html = buildSlaAlertEmailHtml(tx, elapsedMinutes, lang);
+  const text = `Suivi de dossier - Transaction #${tx.referenceNumber} (${(tx.operator || '').toUpperCase()})\n` +
+    `En attente depuis ${elapsedHours} heures.\n` +
+    `Bénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\n` +
+    `Montant : ${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG / ${Number(tx.amountDOP || 0).toLocaleString('fr-FR')} DOP\n\n` +
+    `D'Alexis Transferencia y Accesorio`;
 
-    const subject = t.slaAlertSubject(tx.referenceNumber, elapsedHours);
-    const html = buildSlaAlertEmailHtml(tx, elapsedMinutes, lang);
-    const text = `Suivi de dossier - Transaction #${tx.referenceNumber} (${(tx.operator || '').toUpperCase()})\n` +
-      `En attente depuis ${elapsedHours} heures.\n` +
-      `Bénéficiaire : ${tx.receiverName} (${tx.receiverPhone})\n` +
-      `Montant : ${Number(tx.amountHTG || 0).toLocaleString('fr-FR')} HTG / ${Number(tx.amountDOP || 0).toLocaleString('fr-FR')} DOP\n` +
-      `Responsable : ${tx.assignedToName || tx.assignedToRole}\n\n` +
-      `D'Alexis Transferencia y Accesorio`;
+  await sendEmail({
+    to: agent.email,
+    subject,
+    html,
+    text,
+  });
 
-    await sendEmail({
-      to: person.email,
-      subject,
-      html,
-      text,
-    });
+  console.log(`📋 [SUIVI SLA 24h+] Transaction #${tx.referenceNumber} (${elapsedHours}h en attente) transmise à l'Agent RD ${agent.name} <${agent.email}>`);
 
-    recipientsSent.push(`${person.name} <${person.email}> [${lang}]`);
-  }
-
-  console.log(`📋 [SUIVI SLA 24h+] Transaction #${tx.referenceNumber} (${elapsedHours}h en attente) transmise à la supervision (${recipientsSent.length} destinataire(s))`);
-
-  return { sentCount: recipientsSent.length, recipients: recipientsSent };
+  return { sentCount: 1, recipients: [`${agent.name} <${agent.email}> [${lang}]`] };
 }

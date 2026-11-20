@@ -664,7 +664,7 @@ export const MobileAgentHome: React.FC = () => {
                 min="1"
                 value={inboundAmountUSD}
                 onChange={(e) => setInboundAmountUSD(e.target.value)}
-                placeholder={t('Ex : 5000')}
+                placeholder=""
                 required
                 className="w-full pl-4 pr-24 py-3.5 text-2xl font-black font-mono text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20"
               />
@@ -1191,7 +1191,7 @@ export const MobileAgentHome: React.FC = () => {
                     setSenderPhone('');
                     setReceiverName('');
                     setReceiverPhone('');
-                    setAmountDOP('5000');
+                    setAmountDOP('');
                   }}
                   className="w-full py-3 rounded-2xl font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 dark:bg-blue-500/20 transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                 >
